@@ -1,0 +1,130 @@
+plugins:
+  kubernetes:
+    executor: central_deployment_agent
+    source: cloudify-kubernetes-plugin
+
+data_types:
+  cloudify.kubernetes.types.ApiMappingEntry:
+    description: >
+      Type defining python Kubernetes API objects and methods definitions for particular operation
+    properties:
+      api:
+        type: string
+        description: >
+          Name of python Kubernetes API object which will be used to as request for particular operation type
+        required: true
+      method:
+        type: string
+        description: >
+          Method name of python Kubernetes API object which will be used as request for particular operation type
+        required: true
+      payload:
+        type: string
+        description: >
+          Name of python Kubernetes API object which will be used as request data for particular operation type
+        required: false
+
+  cloudify.kubernetes.types.ApiMapping:
+    description: >
+      Type containing python Kubernetes API objects and methods definitions for all supported operations
+    properties:
+      create:
+        type: cloudify.kubernetes.types.ApiMappingEntry
+        description: >
+          Python Kubernetes API objects and methods definitions for create operation
+      read:
+        type: cloudify.kubernetes.types.ApiMappingEntry
+        description: >
+          Python Kubernetes API objects and methods definitions for read operation
+      delete:
+        type: cloudify.kubernetes.types.ApiMappingEntry
+        description: >
+          Python Kubernetes API objects and methods definitions for delete operation
+
+  cloudify.kubernetes.types.ResourceDefinition:
+    description: >
+      Type defining single Kubernetes resource e.g. Pod, Sevice, ...
+      It is some kind of wrapper for native Kubernetes YAML definition
+    properties:
+      apiVersion:
+        type: string
+        description: >
+          Kubernetes API version as a string
+        default: v1
+      metadata:
+        description: >
+          Metadata section related to single Kubernetes resource
+      spec:
+        description: >
+          Kuberneres resource object specification
+
+node_types:
+  cloudify.kubernetes.nodes.Master:
+    derived_from: cloudify.nodes.Root
+    properties:
+      config_file:
+        type: string
+        description: >
+          Path to Kubernetes config file, which will be used by client to interact with Kubernetes Master Node
+        default: '~/.kube/config'
+
+  cloudify.kubernetes.resources.Main:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.ResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+      options:
+        description: >
+          API options depending on API operations execution
+        default:
+          namespace: default
+      _api_mapping:
+        type: cloudify.kubernetes.types.ApiMapping
+        description: >
+          Python Kubernetes API objects and methods definitions used for given resource type
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: kubernetes.plugin.tasks.resource_create
+        delete:
+          implementation: kubernetes.plugin.tasks.resource_delete
+
+  cloudify.kubernetes.resources.Pod:
+    derived_from: cloudify.kubernetes.resources.Main
+    properties:
+      _api_mapping:
+        default:
+          create:
+            api: CoreV1Api
+            method: create_namespaced_pod
+            payload: V1Pod
+          read:
+            api: CoreV1Api
+            method: read_namespaced_pod
+          delete:
+            api: CoreV1Api
+            method: delete_namespaced_pod
+            payload: V1DeleteOptions
+
+  cloudify.kubernetes.resources.Service:
+    derived_from: cloudify.kubernetes.resources.Main
+    properties:
+      _api_mapping:
+        default:
+          create:
+            api: CoreV1Api
+            method: create_namespaced_service
+            payload: V1Service
+          read:
+            api: CoreV1Api
+            method: read_namespaced_service
+          delete:
+            api: CoreV1Api
+            method: delete_namespaced_service
+            payload: V1DeleteOptions
+
+relationships:
+  cloudify.kubernetes.relationships.managed_by_master:
+    derived_from: cloudify.relationships.connected_to
