@@ -87,9 +87,9 @@ node_types:
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: kubernetes.plugin.tasks.resource_create
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
         delete:
-          implementation: kubernetes.plugin.tasks.resource_delete
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
 
   cloudify.kubernetes.resources.Pod:
     derived_from: cloudify.kubernetes.resources.Main

@@ -23,7 +23,7 @@ setup(
     author_email='krzysztof.bijakowski@gigaspaces.com',
     description='Plugin provides Kubernetes management possibility',
 
-    packages=['plugin', 'plugin.k8s'],
+    packages=['cloudify_kubernetes', 'cloudify_kubernetes.k8s'],
 
     license='LICENSE',
     install_requires=[
