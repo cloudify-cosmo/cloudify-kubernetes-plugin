@@ -29,5 +29,6 @@ setup(
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
         'kubernetes>=1.0.0'
+        'fabric==1.13.1'
     ]
 )
