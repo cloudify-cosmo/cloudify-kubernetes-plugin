@@ -1,4 +1,5 @@
 from .client import CloudifyKubernetesClient
+from .config import KubernetesApiConfigurationVariants
 from .data import (KubernetesResourceDefinition,
                    KubernetesApiMapping)
 from .exceptions import (KuberentesError,
@@ -7,4 +8,3 @@ from .exceptions import (KuberentesError,
                          KuberentesInvalidPayloadClassError,
                          KuberentesInvalidApiClassError,
                          KuberentesInvalidApiMethodError)
-

@@ -4,6 +4,60 @@ plugins:
     source: cloudify-kubernetes-plugin
 
 data_types:
+  cloudify.kubernetes.types.ApiOptions:
+    properties:
+      host:
+        type: string
+        required: false
+        description: >
+          HTTP/HTTPS URL to Kubernetes API
+
+      ssl_ca_cert:
+        type: string
+        required: false
+
+      cert_file:
+        type: string
+        required: false
+
+      key_file:
+        type: string
+        required: false
+
+      verify_ssl:
+        type: string
+        required: false
+
+  cloudify.kubernetes.types.ConfigurationVariant:
+    description: >
+      Type representing all Kubernetes API configuration variants.
+      Each property represents separate variant of configuration.
+      You should choose one variant and fill in only on property.
+    properties:
+      blueprint_file_name:
+        type: string
+        required: false
+        description: >
+          Name of Kubernetes configuration file attached to blueprint
+
+      manager_file_path:
+        type: string
+        required: false
+        description: >
+          Path to Kubernetes configuration file placed on Cloudify Manager VM
+
+      file_content:
+        description: ''
+        required: false
+        description: >
+          Content (YAML) of Kubernetes configuration file
+
+      api_options:
+        type: cloudify.kubernetes.types.ApiOptions
+        required: false
+        description: >
+          Set of basic properties describing Kubernetes API access
+
   cloudify.kubernetes.types.ApiMappingEntry:
     description: >
       Type defining python Kubernetes API objects and methods definitions for particular operation
@@ -62,11 +116,14 @@ node_types:
   cloudify.kubernetes.nodes.Master:
     derived_from: cloudify.nodes.Root
     properties:
-      config_file:
-        type: string
+      configuration:
+        type: cloudify.kubernetes.types.ConfigurationVariant
         description: >
-          Path to Kubernetes config file, which will be used by client to interact with Kubernetes Master Node
-        default: '~/.kube/config'
+          Configuration properties of Kubernetes API. One of four configuration options can be used
+          1. Kubernetes config file contained by blueprint archive
+          2. Kubernetes config file previouly uploaded into Cloudify Manager VM
+          3. Content of Kubernetes config file (YAML)
+          4. Kubernetes API set o properties
 
   cloudify.kubernetes.resources.Main:
     derived_from: cloudify.nodes.Root
