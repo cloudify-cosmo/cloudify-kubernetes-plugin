@@ -1,5 +1,5 @@
 import inspect
-import kubernetes
+from kubernetes.client.rest import ApiException
 
 from .exceptions import *
 from .operations import *
@@ -7,17 +7,10 @@ from .operations import *
 
 class CloudifyKubernetesClient(object):
 
-    def __init__(self, config_file_path, logger):
-        self.api = kubernetes.client
+    def __init__(self, api_configuration, logger):
         self.logger = logger
-        self.logger.info('Initializing Kubernetes client with config file: {0}'.format(config_file_path))
-
-        try:
-            kubernetes.config.load_kube_config(config_file=config_file_path)
-        except Exception as e:
-            raise KuberentesApiInitializationFailedError('Cannot initialize Kubernetes client: {0}'.format(str(e)))
-
-        self.logger.info('Kubernetes client initialized successfully')
+        self.api = api_configuration.prepare_api()
+        self.logger.info('Kubernetes API initialized successfully')
 
     @property
     def _name(self):
@@ -63,8 +56,7 @@ class CloudifyKubernetesClient(object):
             self.logger.debug('Result: {0}'.format(result))
 
             return result
-
-        except kubernetes.client.rest.ApiException as e:
+        except ApiException as e:
             raise KuberentesApiOperationError('Exception during Kubernetes API call: {0}'.format(str(e)))
 
     def create_resource(self, mapping, resource_definition, options):
