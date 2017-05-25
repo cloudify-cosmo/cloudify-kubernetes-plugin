@@ -108,7 +108,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*,cover
+cover
 .hypothesis/
 
 # Translations
@@ -161,5 +161,6 @@ ENV/
 # End of https://www.gitignore.io/api/python,pycharm
 
 # Cloudify
-.cloudify
-
+inputs.yaml
+local-storage/
+.cloudify/
