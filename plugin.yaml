@@ -184,4 +184,17 @@ node_types:
 
 relationships:
   cloudify.kubernetes.relationships.managed_by_master:
-    derived_from: cloudify.relationships.connected_to
+    derived_from: cloudify.relationships.contained_in
+
+workflows:
+  execute_kubectl_command:
+    mapping: kubernetes.cloudify_kubernetes.workflows.execute_kubectl_command
+    parameters:
+      kubectl_arguments:
+        type: string
+        description: >
+          Kubectl arguments to be run as a command on Kubernetes Master node
+      kubectl_node_name:
+        type: string
+        description: >
+          Name of node with agent config provides, which is hosting K8S master
