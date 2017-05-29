@@ -18,7 +18,7 @@ from setuptools import setup
 
 setup(
     name='cloudify-kubernetes-plugin',
-    version='0.1',
+    version='1.0.0',
     author='Krzysztof Bijakowski',
     author_email='krzysztof.bijakowski@gigaspaces.com',
     description='Plugin provides Kubernetes management possibility',

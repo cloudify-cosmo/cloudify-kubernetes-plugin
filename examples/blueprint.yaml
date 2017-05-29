@@ -1,0 +1,96 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.0.1/types.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-utilities-plugin/1.2.1/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.0.0/plugin.yaml
+
+inputs:
+
+  blueprint_id:
+    default: kubernetes_cluster
+
+  blueprint_archive:
+    default: https://github.com/cloudify-examples/simple-kubernetes-blueprint/archive/4.0.1.zip
+
+  main_file_name:
+    default: aws-blueprint.yaml
+
+  deployment_id:
+    default: kubernetes_cluster
+
+  node_name:
+    default: kubernetes_master
+
+node_templates:
+
+  nginx_service:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        metadata:
+          labels:
+            name: nginx
+          name: nginx
+        spec:
+          type: NodePort
+          ports:
+            - port: 8000
+              targetPort: 80
+              nodePort: 30000
+              protocol: TCP
+          selector:
+            app: nginx
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master_configuration
+      - type: cloudify.relationships.depends_on
+        target: nginx_pod
+
+  nginx_pod:
+    type: cloudify.kubernetes.resources.Pod
+    properties:
+      definition:
+        apiVersion: v1
+        metadata:
+          name: nginx
+        spec:
+          replicas: 3
+          selector:
+            app: nginx
+          template:
+            metadata:
+              name: nginx
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: nginx
+                ports:
+                - containerPort: 80
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master_configuration
+
+  kubernetes_master_configuration:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration: { get_attribute: [ kubernetes, configuration_file_content] }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: kubernetes
+
+  kubernetes:
+    type: cloudify.nodes.NodeInstanceProxy
+    properties:
+      resource_config:
+        blueprint:
+          id: { get_input: blueprint_id }
+          blueprint_archive: { get_input: blueprint_archive }
+          main_file_name: { get_input: main_file_name }
+        deployment:
+          id: { get_input: deployment_id }
+        node_instance:
+          node: { get_input: node_name }

@@ -1,7 +1,7 @@
 plugins:
   kubernetes:
     executor: central_deployment_agent
-    source: cloudify-kubernetes-plugin
+    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.0.0.zip
 
 data_types:
   cloudify.kubernetes.types.ApiOptions:
