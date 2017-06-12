@@ -14,6 +14,15 @@ inputs:
   configuration_file_content:
     type: string
 
+  spec_port:
+    default: 8000
+
+  target_port:
+    default: 80
+
+  container_port:
+    default: 80
+
 node_templates:
 
   nginx_service:
@@ -25,8 +34,8 @@ node_templates:
           name: nginx-service
         spec:
           ports:
-          - port: 8000
-            targetPort: 80
+          - port: { get_input: spec_port }
+            targetPort: { get_input: target_port }
             protocol: TCP
           selector:
             app: nginx
@@ -48,7 +57,7 @@ node_templates:
           - name: nginx
             image: nginx:1.7.9
             ports:
-            - containerPort: 80
+            - containerPort: { get_input: container_port }
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
