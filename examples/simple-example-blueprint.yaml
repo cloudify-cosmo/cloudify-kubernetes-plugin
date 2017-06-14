@@ -64,6 +64,15 @@ node_templates:
 
   kubernetes_master:
     type: cloudify.kubernetes.nodes.Master
-    properties:
-      configuration:
-        file_content: { get_input: configuration_file_content }
+    #properties:
+    #  configuration:
+    #    file_content: { get_input: configuration_file_content }
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          # copy configuration to runtime properties
+          implementation: scripts/configuration_copy.py
+          executor: central_deployment_agent
+          inputs:
+            configuration:
+              file_content: { get_input: configuration_file_content }

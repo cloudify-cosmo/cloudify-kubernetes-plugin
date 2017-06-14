@@ -35,16 +35,23 @@ RELATIONSHIP_TYPE_MANAGED_BY_MASTER = (
 )
 
 
-def _retrieve_master_node(resource_instance):
+def _retrieve_master(resource_instance):
     for relationship in resource_instance.relationships:
         if relationship.type == RELATIONSHIP_TYPE_MANAGED_BY_MASTER:
-            return relationship.target.node
+            return relationship.target
 
 
 def _retrieve_configuration_property(resource_instance):
-    return _retrieve_master_node(resource_instance).properties.get(
+    target = _retrieve_master(resource_instance)
+    configuration = target.node.properties.get(
         NODE_PROPERTY_CONFIGURATION, {}
     )
+    configuration.update(
+        target.instance.runtime_properties.get(
+            NODE_PROPERTY_CONFIGURATION, {}
+        )
+    )
+    return configuration
 
 
 def retrieve_id(resource_instance):
