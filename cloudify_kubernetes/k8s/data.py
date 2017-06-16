@@ -16,11 +16,19 @@
 
 class KubernetesResourceDefinition(object):
 
-    def __init__(self, kind, apiVersion, metadata, spec):
+    def __init__(self, kind, apiVersion, metadata, spec=None, parameters=None,
+                 provisioner=None):
         self.kind = kind.split('.')[-1]
         self.api_version = apiVersion
         self.metadata = metadata
-        self.spec = spec
+        # General classes
+        if spec:
+            self.spec = spec
+        # Storage class
+        if parameters:
+            self.parameters = parameters
+        if provisioner:
+            self.provisioner = provisioner
 
 
 class KubernetesApiMapping(object):

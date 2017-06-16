@@ -114,6 +114,28 @@ data_types:
         description: >
           Kuberneres resource object specification
 
+  cloudify.kubernetes.types.StorageClassResourceDefinition:
+    description: >
+      Type defining single Kubernetes resource e.g. StorageClass
+      It is some kind of wrapper for native Kubernetes YAML definition
+    properties:
+      apiVersion:
+        type: string
+        description: >
+          Kubernetes API version as a string
+        default: v1
+      metadata:
+        description: >
+          Metadata section related to single Kubernetes resource
+      parameters:
+        required: false
+        description: >
+          Additional parameters for object creation
+      provisioner:
+        required: false
+        description: >
+          Class provisioner for object creation
+
 node_types:
   cloudify.kubernetes.nodes.Master:
     derived_from: cloudify.nodes.Root
@@ -200,6 +222,55 @@ node_types:
             api: CoreV1Api
             method: delete_namespaced_service
             payload: V1DeleteOptions
+
+  cloudify.kubernetes.resources.PersistentVolume:
+    derived_from: cloudify.kubernetes.resources.Main
+    properties:
+      _api_mapping:
+        default:
+          create:
+            api: CoreV1Api
+            method: create_persistent_volume
+            payload: V1PersistentVolume
+          read:
+            api: CoreV1Api
+            method: read_persistent_volume
+          delete:
+            api: CoreV1Api
+            method: delete_persistent_volume
+            payload: V1DeleteOptions
+
+  cloudify.kubernetes.resources.StorageClass:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+      options:
+        description: >
+          API options depending on API operations execution
+        default:
+          namespace: default
+      _api_mapping:
+        default:
+          create:
+            api: StorageV1beta1Api
+            method: create_storage_class
+            payload: V1beta1StorageClass
+          read:
+            api: StorageV1beta1Api
+            method: read_storage_class
+          delete:
+            api: StorageV1beta1Api
+            method: delete_storage_class
+            payload: V1DeleteOptions
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
+        delete:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
 
 relationships:
   cloudify.kubernetes.relationships.managed_by_master:

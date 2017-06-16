@@ -27,7 +27,7 @@ class TestData(unittest.TestCase):
         self.assertEqual(instance.create, 'create')
         self.assertEqual(instance.delete, 'delete')
 
-    def test_KubernetesResourceDefinition(self):
+    def test_KubernetesResourceDefinitionGeneral(self):
         instance = KubernetesResourceDefinition(kind="1.2.3.4",
                                                 apiVersion="v1",
                                                 metadata="metadata",
@@ -37,6 +37,19 @@ class TestData(unittest.TestCase):
         self.assertEqual(instance.api_version, "v1")
         self.assertEqual(instance.metadata, "metadata")
         self.assertEqual(instance.spec, "spec")
+
+    def test_KubernetesResourceDefinitionStorage(self):
+        instance = KubernetesResourceDefinition(kind="1.2.3.4",
+                                                apiVersion="v1",
+                                                metadata="metadata",
+                                                parameters="parameters",
+                                                provisioner="provisioner")
+
+        self.assertEqual(instance.kind, "4")
+        self.assertEqual(instance.api_version, "v1")
+        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.parameters, "parameters")
+        self.assertEqual(instance.provisioner, "provisioner")
 
 
 if __name__ == '__main__':
