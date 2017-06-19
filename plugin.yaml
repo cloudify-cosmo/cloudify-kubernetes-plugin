@@ -167,6 +167,23 @@ node_types:
             method: delete_namespaced_pod
             payload: V1DeleteOptions
 
+  cloudify.kubernetes.resources.ReplicaSet:
+    derived_from: cloudify.kubernetes.resources.Main
+    properties:
+      _api_mapping:
+        default:
+          create:
+            api: ExtensionsV1beta1Api
+            method: create_namespaced_replica_set
+            payload: V1beta1ReplicaSet
+          read:
+            api: ExtensionsV1beta1Api
+            method: read_namespaced_replica_set
+          delete:
+            api: ExtensionsV1beta1Api
+            method: delete_collection_namespaced_replica_set
+            payload: V1DeleteOptions
+
   cloudify.kubernetes.resources.Service:
     derived_from: cloudify.kubernetes.resources.Main
     properties:
