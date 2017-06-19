@@ -129,10 +129,10 @@ class TestTasks(unittest.TestCase):
         current_ctx.set(_ctx)
         return managed_master_node, _ctx
 
-    def test_retrieve_master_node(self):
+    def test_retrieve_master(self):
         managed_master_node, _ctx = self._prepare_master_node()
-        self.assertEqual(tasks._retrieve_master_node(_ctx.instance),
-                         managed_master_node.target.node)
+        self.assertEqual(tasks._retrieve_master(_ctx.instance),
+                         managed_master_node.target)
 
     def test_retrieve_configuration_property(self):
         _, _ctx = self._prepare_master_node()
