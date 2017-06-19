@@ -123,7 +123,7 @@ node_types:
         description: >
           Configuration properties of Kubernetes API. One of four configuration options can be used
           1. Kubernetes config file contained by blueprint archive
-          2. Kubernetes config file previouly uploaded into Cloudify Manager VM
+          2. Kubernetes config file previously uploaded into Cloudify Manager VM
           3. Content of Kubernetes config file (YAML)
           4. Kubernetes API set o properties
 
