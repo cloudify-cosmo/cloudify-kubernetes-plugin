@@ -1,0 +1,206 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  This runs a trivial deployment in kubernetes containing single-container pod with virtual ethernet interfaces exposed.
+  It should be run as internal component of one of "service_chain" blueprints.
+  Expects that you have first installed https://github.com/cloudify-examples/simple-kubernetes-blueprint/tree/4.0.1.
+  Also install the wagon with the command: "cfy plugins upload PATH_TO_WAGON".
+
+imports:
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.0.1/resources/rest-service/cloudify/types/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-fabric-plugin/1.5/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.0.0/plugin.yaml
+  - common/docker.yaml
+  - common/networking.yaml
+
+inputs:
+  #kubernetes
+  kubernetes_master_ip:
+    type: string
+    default: { get_secret: kubernetes_master_ip }
+
+  kubernetes_master_user:
+    type: string
+    default: { get_secret: kubernetes_master_user }
+
+  kubernetes_master_ssh_key_path :
+    type: string
+    default: { get_secret: kubernetes_master_ssh_key_path }
+
+  kubernetes_master_config_file:
+    default:
+      apiVersion: v1
+      clusters:
+      - cluster:
+          certificate-authority: /etc/kubernetes/pki/ca.pem
+          server: http://10.239.2.85:8080
+        name: default-cluster
+      contexts:
+      - context:
+          cluster: default-cluster
+          user: default-admin
+        name: default-system
+      current-context: default-system
+      kind: Config
+      preferences: {}
+      users:
+      - name: default-admin
+        user:
+          client-certificate: /etc/kubernetes/pki/sa-pub.pem
+          client-key: /etc/kubernetes/pki/sa-key.pem
+
+  #pod
+  docker_image_name:
+    type: string
+    default: 'kubernetes_sfc_example:fake_vnf'
+
+  dockerfile_content:
+    default:
+      - FROM centos:6.8
+      - ENTRYPOINT /bin/bash
+
+  pod_name:
+    type: string
+    default: 'fake-vnf'
+
+  #access interface
+  access_ip:
+    type: string
+    default: '192.168.1.4'
+
+  access_interface:
+    type: string
+    default: 'eth0'
+
+  access_interface_down:
+    type: boolean
+    default: false
+
+  #in interface
+  in_ip:
+    type: string
+    default: '192.168.98.1'
+
+  in_interface:
+    type: string
+    default: 'veth98'
+
+  in_interface_down:
+    type: boolean
+    default: false
+
+  #out interface
+  out_ip:
+    type: string
+    default: '192.168.99.1'
+
+  out_interface:
+    type: string
+    default: 'veth98'
+
+  out_interface_down:
+    type: boolean
+    default: false
+
+dsl_definitions:
+  interfaces: &inject_fabric_env_to_interfaces
+    cloudify.interfaces.lifecycle:
+      create:
+        inputs:
+          fabric_env: { get_property: [kubernetes_master_host, agent_config, extra, fabric_env] }
+
+node_templates:
+  kubernetes_master_host:
+    type: cloudify.nodes.Compute
+    properties:
+      ip: { get_input: kubernetes_master_ip }
+      agent_config:
+        install_method: none
+        extra:
+          fabric_env:
+            host_string: { get_input: kubernetes_master_ip }
+            user: { get_input: kubernetes_master_user }
+            key_filename: { get_input: kubernetes_master_ssh_key_path }
+
+  kubernetes_master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: kubernetes_master_config_file}
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: kubernetes_master_host
+
+  docker_image:
+    type: cloudify.docker.ImageBuilder
+    properties:
+      name: { get_input: docker_image_name }
+      dockerfile_content: { get_input: dockerfile_content }
+    interfaces: *inject_fabric_env_to_interfaces
+
+  pod:
+    type: cloudify.kubernetes.resources.Pod
+    properties:
+      definition:
+        apiVersion: v1
+        metadata:
+          name: { get_input: pod_name }
+        spec:
+          containers:
+          - name: { concat: [{ get_input: pod_name }, '-1']}
+            image: { get_input: docker_image_name }
+            stdin: true
+            tty: true
+            securityContext:
+              privileged: true
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: docker_image
+
+  access_interface:
+    type: cloudify.kubernetes.networking.linux.ConnectionPoint
+    properties:
+      pod_name: { get_attribute: [pod, kubernetes, metadata, name] }
+      name: { get_input: access_interface }
+      ip: { get_input: access_ip }
+      down: { get_input: access_interface_down }
+    interfaces: *inject_fabric_env_to_interfaces
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: pod
+
+  in_interface:
+    type: cloudify.kubernetes.networking.linux.ConnectionPoint
+    properties:
+      pod_name: { get_attribute: [pod, kubernetes, metadata, name] }
+      name: { get_input: in_interface }
+      ip: { get_input: in_ip }
+      down: { get_input: in_interface_down }
+    interfaces: *inject_fabric_env_to_interfaces
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: pod
+
+  out_interface:
+    type: cloudify.kubernetes.networking.linux.ConnectionPoint
+    properties:
+      pod_name: { get_attribute: [pod, kubernetes, metadata, name] }
+      name: { get_input: out_interface }
+      ip: { get_input: out_ip }
+      down: { get_input: out_interface_down }
+    interfaces: *inject_fabric_env_to_interfaces
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: pod
+
+outputs:
+  id:
+    value: { get_attribute: [ pod, kubernetes, metadata, name ] }
+  access_interface:
+    value: { get_attribute: [ access_interface, name ] }
+  in_interface:
+    value: { get_attribute: [ in_interface, name ] }
+  out_interface:
+    value: { get_attribute: [ out_interface, name ] }

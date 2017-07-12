@@ -1,0 +1,72 @@
+node_types:
+  cloudify.kubernetes.networking.linux.ConnectionPoint:
+    derived_from: cloudify.nodes.Root
+    properties:
+      pod_name:
+        type: string
+      name:
+        type: string
+      ip:
+        type: string
+      down:
+        type: boolean
+        default: false
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/networking/linux/connection_point.py
+            task_name:
+              default: create
+
+  cloudify.kubernetes.networking.linux.VirtualLink:
+    derived_from: cloudify.nodes.Root
+    properties:
+      name:
+        type: string
+      ip:
+        type: string
+      input_interface:
+        type: string
+      output_interface:
+        type: string
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/networking/linux/virtual_link.py
+            task_name:
+              default: create
+        delete:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/networking/linux/virtual_link.py
+            task_name:
+              default: delete
+
+  cloudify.kubernetes.networking.linux.ForwardingPath:
+    derived_from: cloudify.nodes.Root
+    properties:
+      members:
+        description: ''
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/networking/linux/forwarding_path.py
+            task_name:
+              default: create
+        delete:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/networking/linux/forwarding_path.py
+            task_name:
+              default: delete
