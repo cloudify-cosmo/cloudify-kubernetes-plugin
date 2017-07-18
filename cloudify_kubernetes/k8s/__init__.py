@@ -12,6 +12,7 @@
 #    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
+from .authentication import KubernetesApiAuthenticationVariants  # noqa
 from .client import CloudifyKubernetesClient  # noqa
 from .config import KubernetesApiConfigurationVariants  # noqa
 from .data import (KubernetesResourceDefinition,  # noqa
@@ -19,6 +20,7 @@ from .data import (KubernetesResourceDefinition,  # noqa
 from .exceptions import (KuberentesError,   # noqa
                          KuberentesApiInitializationFailedError,  # noqa
                          KuberentesApiOperationError,  # noqa
+                         KuberentesAuthenticationError, # noqa
                          KuberentesInvalidPayloadClassError,  # noqa
                          KuberentesInvalidApiClassError,  # noqa
                          KuberentesInvalidApiMethodError)  # noqa

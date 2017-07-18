@@ -13,7 +13,7 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 import unittest
-from mock import MagicMock, patch
+from mock import MagicMock, patch, ANY
 
 from cloudify_kubernetes.k8s.config import (KubernetesApiConfigurationVariants,
                                             ManagerFilePathConfiguration,
@@ -29,9 +29,9 @@ from cloudify_kubernetes.k8s.exceptions import (
 class TestKubernetesApiConfiguration(unittest.TestCase):
 
     def test_KubernetesApiConfiguration(self):
-        instance = KubernetesApiConfiguration('ctx', 'conf')
+        instance = KubernetesApiConfiguration('logger', 'conf')
 
-        self.assertEqual(instance.ctx, 'ctx')
+        self.assertEqual(instance.logger, 'logger')
         self.assertEqual(instance.configuration_data, 'conf')
         self.assertEqual(instance._do_prepare_api(), None)
 
@@ -42,101 +42,135 @@ class TestKubernetesApiConfiguration(unittest.TestCase):
 class TestBlueprintFileConfiguration(unittest.TestCase):
 
     def test_BlueprintFileConfiguration_Error(self):
-        ctx_mock = MagicMock()
+        mock_download_resource = MagicMock(side_effect=Exception())
+        mock_logger = MagicMock()
 
-        ctx_mock.download_resource = MagicMock(side_effect=Exception())
-
-        instance = BlueprintFileConfiguration(ctx_mock, {
-            'blueprint_file_name': 'kubernetes.conf'
-        })
+        instance = BlueprintFileConfiguration(
+            mock_logger,
+            {'blueprint_file_name': 'kubernetes.conf'},
+            download_resource=mock_download_resource
+        )
 
         with self.assertRaises(KuberentesApiInitializationFailedError):
             instance.prepare_api()
 
-        ctx_mock.download_resource.assert_called_with('kubernetes.conf')
+        mock_download_resource.assert_called_with('kubernetes.conf')
 
     def test_BlueprintFileConfiguration(self):
-        ctx_mock = MagicMock()
-        mock_config = MagicMock()
+        mock_download_resource = MagicMock()
+        mock_logger = MagicMock()
         mock_client = MagicMock()
-
-        ctx_mock.download_resource = MagicMock(
+        mock_load_and_set = MagicMock()
+        mock_loader = MagicMock()
+        mock_loader.load_and_set = mock_load_and_set
+        mock_get_kube_config_loader_from_file = MagicMock(
+            return_value=mock_loader
+        )
+        mock_download_resource = MagicMock(
             return_value="downloaded_resource"
         )
 
-        instance = BlueprintFileConfiguration(ctx_mock, {
-            'blueprint_file_name': 'kubernetes.conf'
-        })
+        instance = BlueprintFileConfiguration(
+            mock_logger,
+            {'blueprint_file_name': 'kubernetes.conf'},
+            download_resource=mock_download_resource
+        )
 
         mock_isfile = MagicMock(return_value=True)
 
         with patch('os.path.isfile', mock_isfile):
-            with patch('kubernetes.config.load_kube_config', mock_config):
+            with patch(
+                    'cloudify_kubernetes.k8s.config.'
+                    'KubernetesApiConfiguration.'
+                    'get_kube_config_loader_from_file',
+                    mock_get_kube_config_loader_from_file
+            ):
                 with patch('kubernetes.client', mock_client):
                     self.assertEqual(
                         instance.prepare_api(), mock_client
                     )
 
-        ctx_mock.download_resource.assert_called_with('kubernetes.conf')
-        mock_config.assert_called_with(config_file='downloaded_resource')
+        mock_download_resource.assert_called_with('kubernetes.conf')
+        mock_load_and_set.assert_called_with()
+        mock_get_kube_config_loader_from_file.assert_called_with(
+            config_file='downloaded_resource'
+        )
 
 
 class TestManagerFilePathConfiguration(unittest.TestCase):
 
     def test_ManagerFilePathConfiguration_Error(self):
-        ctx_mock = MagicMock()
+        mock_logger = MagicMock()
 
-        ctx_mock.download_resource = MagicMock(side_effect=Exception())
-
-        instance = ManagerFilePathConfiguration(ctx_mock, {
-            'manager_file_path': 'kubernetes.conf'
-        })
+        instance = ManagerFilePathConfiguration(
+            mock_logger,
+            {'manager_file_path': 'kubernetes.conf'}
+        )
 
         with self.assertRaises(KuberentesApiInitializationFailedError):
             instance.prepare_api()
 
     def test_ManagerFilePathConfiguration(self):
-        ctx_mock = MagicMock()
-        mock_config = MagicMock()
+        mock_logger = MagicMock()
         mock_client = MagicMock()
+        mock_load_and_set = MagicMock()
+        mock_loader = MagicMock()
+        mock_loader.load_and_set = mock_load_and_set
+        mock_get_kube_config_loader_from_file = MagicMock(
+            return_value=mock_loader
+        )
 
-        instance = ManagerFilePathConfiguration(ctx_mock, {
+        instance = ManagerFilePathConfiguration(mock_logger, {
             'manager_file_path': 'kubernetes.conf'
         })
 
         mock_isfile = MagicMock(return_value=True)
 
         with patch('os.path.isfile', mock_isfile):
-            with patch('kubernetes.config.load_kube_config', mock_config):
+            with patch(
+                    'cloudify_kubernetes.k8s.config.'
+                    'KubernetesApiConfiguration.'
+                    'get_kube_config_loader_from_file',
+                    mock_get_kube_config_loader_from_file
+            ):
                 with patch('kubernetes.client', mock_client):
                     self.assertEqual(
                         instance.prepare_api(), mock_client
                     )
 
         mock_isfile.assert_called_with('kubernetes.conf')
-        mock_config.assert_called_with(config_file='kubernetes.conf')
+        mock_load_and_set.assert_called_with()
+        mock_get_kube_config_loader_from_file.assert_called_with(
+            config_file='kubernetes.conf'
+        )
 
 
 class TestFileContentConfiguration(unittest.TestCase):
 
     def test_FileContentConfiguration_Error(self):
-        ctx_mock = MagicMock()
+        mock_logger = MagicMock()
+        download_resource_mock = MagicMock(side_effect=Exception())
 
-        ctx_mock.download_resource = MagicMock(side_effect=Exception())
-
-        instance = FileContentConfiguration(ctx_mock, {})
+        instance = FileContentConfiguration(
+            mock_logger,
+            {},
+            download_resource=download_resource_mock
+        )
 
         with self.assertRaises(KuberentesApiInitializationFailedError):
             instance.prepare_api()
 
     def test_FileContentConfiguration(self):
-        ctx_mock = MagicMock()
+        mock_download_resource = MagicMock()
+        mock_logger = MagicMock()
         mock_config = MagicMock()
         mock_client = MagicMock()
 
-        instance = FileContentConfiguration(ctx_mock, {
-            'file_content': 'kubernetes.conf'
-        })
+        instance = FileContentConfiguration(
+            mock_logger,
+            {'file_content': 'kubernetes.conf'},
+            download_resource=mock_download_resource
+        )
 
         with patch(
             'kubernetes.config.kube_config.KubeConfigLoader', mock_config
@@ -146,23 +180,26 @@ class TestFileContentConfiguration(unittest.TestCase):
                     instance.prepare_api(), mock_client
                 )
 
-        mock_config.assert_called_with(config_dict='kubernetes.conf')
+        mock_config.assert_called_with(
+            config_dict='kubernetes.conf',
+            get_google_credentials=ANY
+        )
 
 
 class TestApiOptionsConfiguration(unittest.TestCase):
 
     def test_ApiOptionsConfiguration_Error(self):
-        ctx_mock = MagicMock()
+        mock_logger = MagicMock()
 
-        instance = ApiOptionsConfiguration(ctx_mock, {})
+        instance = ApiOptionsConfiguration(mock_logger, {})
 
         with self.assertRaises(KuberentesApiInitializationFailedError):
             instance.prepare_api()
 
     def test_ApiOptionsConfiguration_EmptyError(self):
-        ctx_mock = MagicMock()
+        mock_logger = MagicMock()
 
-        instance = ApiOptionsConfiguration(ctx_mock, {
+        instance = ApiOptionsConfiguration(mock_logger, {
             'api_options': {}
         })
 
@@ -170,10 +207,10 @@ class TestApiOptionsConfiguration(unittest.TestCase):
             instance.prepare_api()
 
     def test_ApiOptionsConfiguration(self):
-        ctx_mock = MagicMock()
+        mock_logger = MagicMock()
         mock_client = MagicMock()
 
-        instance = ApiOptionsConfiguration(ctx_mock, {
+        instance = ApiOptionsConfiguration(mock_logger, {
             'api_options': {'host': 'some_host'}
         })
 
@@ -188,23 +225,27 @@ class TestApiOptionsConfiguration(unittest.TestCase):
 class TestKubernetesApiConfigurationVariants(unittest.TestCase):
 
     def test_KubernetesApiConfigurationVariants_Error(self):
-        ctx_mock = MagicMock()
+        mock_download_resource = MagicMock(side_effect=Exception())
+        mock_logger = MagicMock()
 
-        ctx_mock.download_resource = MagicMock(side_effect=Exception())
-
-        instance = KubernetesApiConfigurationVariants(ctx_mock, {})
+        instance = KubernetesApiConfigurationVariants(
+            mock_logger,
+            {},
+            download_resource=mock_download_resource
+        )
 
         with self.assertRaises(KuberentesApiInitializationFailedError):
             instance.prepare_api()
 
     def test_KubernetesApiConfigurationVariants(self):
-        ctx_mock = MagicMock()
+        mock_logger = MagicMock()
         mock_config = MagicMock()
         mock_client = MagicMock()
 
-        instance = KubernetesApiConfigurationVariants(ctx_mock, {
-            'file_content': 'kubernetes.conf'
-        })
+        instance = KubernetesApiConfigurationVariants(
+            mock_logger,
+            {'file_content': 'kubernetes.conf'}
+        )
 
         with patch(
             'kubernetes.config.kube_config.KubeConfigLoader', mock_config
@@ -214,7 +255,10 @@ class TestKubernetesApiConfigurationVariants(unittest.TestCase):
                     instance.prepare_api(), mock_client
                 )
 
-        mock_config.assert_called_with(config_dict='kubernetes.conf')
+        mock_config.assert_called_with(
+            config_dict='kubernetes.conf',
+            get_google_credentials=ANY
+        )
 
 
 if __name__ == '__main__':

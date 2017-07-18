@@ -26,9 +26,13 @@ from .operations import (KubernetesDeleteOperation,
 
 class CloudifyKubernetesClient(object):
 
-    def __init__(self, api_configuration, logger):
+    def __init__(self, logger, api_configuration, api_authentication=None):
         self.logger = logger
         self.api = api_configuration.prepare_api()
+
+        if api_authentication:
+            api_authentication.authenticate(self.api)
+
         self.logger.info('Kubernetes API initialized successfully')
 
     @property

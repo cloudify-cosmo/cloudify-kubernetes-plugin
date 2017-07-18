@@ -33,7 +33,7 @@ data_types:
   cloudify.kubernetes.types.ConfigurationVariant:
     description: >
       Type representing all Kubernetes API configuration variants.
-      Each property represents separate variant of configuration.
+      Each property represents separate supported variant of configuration.
       You should choose one variant and fill in only on property.
     properties:
       blueprint_file_name:
@@ -59,6 +59,19 @@ data_types:
         required: false
         description: >
           Set of basic properties describing Kubernetes API access
+
+  cloudify.kubernetes.types.AuthenticationVariant:
+    description: >
+      Type representing all authentication variants
+      for different Kubernetes cloud providers.
+      Each property represents separate supported variant of authentication.
+      You should choose one variant and fill in only on property.
+    properties:
+      gcp_service_account:
+        type: string
+        required: false
+        description: >
+          (JSON) Content of Google Cloud Platform Service Accout file
 
   cloudify.kubernetes.types.ApiMappingEntry:
     description: >
@@ -148,6 +161,12 @@ node_types:
           2. Kubernetes config file previously uploaded into Cloudify Manager VM
           3. Content of Kubernetes config file (YAML)
           4. Kubernetes API set o properties
+      authentication:
+        type: cloudify.kubernetes.types.AuthenticationVariant
+        required: false
+        description: >
+          Authentication properties of Kubernetes Cloud providers. Optional.
+          Currently supported providers: Google Cloud Platform
 
   cloudify.kubernetes.resources.Main:
     derived_from: cloudify.nodes.Root
