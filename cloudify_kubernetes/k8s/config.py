@@ -12,17 +12,38 @@
 #    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
+
 import kubernetes
 import os
+import yaml
 
-from exceptions import KuberentesApiInitializationFailedError
+from .exceptions import KuberentesApiInitializationFailedError
 
 
 class KubernetesApiConfiguration(object):
 
-    def __init__(self, ctx, configuration_data):
-        self.ctx = ctx
+    @classmethod
+    def get_kube_config_loader(cls, **kwargs):
+        return kubernetes.config.kube_config.KubeConfigLoader(
+            get_google_credentials=lambda: '',
+            **kwargs
+        )
+
+    @classmethod
+    def get_kube_config_loader_from_file(cls, config_file, **kwargs):
+        with open(config_file) as file:
+            return cls.get_kube_config_loader(
+                config_dict=yaml.load(file),
+                config_base_path=os.path.abspath(
+                    os.path.dirname(config_file)
+                ),
+                **kwargs
+            )
+
+    def __init__(self, logger, configuration_data, **kwargs):
+        self.logger = logger
         self.configuration_data = configuration_data
+        self.kwargs = kwargs
 
     def _do_prepare_api(self):
         return None
@@ -49,19 +70,19 @@ class BlueprintFileConfiguration(KubernetesApiConfiguration):
             ]
 
             try:
-                manager_file_path = self.ctx.download_resource(
-                    blueprint_file_name
-                )
+                download_resource = self.kwargs.get('download_resource')
+                manager_file_path = download_resource(blueprint_file_name)
 
                 if manager_file_path and os.path.isfile(
                     os.path.expanduser(manager_file_path)
                 ):
-                    kubernetes.config.load_kube_config(
+                    self.get_kube_config_loader_from_file(
                         config_file=manager_file_path
-                    )
+                    ).load_and_set()
+
                     return kubernetes.client
             except Exception as e:
-                self.ctx.logger.error(
+                self.logger.error(
                     'Cannot download config file from blueprint: {0}'
                     .format(str(e))
                 )
@@ -81,9 +102,10 @@ class ManagerFilePathConfiguration(KubernetesApiConfiguration):
             if manager_file_path and os.path.isfile(
                 os.path.expanduser(manager_file_path)
             ):
-                kubernetes.config.load_kube_config(
+                self.get_kube_config_loader_from_file(
                     config_file=manager_file_path
-                )
+                ).load_and_set()
+
                 return kubernetes.client
 
         return None
@@ -93,12 +115,12 @@ class FileContentConfiguration(KubernetesApiConfiguration):
     FILE_CONTENT_KEY = 'file_content'
 
     def _do_prepare_api(self):
+
         if self.FILE_CONTENT_KEY in self.configuration_data:
             file_content = self.configuration_data[self.FILE_CONTENT_KEY]
 
-            kubernetes.config.kube_config.KubeConfigLoader(
-                config_dict=file_content
-            ).load_and_set()
+            self.get_kube_config_loader(config_dict=file_content)\
+                .load_and_set()
 
             return kubernetes.client
 
@@ -129,36 +151,39 @@ class ApiOptionsConfiguration(KubernetesApiConfiguration):
 
 class KubernetesApiConfigurationVariants(KubernetesApiConfiguration):
 
-    def __init__(self, ctx, configuration_data):
-        super(KubernetesApiConfigurationVariants, self).__init__(
-            ctx, configuration_data
-        )
-        self.variants = (
-            BlueprintFileConfiguration,
-            ManagerFilePathConfiguration,
-            FileContentConfiguration,
-            ApiOptionsConfiguration
-        )
+    VARIANTS = (
+        BlueprintFileConfiguration,
+        ManagerFilePathConfiguration,
+        FileContentConfiguration,
+        ApiOptionsConfiguration
+    )
 
     def _do_prepare_api(self):
-        self.ctx.logger.debug(
+        self.logger.debug(
             'Checking how Kubernetes API should be configured'
         )
 
-        for variant in self.variants:
+        for variant in self.VARIANTS:
             try:
                 api_candidate = variant(
-                    self.ctx, self.configuration_data
+                    self.logger,
+                    self.configuration_data,
+                    **self.kwargs
                 ).prepare_api()
 
-                self.ctx.logger.debug('Option {0} will be used'
-                                      .format(variant.__name__))
+                self.logger.debug(
+                    'Configuration option {0} will be used'
+                    .format(variant.__name__)
+                )
                 return api_candidate
             except KuberentesApiInitializationFailedError:
-                self.ctx.logger.debug('Option {0} cannot be used'
-                                      .format(variant.__name__))
+                self.logger.debug(
+                    'Configuration option {0} cannot be used'
+                    .format(variant.__name__)
+                )
 
         raise KuberentesApiInitializationFailedError(
             'Cannot initialize Kubernetes API - no suitable configuration '
             'variant found for {0} properties'
-            .format(self.configuration_data))
+            .format(self.configuration_data)
+        )

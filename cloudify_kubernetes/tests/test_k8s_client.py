@@ -30,7 +30,7 @@ class TestClient(unittest.TestCase):
         logger = MagicMock()
         api_configuration = MagicMock()
         api_configuration.prepare_api = MagicMock(return_value="APi")
-        instance = CloudifyKubernetesClient(api_configuration, logger)
+        instance = CloudifyKubernetesClient(logger, api_configuration)
         self.assertEqual(instance.logger, logger)
         self.assertEqual(instance.api, "APi")
 
@@ -41,7 +41,7 @@ class TestClient(unittest.TestCase):
         api_mock.__class__.__name__ = "ClassName"
         api_configuration.prepare_api = MagicMock(return_value=api_mock)
 
-        instance = CloudifyKubernetesClient(api_configuration, logger)
+        instance = CloudifyKubernetesClient(logger, api_configuration)
         self.assertEqual(instance._name, "ClassName")
 
     def test_prepare_payload_InvalidPayload(self):
@@ -55,7 +55,7 @@ class TestClient(unittest.TestCase):
 
         api_configuration.prepare_api = MagicMock(return_value=FakeApi())
 
-        instance = CloudifyKubernetesClient(api_configuration, logger)
+        instance = CloudifyKubernetesClient(logger, api_configuration)
         with self.assertRaises(KuberentesInvalidPayloadClassError) as error:
             instance._prepare_payload('unknown_attribute', MagicMock())
 
@@ -76,7 +76,7 @@ class TestClient(unittest.TestCase):
 
         api_configuration.prepare_api = MagicMock(return_value=FakeApi())
 
-        instance = CloudifyKubernetesClient(api_configuration, logger)
+        instance = CloudifyKubernetesClient(logger, api_configuration)
         with self.assertRaises(KuberentesInvalidApiClassError) as error:
             instance._prepare_api_method('unknown_attribute',
                                          'other_attribute')
@@ -101,7 +101,7 @@ class TestClient(unittest.TestCase):
 
         api_configuration.prepare_api = MagicMock(return_value=mock_api)
 
-        instance = CloudifyKubernetesClient(api_configuration, logger)
+        instance = CloudifyKubernetesClient(logger, api_configuration)
         with self.assertRaises(KuberentesInvalidApiMethodError) as error:
             instance._prepare_api_method('attribute', 'other_attribute')
 
@@ -120,7 +120,7 @@ class TestClient(unittest.TestCase):
         operation_mock = MagicMock()
         operation_mock.execute = MagicMock(side_effect=ApiException())
 
-        instance = CloudifyKubernetesClient(api_configuration, logger)
+        instance = CloudifyKubernetesClient(logger, api_configuration)
         with self.assertRaises(KuberentesApiOperationError) as error:
             instance._execute(operation_mock, {'a': 'b'})
 
@@ -184,7 +184,7 @@ class TestClient(unittest.TestCase):
             'method': 'delete'
         }
 
-        return CloudifyKubernetesClient(api_configuration, logger), mappingMock
+        return CloudifyKubernetesClient(logger, api_configuration), mappingMock
 
     def test_execute_create_resource(self):
 

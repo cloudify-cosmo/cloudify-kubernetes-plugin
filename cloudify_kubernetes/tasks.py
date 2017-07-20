@@ -12,12 +12,15 @@
 #    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
+
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import RecoverableError, NonRecoverableError
 
 from .k8s import (CloudifyKubernetesClient,
+                  KubernetesApiAuthenticationVariants,
                   KubernetesApiConfigurationVariants,
+                  KuberentesApiInitializationFailedError,
                   KubernetesApiMapping,
                   KubernetesResourceDefinition,
                   KuberentesInvalidPayloadClassError,
@@ -27,6 +30,7 @@ from .k8s import (CloudifyKubernetesClient,
 
 INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
 NODE_PROPERTY_API_MAPPING = '_api_mapping'
+NODE_PROPERTY_AUTHENTICATION = 'authentication'
 NODE_PROPERTY_CONFIGURATION = 'configuration'
 NODE_PROPERTY_DEFINITION = 'definition'
 NODE_PROPERTY_OPTIONS = 'options'
@@ -41,16 +45,13 @@ def _retrieve_master(resource_instance):
             return relationship.target
 
 
-def _retrieve_configuration_property(resource_instance):
+def _retrieve_property(resource_instance, property_name):
     target = _retrieve_master(resource_instance)
-    configuration = target.node.properties.get(
-        NODE_PROPERTY_CONFIGURATION, {}
-    )
+    configuration = target.node.properties.get(property_name, {})
     configuration.update(
-        target.instance.runtime_properties.get(
-            NODE_PROPERTY_CONFIGURATION, {}
-        )
+        target.instance.runtime_properties.get(property_name, {})
     )
+
     return configuration
 
 
@@ -60,45 +61,79 @@ def retrieve_id(resource_instance):
     ]['metadata']['name']
 
 
-def _resource_task(task_operation):
-    configuration_property = _retrieve_configuration_property(ctx.instance)
-    resource_definition = KubernetesResourceDefinition(
-        ctx.node.type, **ctx.node.properties[NODE_PROPERTY_DEFINITION]
-    )
-    mapping = KubernetesApiMapping(
-        **ctx.node.properties[NODE_PROPERTY_API_MAPPING]
-    )
+def with_kubernetes_client(function):
+    def wrapper(**kwargs):
+        configuration_property = _retrieve_property(
+            ctx.instance,
+            NODE_PROPERTY_CONFIGURATION
+        )
 
-    try:
-        client = CloudifyKubernetesClient(
-            KubernetesApiConfigurationVariants(ctx, configuration_property),
-            ctx.logger)
+        authentication_property = _retrieve_property(
+            ctx.instance,
+            NODE_PROPERTY_AUTHENTICATION
+        )
 
-        task_operation(client, mapping, resource_definition)
-    except (KuberentesInvalidPayloadClassError, KuberentesInvalidApiClassError,
-            KuberentesInvalidApiMethodError) as e:
-        raise NonRecoverableError(str(e))
-    except Exception as e:
-        raise RecoverableError(str(e))
+        try:
+            kwargs['client'] = CloudifyKubernetesClient(
+                ctx.logger,
+                KubernetesApiConfigurationVariants(
+                    ctx.logger,
+                    configuration_property,
+                    download_resource=ctx.download_resource
+                ),
+                KubernetesApiAuthenticationVariants(
+                    ctx.logger,
+                    authentication_property
+                )
+            )
+
+            function(**kwargs)
+        except KuberentesApiInitializationFailedError as e:
+            raise RecoverableError(e)
+
+    return wrapper
+
+
+def resource_task(task, **kwargs):
+    def wrapper(**kwargs):
+        kwargs['resource_definition'] = KubernetesResourceDefinition(
+            ctx.node.type,
+            **ctx.node.properties[NODE_PROPERTY_DEFINITION]
+        )
+
+        kwargs['mapping'] = KubernetesApiMapping(
+            **ctx.node.properties[NODE_PROPERTY_API_MAPPING]
+        )
+
+        try:
+            task(**kwargs)
+        except (KuberentesInvalidPayloadClassError,
+                KuberentesInvalidApiClassError,
+                KuberentesInvalidApiMethodError) as e:
+            raise NonRecoverableError(str(e))
+        except Exception as e:
+            raise RecoverableError(str(e))
+
+    return wrapper
 
 
 @operation
-def resource_create(**kwargs):
-    def _do_create(client, mapping, resource_definition):
-        ctx.instance.runtime_properties[
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES
-        ] = client.create_resource(
-            mapping, resource_definition,
-            ctx.node.properties[NODE_PROPERTY_OPTIONS]
-        ).to_dict()
-
-    _resource_task(_do_create)
+@with_kubernetes_client
+@resource_task
+def resource_create(client, mapping, resource_definition, **kwargs):
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] =\
+        client.create_resource(
+            mapping,
+            resource_definition,
+            ctx.node.properties[NODE_PROPERTY_OPTIONS]).to_dict()
 
 
 @operation
-def resource_delete(**kwargs):
-    def _do_delete(client, mapping, resource_definition):
-        client.delete_resource(mapping, retrieve_id(ctx.instance),
-                               ctx.node.properties[NODE_PROPERTY_OPTIONS])
-
-    _resource_task(_do_delete)
+@with_kubernetes_client
+@resource_task
+def resource_delete(client, mapping, resource_definition, **kwargs):
+    client.delete_resource(
+        mapping,
+        retrieve_id(ctx.instance),
+        ctx.node.properties[NODE_PROPERTY_OPTIONS]
+    )

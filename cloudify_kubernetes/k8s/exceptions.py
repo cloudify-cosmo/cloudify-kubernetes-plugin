@@ -26,6 +26,10 @@ class KuberentesApiOperationError(KuberentesError):
     pass
 
 
+class KuberentesAuthenticationError(KuberentesError):
+    pass
+
+
 class KuberentesInvalidPayloadClassError(KuberentesError):
     pass
 

@@ -14,6 +14,7 @@
 #    * limitations under the License.
 import unittest
 from cloudify_kubernetes.k8s import (KuberentesApiInitializationFailedError,
+                                     KuberentesAuthenticationError,
                                      KuberentesInvalidPayloadClassError,
                                      KuberentesInvalidApiMethodError,
                                      KuberentesInvalidApiClassError,
@@ -29,6 +30,10 @@ class TestException(unittest.TestCase):
 
     def test_KuberentesApiOperationError(self):
         instance = KuberentesApiOperationError('message')
+        self.assertTrue(isinstance(instance, KuberentesError))
+
+    def test_KuberentesAuthenticationError(self):
+        instance = KuberentesAuthenticationError('message')
         self.assertTrue(isinstance(instance, KuberentesError))
 
     def test_KuberentesInvalidPayloadClassError(self):

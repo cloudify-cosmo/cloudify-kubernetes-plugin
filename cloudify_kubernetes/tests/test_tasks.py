@@ -18,7 +18,8 @@ from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
 from cloudify.exceptions import RecoverableError, NonRecoverableError
 
-from cloudify_kubernetes.k8s import KuberentesInvalidApiMethodError
+from cloudify_kubernetes.k8s import (CloudifyKubernetesClient,
+                                     KuberentesInvalidApiMethodError)
 import cloudify_kubernetes.tasks as tasks
 
 
@@ -134,10 +135,12 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(tasks._retrieve_master(_ctx.instance),
                          managed_master_node.target)
 
-    def test_retrieve_configuration_property(self):
+    def test_retrieve_property(self):
         _, _ctx = self._prepare_master_node()
-        self.assertEqual(tasks._retrieve_configuration_property(_ctx.instance),
-                         {'blueprint_file_name': 'kubernetes.conf'})
+        self.assertEqual(
+            tasks._retrieve_property(_ctx.instance, 'configuration'),
+            {'blueprint_file_name': 'kubernetes.conf'}
+        )
 
     def test_retrieve_id(self):
         _, _ctx = self._prepare_master_node()
@@ -147,27 +150,18 @@ class TestTasks(unittest.TestCase):
     def test_resource_task(self):
         _, _ctx = self._prepare_master_node()
 
-        with self.assertRaises(RecoverableError) as error:
-            tasks._resource_task(MagicMock())
-
-        self.assertEqual(
-            str(error.exception),
-            "Cannot initialize Kubernetes API - no suitable configuration "
-            "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
-            "properties"
-        )
+        tasks.resource_task(MagicMock())()
 
         mock_isfile = MagicMock(return_value=True)
-
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
         with patch('os.path.isfile', mock_isfile):
             with self.assertRaises(NonRecoverableError) as error:
-                tasks._resource_task(MagicMock(
+                tasks.resource_task(MagicMock(
                     side_effect=KuberentesInvalidApiMethodError(
                         'error_text'
                     )
-                ))
+                ))()
 
         self.assertEqual(
             str(error.exception), "error_text"
@@ -177,7 +171,11 @@ class TestTasks(unittest.TestCase):
         _, _ctx = self._prepare_master_node()
 
         with self.assertRaises(RecoverableError) as error:
-            tasks.resource_create(ctx=_ctx)
+            tasks.resource_create(
+                client=MagicMock(),
+                mapping=MagicMock(),
+                resource_definition=MagicMock()
+            )
 
         self.assertEqual(
             str(error.exception),
@@ -194,7 +192,17 @@ class TestTasks(unittest.TestCase):
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
         with patch('os.path.isfile', mock_isfile):
-            tasks.resource_create(ctx=_ctx)
+            with patch(
+                    'cloudify_kubernetes.k8s.config.'
+                    'KubernetesApiConfiguration.'
+                    'get_kube_config_loader_from_file',
+                    MagicMock()
+            ):
+                tasks.resource_create(
+                    client=MagicMock(),
+                    mapping=MagicMock(),
+                    resource_definition=MagicMock()
+                )
 
         self.assertEqual(_ctx.instance.runtime_properties, {
             'kubernetes': {
@@ -207,7 +215,11 @@ class TestTasks(unittest.TestCase):
         _, _ctx = self._prepare_master_node()
 
         with self.assertRaises(RecoverableError) as error:
-            tasks.resource_delete(ctx=_ctx)
+            tasks.resource_delete(
+                client=MagicMock(),
+                mapping=MagicMock(),
+                resource_definition=MagicMock()
+            )
 
         self.assertEqual(
             str(error.exception),
@@ -224,7 +236,52 @@ class TestTasks(unittest.TestCase):
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
         with patch('os.path.isfile', mock_isfile):
-            tasks.resource_delete(ctx=_ctx)
+            with patch(
+                    'cloudify_kubernetes.k8s.config.'
+                    'KubernetesApiConfiguration.'
+                    'get_kube_config_loader_from_file',
+                    MagicMock()
+            ):
+                tasks.resource_delete(
+                    client=MagicMock(),
+                    mapping=MagicMock(),
+                    resource_definition=MagicMock()
+                )
+
+    def test_with_kubernetes_client_RecoverableError(self):
+        _, _ctx = self._prepare_master_node()
+
+        def function(client, **kwargs):
+            return client, kwargs
+
+        with self.assertRaises(RecoverableError) as error:
+            tasks.with_kubernetes_client(function)()
+
+        self.assertEqual(
+            str(error.exception),
+            "Cannot initialize Kubernetes API - no suitable configuration "
+            "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
+            "properties"
+        )
+
+    def test_with_kubernetes_client(self):
+        _, _ctx = self._prepare_master_node()
+
+        mock_isfile = MagicMock(return_value=True)
+
+        _ctx.download_resource = MagicMock(return_value="downloaded_resource")
+
+        def function(client, **kwargs):
+            self.assertTrue(isinstance(client, CloudifyKubernetesClient))
+
+        with patch('os.path.isfile', mock_isfile):
+            with patch(
+                    'cloudify_kubernetes.k8s.config.'
+                    'KubernetesApiConfiguration.'
+                    'get_kube_config_loader_from_file',
+                    MagicMock()
+            ):
+                tasks.with_kubernetes_client(function)()
 
 
 if __name__ == '__main__':
