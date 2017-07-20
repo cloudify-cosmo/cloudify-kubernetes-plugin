@@ -59,6 +59,10 @@ class GCPServiceAccountAuthentication(KubernetesApiAuthentication):
         )
 
         if service_account_file_content:
+
+            if isinstance(service_account_file_content, str) or isinstance(service_account_file_content, unicode):
+                service_account_file_content = json.loads(service_account_file_content)
+
             credentials = ServiceAccountCredentials.from_json_keyfile_dict(
                 service_account_file_content,
                 self.SCOPES
