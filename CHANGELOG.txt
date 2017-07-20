@@ -1,2 +1,7 @@
 1.0.0:
   - Lifecycle support for pods and services.
+1.1.0:
+  - Get master configuration from runtime properties
+  - Add ReplicaSet support
+  - Add PersistentVolume and StorageClass support
+  - Support Google Authentication for GKE
