@@ -222,7 +222,7 @@ node_types:
             method: read_namespaced_replica_set
           delete:
             api: ExtensionsV1beta1Api
-            method: delete_collection_namespaced_replica_set
+            method: delete_namespaced_replica_set
             payload: V1DeleteOptions
 
   cloudify.kubernetes.resources.Service:
