@@ -13,6 +13,8 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
+import yaml
+
 from cloudify import ctx
 from cloudify.decorators import operation
 from cloudify.exceptions import RecoverableError, NonRecoverableError
@@ -94,12 +96,46 @@ def with_kubernetes_client(function):
     return wrapper
 
 
+def _yaml_from_file(
+        resource_path,
+        target_path,
+        template_variables):
+
+    downloaded_file_path = \
+        ctx.download_resource_and_render(
+            resource_path,
+            target_path,
+            template_variables)
+
+    with open(downloaded_file_path) as outfile:
+        file_content = outfile.read()
+
+    return yaml.load(file_content)
+
+
 def resource_task(task, **kwargs):
     def wrapper(**kwargs):
-        kwargs['resource_definition'] = KubernetesResourceDefinition(
-            ctx.node.type,
-            **ctx.node.properties[NODE_PROPERTY_DEFINITION]
-        )
+
+        node_property_definition = \
+            ctx.node.properties[NODE_PROPERTY_DEFINITION]
+
+        file_resource = \
+            node_property_definition.pop('file', {})
+        if file_resource:
+            resource_definition = \
+                _yaml_from_file(**file_resource)
+        else:
+            resource_definition = node_property_definition
+
+        if 'kind' not in resource_definition.keys():
+            node_type = \
+                ctx.node.type if \
+                isinstance(ctx.node.type, basestring) else ''
+            resource_definition['kind'] = node_type.split('.')[-1]
+
+        kwargs['resource_definition'] = \
+            KubernetesResourceDefinition(
+                **resource_definition)
 
         kwargs['mapping'] = KubernetesApiMapping(
             **ctx.node.properties[NODE_PROPERTY_API_MAPPING]
