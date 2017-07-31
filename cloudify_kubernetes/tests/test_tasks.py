@@ -94,7 +94,8 @@ class TestTasks(unittest.TestCase):
                 'definition': {
                     'apiVersion': 'v1',
                     'metadata': 'c',
-                    'spec': 'd'
+                    'spec': 'd',
+                    'file': {}
                 },
                 '_api_mapping': {
                     'create': {

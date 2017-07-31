@@ -2,10 +2,24 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '1.1.0'
-    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.1.0.zip
+    package_version: '1.2.0.dev0'
+    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.2.0.dev0.zip
 
 data_types:
+
+  cloudify.kubernetes.types.FileResource:
+    properties:
+      resource_path:
+        type: string
+        description: File relative to blueprint path.
+        required: false
+      target_path:
+        type: string
+        description: Do not use.
+        required: false
+      template_variables:
+        required: false
+
   cloudify.kubernetes.types.ApiOptions:
     properties:
       host:
@@ -120,12 +134,23 @@ data_types:
         description: >
           Kubernetes API version as a string
         default: v1
+      kind:
+        type: string
+        required: false
       metadata:
         description: >
           Metadata section related to single Kubernetes resource
+        default: {}
       spec:
         description: >
           Kuberneres resource object specification
+        default: {}
+      file:
+        type: cloudify.kubernetes.types.FileResource
+        description: >
+          A YAML file containing the resource definition.
+          Mutually exclusive to all other data type properties.
+        required: false
 
   cloudify.kubernetes.types.StorageClassResourceDefinition:
     description: >
@@ -137,6 +162,9 @@ data_types:
         description: >
           Kubernetes API version as a string
         default: v1
+      kind:
+        type: string
+        required: false
       metadata:
         description: >
           Metadata section related to single Kubernetes resource
@@ -150,6 +178,7 @@ data_types:
           Class provisioner for object creation
 
 node_types:
+
   cloudify.kubernetes.nodes.Master:
     derived_from: cloudify.nodes.Root
     properties:
@@ -191,6 +220,23 @@ node_types:
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
 
+  cloudify.kubernetes.resources.Deployment:
+    derived_from: cloudify.kubernetes.resources.Main
+    properties:
+      _api_mapping:
+        default:
+          create:
+            api: ExtensionsV1beta1Api
+            method: create_namespaced_deployment
+            payload: V1beta1Deployment
+          read:
+            api: ExtensionsV1beta1Api
+            method: read_namespaced_deployment
+          delete:
+            api: ExtensionsV1beta1Api
+            method: delete_namespaced_deployment
+            payload: V1DeleteOptions
+
   cloudify.kubernetes.resources.Pod:
     derived_from: cloudify.kubernetes.resources.Main
     properties:
@@ -224,6 +270,22 @@ node_types:
             api: ExtensionsV1beta1Api
             method: delete_namespaced_replica_set
             payload: V1DeleteOptions
+
+  cloudify.kubernetes.resources.ReplicationController:
+    derived_from: cloudify.kubernetes.resources.Main
+    properties:
+      _api_mapping:
+        default:
+          create:
+            api: CoreV1Api
+            method: create_namespaced_replication_controller
+            payload: V1ReplicationController
+          read:
+            api: CoreV1Api
+            method: read_namespaced_replication_controller
+          delete:
+            api: CoreV1Api
+            method: delete_collection_namespaced_replication_controller
 
   cloudify.kubernetes.resources.Service:
     derived_from: cloudify.kubernetes.resources.Main
