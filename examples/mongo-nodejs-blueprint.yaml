@@ -2,8 +2,7 @@ tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
-  # - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.0.dev0/plugin.yaml
-  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/4e473b05f18f5f67fb183a54fcac1094e9e79087/plugin.yaml
+   - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.0/plugin.yaml
 
 inputs:
 

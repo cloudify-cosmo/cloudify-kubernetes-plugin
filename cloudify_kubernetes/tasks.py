@@ -98,8 +98,10 @@ def with_kubernetes_client(function):
 
 def _yaml_from_file(
         resource_path,
-        target_path,
-        template_variables):
+        target_path=None,
+        template_variables=None):
+
+    template_variables = template_variables or {}
 
     downloaded_file_path = \
         ctx.download_resource_and_render(

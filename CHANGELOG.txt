@@ -5,3 +5,8 @@
   - Add ReplicaSet support
   - Add PersistentVolume and StorageClass support
   - Support Google Authentication for GKE
+1.2.0:
+  - Delete Replica Sets by name
+  - Deployment resource support
+  - Replication Controller support
+  - File resource definition support
