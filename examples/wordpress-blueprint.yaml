@@ -1,0 +1,268 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  Based on this example: https://github.com/kubernetes/examples/blob/master/mysql-wordpress-pd/README.md.
+
+imports:
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.0/plugin.yaml
+
+inputs:
+
+  configuration_file_content:
+    type: string
+
+  wordpress_password:
+    default: X0kdmdwethrngosdf88
+
+  mysql_password:
+    default: X0kdmdwethrngosdf88
+
+node_types:
+
+  cloudify.kubernetes.resources.PersistentVolumeClaim:
+    derived_from: cloudify.kubernetes.resources.Main
+    properties:
+      _api_mapping:
+        default:
+          create:
+            api: CoreV1Api
+            method: create_namespaced_persistent_volume_claim
+            payload: V1PersistentVolumeClaim
+          read:
+            api: CoreV1Api
+            method: read_namespaced_persistent_volume_claim
+          delete:
+            api: CoreV1Api
+            method: delete_namespaced_persistent_volume_claim
+            payload: V1DeleteOptions
+
+node_templates:
+
+  wordpress_deploy:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: wordpress
+          labels:
+            app: wordpress
+        spec:
+          strategy:
+            type: Recreate
+          template:
+            metadata:
+              labels:
+                app: wordpress
+                tier: frontend
+            spec:
+              containers:
+              - image: wordpress:4.8.0-apache
+                name: wordpress
+                env:
+                - name: WORDPRESS_DB_HOST
+                  value: wordpress-mysql
+                - name: WORDPRESS_DB_PASSWORD
+                  value: { get_input: wordpress_password }
+                ports:
+                - containerPort: 80
+                  name: wordpress
+                volumeMounts:
+                - name: wordpress-persistent-storage
+                  mountPath: /var/www/html
+              volumes:
+              - name: wordpress-persistent-storage
+                persistentVolumeClaim:
+                  claimName: wp-pv-claim
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: mysql_pv_claim
+
+  wordpress_svc:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: wordpress
+          labels:
+            app: wordpress
+        spec:
+          ports:
+            - port: 80
+          selector:
+            app: wordpress
+            tier: frontend
+          # type: LoadBalancer
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: mysql_pv_claim
+
+  wp_pv_claim:
+    type: cloudify.kubernetes.resources.PersistentVolumeClaim
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: wp-pv-claim
+          labels:
+            app: wordpress
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 20Gi
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: wordpress_mysql_deploy
+      - type: cloudify.relationships.depends_on
+        target: wordpress_mysql_svc
+
+  wordpress_mysql_deploy:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: wordpress-mysql
+          labels:
+            app: wordpress
+        spec:
+          strategy:
+            type: Recreate
+          template:
+            metadata:
+              labels:
+                app: wordpress
+                tier: mysql
+            spec:
+              containers:
+              - image: mysql:5.6
+                name: mysql
+                env:
+                  # $ kubectl create secret generic mysql-pass --from-file=password.txt
+                  # make sure password.txt does not have a trailing newline
+                - name: MYSQL_ROOT_PASSWORD
+                  value: { get_input: mysql_password }
+                ports:
+                - containerPort: 3306
+                  name: mysql
+                volumeMounts:
+                - name: mysql-persistent-storage
+                  mountPath: /var/lib/mysql
+              volumes:
+              - name: mysql-persistent-storage
+                persistentVolumeClaim:
+                  claimName: mysql-pv-claim
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: mysql_pv_claim
+
+  wordpress_mysql_svc:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: wordpress-mysql
+          labels:
+            app: wordpress
+        spec:
+          ports:
+            - port: 3306
+          selector:
+            app: wordpress
+            tier: mysql
+          clusterIP: None
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: mysql_pv_claim
+
+  mysql_pv_claim:
+    type: cloudify.kubernetes.resources.PersistentVolumeClaim
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: mysql-pv-claim
+          labels:
+            app: wordpress
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 20Gi
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: local_pv_2
+      - type: cloudify.relationships.depends_on
+        target: local_pv_1
+
+  local_pv_2:
+    type: cloudify.kubernetes.resources.PersistentVolume
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: local-pv-2
+          labels:
+            type: local
+        spec:
+          capacity:
+            storage: 20Gi
+          accessModes:
+            - ReadWriteOnce
+          hostPath:
+            path: /tmp/data/pv-2
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+
+  local_pv_1:
+    type: cloudify.kubernetes.resources.PersistentVolume
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: local-pv-1
+          labels:
+            type: local
+        spec:
+          capacity:
+            storage: 20Gi
+          accessModes:
+            - ReadWriteOnce
+          hostPath:
+            path: /tmp/data/pv-1
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+
+  kubernetes_master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: configuration_file_content }

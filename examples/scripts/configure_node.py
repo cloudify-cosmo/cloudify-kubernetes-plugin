@@ -4,8 +4,6 @@ import subprocess
 from cloudify import ctx
 from cloudify.state import ctx_parameters as inputs
 
-START_COMMAND = 'sudo kubeadm join --token {0} {1}:{2}'
-
 
 def execute_command(_command):
 
@@ -36,13 +34,16 @@ def execute_command(_command):
 
 if __name__ == '__main__':
 
-    # masters = [x for x in ctx.instance.relationships
-    #            if 'cloudify.nodes.Kubernetes.Master' in
-    #               x.target.node.type_hierarchy]
-    # ctx_master = masters[0]
-    # join_command = (inputs.get('join_command')
-    #                 or ctx_master.target.instance.runtime_properties[
-    #                    'join_command']
-    join_command = inputs.get('join_command')
+    join_command = inputs['join_command']
     join_command = 'sudo {0} --skip-preflight-checks'.format(join_command)
     execute_command(join_command)
+
+    # Install weave-related utils
+    execute_command('sudo curl -L git.io/weave -o /usr/local/bin/weave')
+    execute_command('sudo chmod a+x /usr/local/bin/weave')
+    execute_command('sudo curl -L git.io/scope -o /usr/local/bin/scope')
+    execute_command('sudo chmod a+x /usr/local/bin/scope')
+    execute_command('/usr/local/bin/scope launch')
+
+    hostname = execute_command('hostname')
+    ctx.instance.runtime_properties['hostname'] = hostname.rstrip('\n')
