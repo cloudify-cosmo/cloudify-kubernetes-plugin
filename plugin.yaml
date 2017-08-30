@@ -2,11 +2,10 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '1.2.0'
-    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.2.0.zip
+    package_version: '1.2.1rc1'
+    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.2.1rc1.zip
 
 data_types:
-
   cloudify.kubernetes.types.FileResource:
     properties:
       resource_path:
@@ -145,12 +144,6 @@ data_types:
         description: >
           Kuberneres resource object specification
         default: {}
-      file:
-        type: cloudify.kubernetes.types.FileResource
-        description: >
-          A YAML file containing the resource definition.
-          Mutually exclusive to all other data type properties.
-        required: false
 
   cloudify.kubernetes.types.StorageClassResourceDefinition:
     description: >
@@ -178,7 +171,6 @@ data_types:
           Class provisioner for object creation
 
 node_types:
-
   cloudify.kubernetes.nodes.Master:
     derived_from: cloudify.nodes.Root
     properties:
@@ -197,7 +189,7 @@ node_types:
           Authentication properties of Kubernetes Cloud providers. Optional.
           Currently supported providers: Google Cloud Platform
 
-  cloudify.kubernetes.resources.Main:
+  cloudify.kubernetes.resources.BlueprintDefinedResource:
     derived_from: cloudify.nodes.Root
     properties:
       definition:
@@ -209,10 +201,6 @@ node_types:
           API options depending on API operations execution
         default:
           namespace: default
-      _api_mapping:
-        type: cloudify.kubernetes.types.ApiMapping
-        description: >
-          Python Kubernetes API objects and methods definitions used for given resource type
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -221,105 +209,22 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
 
   cloudify.kubernetes.resources.Deployment:
-    derived_from: cloudify.kubernetes.resources.Main
-    properties:
-      _api_mapping:
-        default:
-          create:
-            api: ExtensionsV1beta1Api
-            method: create_namespaced_deployment
-            payload: V1beta1Deployment
-          read:
-            api: ExtensionsV1beta1Api
-            method: read_namespaced_deployment
-          delete:
-            api: ExtensionsV1beta1Api
-            method: delete_namespaced_deployment
-            payload: V1DeleteOptions
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
   cloudify.kubernetes.resources.Pod:
-    derived_from: cloudify.kubernetes.resources.Main
-    properties:
-      _api_mapping:
-        default:
-          create:
-            api: CoreV1Api
-            method: create_namespaced_pod
-            payload: V1Pod
-          read:
-            api: CoreV1Api
-            method: read_namespaced_pod
-          delete:
-            api: CoreV1Api
-            method: delete_namespaced_pod
-            payload: V1DeleteOptions
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
   cloudify.kubernetes.resources.ReplicaSet:
-    derived_from: cloudify.kubernetes.resources.Main
-    properties:
-      _api_mapping:
-        default:
-          create:
-            api: ExtensionsV1beta1Api
-            method: create_namespaced_replica_set
-            payload: V1beta1ReplicaSet
-          read:
-            api: ExtensionsV1beta1Api
-            method: read_namespaced_replica_set
-          delete:
-            api: ExtensionsV1beta1Api
-            method: delete_namespaced_replica_set
-            payload: V1DeleteOptions
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
   cloudify.kubernetes.resources.ReplicationController:
-    derived_from: cloudify.kubernetes.resources.Main
-    properties:
-      _api_mapping:
-        default:
-          create:
-            api: CoreV1Api
-            method: create_namespaced_replication_controller
-            payload: V1ReplicationController
-          read:
-            api: CoreV1Api
-            method: read_namespaced_replication_controller
-          delete:
-            api: CoreV1Api
-            method: delete_collection_namespaced_replication_controller
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
   cloudify.kubernetes.resources.Service:
-    derived_from: cloudify.kubernetes.resources.Main
-    properties:
-      _api_mapping:
-        default:
-          create:
-            api: CoreV1Api
-            method: create_namespaced_service
-            payload: V1Service
-          read:
-            api: CoreV1Api
-            method: read_namespaced_service
-          delete:
-            api: CoreV1Api
-            method: delete_namespaced_service
-            payload: V1DeleteOptions
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
   cloudify.kubernetes.resources.PersistentVolume:
-    derived_from: cloudify.kubernetes.resources.Main
-    properties:
-      _api_mapping:
-        default:
-          create:
-            api: CoreV1Api
-            method: create_persistent_volume
-            payload: V1PersistentVolume
-          read:
-            api: CoreV1Api
-            method: read_persistent_volume
-          delete:
-            api: CoreV1Api
-            method: delete_persistent_volume
-            payload: V1DeleteOptions
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
   cloudify.kubernetes.resources.StorageClass:
     derived_from: cloudify.nodes.Root
@@ -328,30 +233,47 @@ node_types:
         type: cloudify.kubernetes.types.StorageClassResourceDefinition
         description: >
           Definition of resource object using native Kubernetes YAML spec
-      options:
+
+  cloudify.kubernetes.resources.CustomBlueprintDefinedResource:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      api_mapping:
+        type: cloudify.kubernetes.types.ApiMapping
         description: >
-          API options depending on API operations execution
-        default:
-          namespace: default
-      _api_mapping:
-        default:
-          create:
-            api: StorageV1beta1Api
-            method: create_storage_class
-            payload: V1beta1StorageClass
-          read:
-            api: StorageV1beta1Api
-            method: read_storage_class
-          delete:
-            api: StorageV1beta1Api
-            method: delete_storage_class
-            payload: V1DeleteOptions
+          Python Kubernetes API objects and methods definitions used for given resource type
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
+          implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_create
         delete:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
+          implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_delete
+
+  cloudify.kubernetes.resources.FileDefinedResource:
+    derived_from: cloudify.nodes.Root
+    properties:
+      file:
+        type: cloudify.kubernetes.types.FileResource
+        description: >
+          A path to YAML file containing the resource definition.
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_create
+        delete:
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
+
+  cloudify.kubernetes.resources.MultipleFileDefinedResources:
+    derived_from: cloudify.nodes.Root
+    properties:
+      files:
+        description: >
+          A list of paths to YAML files containing the resources definition.
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_create
+        delete:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_delete
 
 relationships:
   cloudify.kubernetes.relationships.managed_by_master:

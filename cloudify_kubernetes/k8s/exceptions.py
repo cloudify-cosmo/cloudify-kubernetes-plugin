@@ -30,6 +30,14 @@ class KuberentesAuthenticationError(KuberentesError):
     pass
 
 
+class KuberentesMappingNotFoundError(KuberentesError):
+    pass
+
+
+class KuberentesInvalidDefinitionError(KuberentesError):
+    pass
+
+
 class KuberentesInvalidPayloadClassError(KuberentesError):
     pass
 

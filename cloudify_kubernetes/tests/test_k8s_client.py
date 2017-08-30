@@ -12,6 +12,7 @@
 #    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
+
 import unittest
 from mock import MagicMock
 
@@ -168,21 +169,19 @@ class TestClient(unittest.TestCase):
         operation_mock.execute = MagicMock(side_effect=ApiException())
 
         mappingMock = MagicMock()
-        mappingMock.create = {
-            'payload': 'api_payload_version',
-            'api': 'api_client_version',
-            'method': 'create'
-        }
 
-        mappingMock.read = {
-            'api': 'api_client_version',
-            'method': 'read'
-        }
+        mappingMock.create = MagicMock()
+        mappingMock.create.payload = 'api_payload_version'
+        mappingMock.create.api = 'api_client_version'
+        mappingMock.create.method = 'create'
 
-        mappingMock.delete = {
-            'api': 'api_client_version',
-            'method': 'delete'
-        }
+        mappingMock.read = MagicMock()
+        mappingMock.read.api = 'api_client_version'
+        mappingMock.read.method = 'read'
+
+        mappingMock.delete = MagicMock()
+        mappingMock.delete.api = 'api_client_version'
+        mappingMock.delete.method = 'delete'
 
         return CloudifyKubernetesClient(logger, api_configuration), mappingMock
 
@@ -226,6 +225,32 @@ class TestClient(unittest.TestCase):
             ),
             ('resource_id', 'b')
         )
+
+
+class TestKubernetesResourceDefinition(unittest.TestCase):
+    def test_KubernetesResourceDefinitionGeneral(self):
+        instance = KubernetesResourceDefinition(kind="1.2.3.4",
+                                                apiVersion="v1",
+                                                metadata="metadata",
+                                                spec="spec")
+
+        self.assertEqual(instance.kind, "4")
+        self.assertEqual(instance.api_version, "v1")
+        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.spec, "spec")
+
+    def test_KubernetesResourceDefinitionStorage(self):
+        instance = KubernetesResourceDefinition(kind="1.2.3.4",
+                                                apiVersion="v1",
+                                                metadata="metadata",
+                                                parameters="parameters",
+                                                provisioner="provisioner")
+
+        self.assertEqual(instance.kind, "4")
+        self.assertEqual(instance.api_version, "v1")
+        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.parameters, "parameters")
+        self.assertEqual(instance.provisioner, "provisioner")
 
 
 if __name__ == '__main__':
