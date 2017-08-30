@@ -13,165 +13,174 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-import yaml
 
 from cloudify import ctx
 from cloudify.decorators import operation
-from cloudify.exceptions import RecoverableError, NonRecoverableError
 
-from .k8s import (CloudifyKubernetesClient,
-                  KubernetesApiAuthenticationVariants,
-                  KubernetesApiConfigurationVariants,
-                  KuberentesApiInitializationFailedError,
-                  KubernetesApiMapping,
-                  KubernetesResourceDefinition,
-                  KuberentesInvalidPayloadClassError,
-                  KuberentesInvalidApiClassError,
-                  KuberentesInvalidApiMethodError)
+from .decorators import (resource_task,
+                         with_kubernetes_client)
+from .utils import (mapping_by_data,
+                    mapping_by_kind,
+                    resource_definition_from_blueprint,
+                    resource_definition_from_file)
 
 
+DEFAULT_NAMESPACE = 'default'
 INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
-NODE_PROPERTY_API_MAPPING = '_api_mapping'
-NODE_PROPERTY_AUTHENTICATION = 'authentication'
-NODE_PROPERTY_CONFIGURATION = 'configuration'
-NODE_PROPERTY_DEFINITION = 'definition'
+NODE_PROPERTY_FILE = 'file'
+NODE_PROPERTY_FILE_RESOURCE_PATH = 'resource_path'
+NODE_PROPERTY_FILES = 'files'
 NODE_PROPERTY_OPTIONS = 'options'
-RELATIONSHIP_TYPE_MANAGED_BY_MASTER = (
-    'cloudify.kubernetes.relationships.managed_by_master'
-)
 
 
-def _retrieve_master(resource_instance):
-    for relationship in resource_instance.relationships:
-        if relationship.type == RELATIONSHIP_TYPE_MANAGED_BY_MASTER:
-            return relationship.target
-
-
-def _retrieve_property(resource_instance, property_name):
-    target = _retrieve_master(resource_instance)
-    configuration = target.node.properties.get(property_name, {})
-    configuration.update(
-        target.instance.runtime_properties.get(property_name, {})
-    )
-
-    return configuration
-
-
-def retrieve_id(resource_instance):
-    return resource_instance.runtime_properties[
+def _retrieve_id(resource_instance, file=None):
+    data = resource_instance.runtime_properties[
         INSTANCE_RUNTIME_PROPERTY_KUBERNETES
-    ]['metadata']['name']
+    ]
+
+    if isinstance(data, dict) and file:
+        data = data[file]
+
+    return data['metadata']['name']
 
 
-def with_kubernetes_client(function):
-    def wrapper(**kwargs):
-        configuration_property = _retrieve_property(
-            ctx.instance,
-            NODE_PROPERTY_CONFIGURATION
-        )
-
-        authentication_property = _retrieve_property(
-            ctx.instance,
-            NODE_PROPERTY_AUTHENTICATION
-        )
-
-        try:
-            kwargs['client'] = CloudifyKubernetesClient(
-                ctx.logger,
-                KubernetesApiConfigurationVariants(
-                    ctx.logger,
-                    configuration_property,
-                    download_resource=ctx.download_resource
-                ),
-                KubernetesApiAuthenticationVariants(
-                    ctx.logger,
-                    authentication_property
-                )
-            )
-
-            function(**kwargs)
-        except KuberentesApiInitializationFailedError as e:
-            raise RecoverableError(e)
-
-    return wrapper
+def _retrieve_path(kwargs):
+    return kwargs\
+        .get(NODE_PROPERTY_FILE, {})\
+        .get(NODE_PROPERTY_FILE_RESOURCE_PATH, '')
 
 
-def _yaml_from_file(
-        resource_path,
-        target_path=None,
-        template_variables=None):
+def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
+    if 'namespace' not in kwargs:
+        kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    template_variables = template_variables or {}
-
-    downloaded_file_path = \
-        ctx.download_resource_and_render(
-            resource_path,
-            target_path,
-            template_variables)
-
-    with open(downloaded_file_path) as outfile:
-        file_content = outfile.read()
-
-    return yaml.load(file_content)
+    return client.create_resource(
+        api_mapping,
+        resource_definition,
+        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    ).to_dict()
 
 
-def resource_task(task, **kwargs):
-    def wrapper(**kwargs):
+def _do_resource_delete(client, api_mapping, id, **kwargs):
+    if 'namespace' not in kwargs:
+        kwargs['namespace'] = DEFAULT_NAMESPACE
 
-        node_property_definition = \
-            ctx.node.properties[NODE_PROPERTY_DEFINITION]
-
-        file_resource = \
-            node_property_definition.pop('file', {})
-        if file_resource:
-            resource_definition = \
-                _yaml_from_file(**file_resource)
-        else:
-            resource_definition = node_property_definition
-
-        if 'kind' not in resource_definition.keys():
-            node_type = \
-                ctx.node.type if \
-                isinstance(ctx.node.type, basestring) else ''
-            resource_definition['kind'] = node_type.split('.')[-1]
-
-        kwargs['resource_definition'] = \
-            KubernetesResourceDefinition(
-                **resource_definition)
-
-        kwargs['mapping'] = KubernetesApiMapping(
-            **ctx.node.properties[NODE_PROPERTY_API_MAPPING]
-        )
-
-        try:
-            task(**kwargs)
-        except (KuberentesInvalidPayloadClassError,
-                KuberentesInvalidApiClassError,
-                KuberentesInvalidApiMethodError) as e:
-            raise NonRecoverableError(str(e))
-        except Exception as e:
-            raise RecoverableError(str(e))
-
-    return wrapper
+    return client.delete_resource(
+        api_mapping,
+        id,
+        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    ).to_dict()
 
 
 @operation
 @with_kubernetes_client
-@resource_task
-def resource_create(client, mapping, resource_definition, **kwargs):
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] =\
-        client.create_resource(
-            mapping,
-            resource_definition,
-            ctx.node.properties[NODE_PROPERTY_OPTIONS]).to_dict()
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_kind
+)
+def resource_create(client, api_mapping, resource_definition, **kwargs):
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+        _do_resource_create(client, api_mapping, resource_definition)
 
 
 @operation
 @with_kubernetes_client
-@resource_task
-def resource_delete(client, mapping, resource_definition, **kwargs):
-    client.delete_resource(
-        mapping,
-        retrieve_id(ctx.instance),
-        ctx.node.properties[NODE_PROPERTY_OPTIONS]
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_kind
+)
+def resource_delete(client, api_mapping, resource_definition, **kwargs):
+    _do_resource_delete(client, api_mapping, _retrieve_id(ctx.instance))
+
+
+@operation
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_data
+)
+def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+        _do_resource_create(client, api_mapping, resource_definition)
+
+
+@operation
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_data
+)
+def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
+    _do_resource_delete(client, api_mapping, _retrieve_id(ctx.instance))
+
+
+@operation
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_file,
+    retrieve_mapping=mapping_by_kind
+)
+def file_resource_create(client, api_mapping, resource_definition, **kwargs):
+    result = _do_resource_create(client, api_mapping, resource_definition)
+
+    if INSTANCE_RUNTIME_PROPERTY_KUBERNETES in \
+            ctx.instance.runtime_properties:
+
+        if isinstance(
+            ctx.instance.runtime_properties[
+                INSTANCE_RUNTIME_PROPERTY_KUBERNETES
+            ],
+            dict
+        ):
+            path = _retrieve_path(kwargs)
+
+            ctx.instance.runtime_properties[
+                INSTANCE_RUNTIME_PROPERTY_KUBERNETES
+            ][path] = result
+
+            return
+
+    else:
+        ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES]\
+            = result
+
+
+@operation
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_file,
+    retrieve_mapping=mapping_by_kind
+)
+def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
+    path = _retrieve_path(kwargs)
+
+    _do_resource_delete(
+        client,
+        api_mapping,
+        _retrieve_id(ctx.instance, path)
     )
+
+
+@operation
+def multiple_file_resource_create(**kwargs):
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES]\
+        = {}
+
+    file_resources = kwargs.get(
+        NODE_PROPERTY_FILES,
+        ctx.node.properties.get(NODE_PROPERTY_FILES, [])
+    )
+
+    for file_resource in file_resources:
+        file_resource_create(file=file_resource, **kwargs)
+
+
+@operation
+def multiple_file_resource_delete(**kwargs):
+    file_resources = kwargs.get(
+        NODE_PROPERTY_FILES,
+        ctx.node.properties.get(NODE_PROPERTY_FILES, [])
+    )
+
+    for file_resource in file_resources:
+        file_resource_delete(file=file_resource, **kwargs)

@@ -175,6 +175,7 @@ class KubernetesApiConfigurationVariants(KubernetesApiConfiguration):
                     'Configuration option {0} will be used'
                     .format(variant.__name__)
                 )
+
                 return api_candidate
             except KuberentesApiInitializationFailedError:
                 self.logger.debug(

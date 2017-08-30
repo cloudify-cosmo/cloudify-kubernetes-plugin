@@ -1,0 +1,50 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.1rc1/plugin.yaml
+
+inputs:
+  kubernetes_configuration_file_content:
+    description: >
+      File content of kubernetes master YAML configuration
+
+node_templates:
+  master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: kubernetes_configuration_file_content }
+
+  pod_a:
+    type: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: pod-a
+        spec:
+          containers:
+          - name: pod-a-1
+            image: "centos:7"
+            command: ["/bin/bash"]
+            stdin: true
+            tty: true
+            securityContext:
+              privileged: true
+      api_mapping:
+        create:
+          api: CoreV1Api
+          method: create_namespaced_pod
+          payload: V1Pod
+        read:
+          api: CoreV1Api
+          method: read_namespaced_pod
+        delete:
+          api: CoreV1Api
+          method: delete_namespaced_pod
+          payload: V1DeleteOptions
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: master
