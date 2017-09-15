@@ -80,7 +80,11 @@ def _do_resource_delete(client, api_mapping, id, **kwargs):
 )
 def resource_create(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        _do_resource_create(client, api_mapping, resource_definition)
+        _do_resource_create(
+            client,
+            api_mapping,
+            resource_definition,
+            **kwargs)
 
 
 @operation
@@ -90,7 +94,12 @@ def resource_create(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_kind
 )
 def resource_delete(client, api_mapping, resource_definition, **kwargs):
-    _do_resource_delete(client, api_mapping, _retrieve_id(ctx.instance))
+    _do_resource_delete(
+        client,
+        api_mapping,
+        _retrieve_id(ctx.instance),
+        **kwargs
+    )
 
 
 @operation
@@ -101,7 +110,11 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
 )
 def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        _do_resource_create(client, api_mapping, resource_definition)
+        _do_resource_create(
+            client,
+            api_mapping,
+            resource_definition,
+            **kwargs)
 
 
 @operation
@@ -111,7 +124,12 @@ def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_data
 )
 def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
-    _do_resource_delete(client, api_mapping, _retrieve_id(ctx.instance))
+    _do_resource_delete(
+        client,
+        api_mapping,
+        _retrieve_id(ctx.instance),
+        **kwargs
+    )
 
 
 @operation
@@ -121,7 +139,12 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_kind
 )
 def file_resource_create(client, api_mapping, resource_definition, **kwargs):
-    result = _do_resource_create(client, api_mapping, resource_definition)
+    result = _do_resource_create(
+        client,
+        api_mapping,
+        resource_definition,
+        **kwargs
+    )
 
     if INSTANCE_RUNTIME_PROPERTY_KUBERNETES in \
             ctx.instance.runtime_properties:
@@ -157,7 +180,8 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
     _do_resource_delete(
         client,
         api_mapping,
-        _retrieve_id(ctx.instance, path)
+        _retrieve_id(ctx.instance, path),
+        **kwargs
     )
 
 

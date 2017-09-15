@@ -64,7 +64,6 @@ data_types:
           Path to Kubernetes configuration file placed on Cloudify Manager VM
 
       file_content:
-        description: ''
         required: false
         description: >
           Content (YAML) of Kubernetes configuration file
