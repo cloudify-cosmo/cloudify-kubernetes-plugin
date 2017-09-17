@@ -10,3 +10,6 @@
   - Deployment resource support
   - Replication Controller support
   - File resource definition support
+1.2.1:
+  - Multiple-file resource support.
+  - Distinguished Main type to cloudify.kubernetes.resources.BlueprintDefinedResource and cloudify.kubernetes.resources.FileDefinedResource.

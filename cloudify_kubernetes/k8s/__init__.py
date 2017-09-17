@@ -14,14 +14,17 @@
 #    * limitations under the License.
 
 from .authentication import KubernetesApiAuthenticationVariants  # noqa
-from .client import CloudifyKubernetesClient  # noqa
+from .client import (KubernetesResourceDefinition, # noqa
+                     CloudifyKubernetesClient) # noqa
 from .config import KubernetesApiConfigurationVariants  # noqa
-from .data import (KubernetesResourceDefinition,  # noqa
-                   KubernetesApiMapping)  # noqa
-from .exceptions import (KuberentesError,   # noqa
+from .mapping import (get_mapping, # noqa
+                      KubernetesApiMapping) # noqa
+from .exceptions import (KuberentesError, # noqa
                          KuberentesApiInitializationFailedError,  # noqa
                          KuberentesApiOperationError,  # noqa
                          KuberentesAuthenticationError, # noqa
+                         KuberentesInvalidDefinitionError, # noqa
                          KuberentesInvalidPayloadClassError,  # noqa
                          KuberentesInvalidApiClassError,  # noqa
-                         KuberentesInvalidApiMethodError)  # noqa
+                         KuberentesInvalidApiMethodError, # noqa
+                         KuberentesMappingNotFoundError) # noqa

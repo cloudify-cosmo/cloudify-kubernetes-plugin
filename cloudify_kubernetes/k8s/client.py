@@ -25,6 +25,23 @@ from .operations import (KubernetesDeleteOperation,
                          KubernetesCreateOperation)
 
 
+class KubernetesResourceDefinition(object):
+
+    def __init__(self, kind, apiVersion, metadata, spec=None, parameters=None,
+                 provisioner=None):
+        self.kind = kind.split('.')[-1]
+        self.api_version = apiVersion
+        self.metadata = metadata
+        # General classes
+        if spec:
+            self.spec = spec
+        # Storage class
+        if parameters:
+            self.parameters = parameters
+        if provisioner:
+            self.provisioner = provisioner
+
+
 class CloudifyKubernetesClient(object):
 
     def __init__(self, logger, api_configuration, api_authentication=None):
@@ -97,21 +114,21 @@ class CloudifyKubernetesClient(object):
 
     def create_resource(self, mapping, resource_definition, options):
         options['body'] = self._prepare_payload(
-            mapping.create['payload'], resource_definition
+            mapping.create.payload, resource_definition
         )
         return self._execute(self._prepare_operation(
-            KubernetesCreateOperation, **mapping.create
+            KubernetesCreateOperation, **vars(mapping.create)
         ), options)
 
     def read_resource(self, mapping, resource_id, options):
         options['name'] = resource_id
         return self._execute(self._prepare_operation(
-            KubernetesReadOperation, **mapping.read
+            KubernetesReadOperation, **vars(mapping.read)
         ), options)
 
     def delete_resource(self, mapping, resource_id, options):
         options['name'] = resource_id
         options['body'] = {}
         return self._execute(self._prepare_operation(
-            KubernetesDeleteOperation, **mapping.delete), options
+            KubernetesDeleteOperation, **vars(mapping.delete)), options
         )
