@@ -1,11 +1,13 @@
 plugins:
+
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '1.2.1rc1'
-    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.2.1rc1.zip
+    package_version: '1.2.1'
+    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/1.2.1.zip
 
 data_types:
+
   cloudify.kubernetes.types.FileResource:
     properties:
       resource_path:
@@ -171,6 +173,7 @@ data_types:
           Class provisioner for object creation
 
 node_types:
+
   cloudify.kubernetes.nodes.Master:
     derived_from: cloudify.nodes.Root
     properties:
@@ -276,5 +279,6 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_delete
 
 relationships:
+
   cloudify.kubernetes.relationships.managed_by_master:
     derived_from: cloudify.relationships.connected_to

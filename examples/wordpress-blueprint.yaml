@@ -5,7 +5,7 @@ description: >
 
 imports:
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
-  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.0/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.1/plugin.yaml
 
 inputs:
 
@@ -57,9 +57,9 @@ inputs:
 node_types:
 
   cloudify.kubernetes.resources.PersistentVolumeClaim:
-    derived_from: cloudify.kubernetes.resources.Main
+    derived_from: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
     properties:
-      _api_mapping:
+      api_mapping:
         default:
           create:
             api: CoreV1Api
