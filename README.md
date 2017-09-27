@@ -95,7 +95,6 @@ on Kubernetes Master VM. You can also obtain it executing:
 ### Master authentication possibilities
 
 Plugin has been designed to support different Kubernetes clusters providers.
-For now only Google Cloud Platform is supported.
 As *authentication* property of Master node you can specify dictionary with key and value: 
 
  * ***gcp_service_account*** -  value should be (JSON) content of Google Cloud Platform Service Accout file
