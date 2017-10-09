@@ -121,6 +121,7 @@ As *authentication* property of Master node you can specify dictionary with key 
     - *cloudify.kubernetes.resources.Service*
     - *cloudify.kubernetes.resources.PersistentVolume*
     - *cloudify.kubernetes.resources.StorageClass*
+    - *cloudify.kubernetes.resources.ConfigMap*
     
     Example blueprint:
   

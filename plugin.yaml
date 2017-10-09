@@ -146,6 +146,17 @@ data_types:
           Kuberneres resource object specification
         default: {}
 
+  cloudify.kubernetes.types.ConfigClassResourceDefinition:
+    derived_from: cloudify.kubernetes.types.ResourceDefinition
+    description: >
+      Type defining Kubernetes resource for storing data.
+      It is some kind of wrapper for native Kubernetes YAML definition
+    properties:
+      data:
+        description: >
+          Contains data to store in ConfigMap, Secret..
+        default: {}
+
   cloudify.kubernetes.types.StorageClassResourceDefinition:
     description: >
       Type defining single Kubernetes resource e.g. StorageClass
@@ -227,6 +238,12 @@ node_types:
 
   cloudify.kubernetes.resources.PersistentVolume:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+
+  cloudify.kubernetes.resources.ConfigMap:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.ConfigClassResourceDefinition
 
   cloudify.kubernetes.resources.StorageClass:
     derived_from: cloudify.nodes.Root
