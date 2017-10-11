@@ -152,6 +152,22 @@ SUPPORTED_API_MAPPINGS = {
             method='delete_storage_class',
             payload='V1DeleteOptions'
         ),
+    ),
+    'ConfigMap': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='create_namespaced_config_map',
+            payload='V1ConfigMap'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='read_namespaced_config_map',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='delete_namespaced_config_map',
+            payload='V1DeleteOptions'
+        ),
     )
 }
 
