@@ -13,3 +13,5 @@
 1.2.1:
   - Multiple-file resource support.
   - Distinguished Main type to cloudify.kubernetes.resources.BlueprintDefinedResource and cloudify.kubernetes.resources.FileDefinedResource.
+1.2.2:
+  - Support ConfigMaps.
