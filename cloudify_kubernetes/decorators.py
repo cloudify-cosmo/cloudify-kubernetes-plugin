@@ -15,8 +15,11 @@
 #
 
 from cloudify import ctx
-from cloudify.exceptions import RecoverableError, NonRecoverableError
-
+from cloudify.exceptions import (
+    OperationRetry,
+    RecoverableError,
+    NonRecoverableError
+)
 from .k8s import (CloudifyKubernetesClient,
                   KubernetesApiAuthenticationVariants,
                   KubernetesApiConfigurationVariants,
@@ -57,16 +60,18 @@ def resource_task(retrieve_resource_definition, retrieve_mapping):
                 kwargs['resource_definition'] = \
                     retrieve_resource_definition(**kwargs)
                 kwargs['api_mapping'] = retrieve_mapping(**kwargs)
-
                 task(**kwargs)
             except (KuberentesMappingNotFoundError,
                     KuberentesInvalidPayloadClassError,
                     KuberentesInvalidApiClassError,
                     KuberentesInvalidApiMethodError) as e:
                 raise NonRecoverableError(str(e))
+            except OperationRetry as e:
+                raise OperationRetry('{0}'.format(str(e)))
+            except NonRecoverableError as e:
+                raise NonRecoverableError('{0}'.format(str(e)))
             except Exception as e:
-                raise RecoverableError(str(e))
-
+                raise RecoverableError('{0}'.format(str(e)))
         return wrapper
     return decorator
 

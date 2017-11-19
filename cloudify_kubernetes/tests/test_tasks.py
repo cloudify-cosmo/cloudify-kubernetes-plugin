@@ -16,7 +16,7 @@
 from mock import MagicMock, patch
 import unittest
 
-from cloudify.exceptions import RecoverableError
+from cloudify.exceptions import RecoverableError, OperationRetry
 from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
 
@@ -315,11 +315,15 @@ class TestTasks(unittest.TestCase):
                     'get_kube_config_loader_from_file',
                     MagicMock()
             ):
-                tasks.resource_delete(
-                    client=MagicMock(),
-                    api_mapping=MagicMock(),
-                    resource_definition=MagicMock()
-                )
+                with patch(
+                        'cloudify_kubernetes.tasks._do_resource_read',
+                        MagicMock()):
+                    with self.assertRaises(OperationRetry):
+                        tasks.resource_delete(
+                            client=MagicMock(),
+                            api_mapping=MagicMock(),
+                            resource_definition=MagicMock()
+                        )
 
     def test_custom_resource_create(self):
         # TODO
