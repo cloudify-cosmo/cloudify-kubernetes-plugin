@@ -2,7 +2,7 @@ tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/3.4/types.yaml
-  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.1/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.3.0/plugin.yaml
 
 inputs:
 
@@ -62,17 +62,28 @@ node_templates:
     properties:
       definition:
         apiVersion: v1
+        kind: Pod
         metadata:
-          name: pod-a
+          name: nginx
+          namespace: default
         spec:
           containers:
-          - name: pod-a-1
-            image: "centos:7"
-            command: ["/bin/bash"]
-            stdin: true
-            tty: true
-            securityContext:
-              privileged: true
+          - name: nginx
+            image: nginx
+            volumeMounts:
+            - name: someunxists
+              mountPath: /data
+            ports:
+            - containerPort: 80
+          volumes:
+          - name: someunxists
+            flexVolume:
+              driver: "cloudify/mount"
+              fsType: "ext4"
+              options:
+                volumeID: "vol1"
+                size: "1000m"
+                volumegroup: "kube_vg"
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: master
