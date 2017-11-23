@@ -1,0 +1,2 @@
+-e git+https://github.com/kubernetes-incubator/client-python.git@9e948b7486352d1e48137009201b158b320d459b#egg=kubernetes
+-e git+https://github.com/GoogleCloudPlatform/google-auth-library-python.git@9bea1b15105d6851b315bd622702e0b201e4e874#egg=google-auth

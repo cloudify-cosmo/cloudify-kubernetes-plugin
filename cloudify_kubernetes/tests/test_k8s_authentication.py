@@ -83,6 +83,8 @@ class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
         mock_credentials.get_access_token = MagicMock(
             return_value=access_token_mock
         )
+        mock_credentials._make_authorization_grant_assertion = \
+            MagicMock(return_value=token)
 
         instance = GCPServiceAccountAuthentication(
             mock_logger,
@@ -90,8 +92,8 @@ class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
         )
 
         with patch(
-            'oauth2client.service_account.'
-            'ServiceAccountCredentials.from_json_keyfile_dict',
+            'google.oauth2.service_account.'
+            'Credentials.from_service_account_info',
             MagicMock(return_value=mock_credentials)
         ):
             instance.authenticate(mock_api)

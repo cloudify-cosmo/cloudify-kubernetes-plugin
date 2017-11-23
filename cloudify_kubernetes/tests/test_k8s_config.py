@@ -12,6 +12,7 @@
 #    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
+
 import unittest
 from mock import MagicMock, patch, ANY
 
@@ -91,7 +92,6 @@ class TestBlueprintFileConfiguration(unittest.TestCase):
                     )
 
         mock_download_resource.assert_called_with('kubernetes.conf')
-        mock_load_and_set.assert_called_with()
         mock_get_kube_config_loader_from_file.assert_called_with(
             config_file='downloaded_resource'
         )
@@ -139,7 +139,6 @@ class TestManagerFilePathConfiguration(unittest.TestCase):
                     )
 
         mock_isfile.assert_called_with('kubernetes.conf')
-        mock_load_and_set.assert_called_with()
         mock_get_kube_config_loader_from_file.assert_called_with(
             config_file='kubernetes.conf'
         )

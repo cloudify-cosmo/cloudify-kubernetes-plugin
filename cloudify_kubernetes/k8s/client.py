@@ -24,11 +24,31 @@ from .operations import (KubernetesDeleteOperation,
                          KubernetesReadOperation,
                          KubernetesCreateOperation)
 
+from cloudify import ctx
+
 
 class KubernetesResourceDefinition(object):
 
     def __init__(self, kind, apiVersion, metadata, spec=None, parameters=None,
-                 provisioner=None, data=None):
+                 provisioner=None, data=None, **kwargs):
+
+        validated_sections = \
+            ['kind',
+             'apiVersion',
+             'metadata',
+             'spec',
+             'parameters',
+             'provisioner',
+             'data']
+
+        def add_key_for_unvalidated_types(name, value):
+            ctx.logger.warn(
+                'An unvalidated Kubernetes template '
+                'section name ({0}) was provided. '
+                'Defering to API for template validation.'.format(
+                    name))
+            setattr(self, name, value)
+
         self.kind = kind.split('.')[-1]
         self.api_version = apiVersion
         self.metadata = metadata
@@ -43,6 +63,10 @@ class KubernetesResourceDefinition(object):
         # Config class
         if data:
             self.data = data
+        # Support all types. Will allow invalid templates.
+        for k in kwargs.keys():
+            if k not in validated_sections:
+                add_key_for_unvalidated_types(k, kwargs[k])
 
 
 class CloudifyKubernetesClient(object):
