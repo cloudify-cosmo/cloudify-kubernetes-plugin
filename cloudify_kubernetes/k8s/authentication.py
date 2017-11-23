@@ -13,20 +13,21 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-import os
 import json
 
 from .exceptions import KuberentesAuthenticationError
-from cloudify.exceptions import NonRecoverableError
 
-try:
-    import google
-    lib_directory = os.path.dirname(__file__) + '/lib'
-    google.__path__ = \
-        [os.path.join(lib_directory, 'google')] + google.__path__
-    from google.oauth2.service_account import Credentials
-except ImportError as e:
-    raise NonRecoverableError(str(e))
+from google.oauth2.service_account import Credentials
+
+# from cloudify.exceptions import NonRecoverableError
+# try:
+#     import google
+#     lib_directory = os.path.dirname(__file__) + '/lib'
+#     google.__path__ = \
+#         [os.path.join(lib_directory, 'google')] + google.__path__
+#     from google.oauth2.service_account import Credentials
+# except ImportError as e:
+#     raise NonRecoverableError(str(e))
 
 
 class KubernetesApiAuthentication(object):

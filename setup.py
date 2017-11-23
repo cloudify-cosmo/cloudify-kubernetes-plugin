@@ -15,6 +15,7 @@
 
 
 from setuptools import setup
+from setuptools import find_packages
 
 setup(
     name='cloudify-kubernetes-plugin',
@@ -22,9 +23,8 @@ setup(
     author='Krzysztof Bijakowski',
     author_email='krzysztof.bijakowski@gigaspaces.com',
     description='Plugin provides Kubernetes management possibility',
-
-    packages=['cloudify_kubernetes', 'cloudify_kubernetes.k8s'],
-
+    namespace_packages=['google'],
+    packages=find_packages(exclude=['tests*']),
     license='LICENSE',
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
