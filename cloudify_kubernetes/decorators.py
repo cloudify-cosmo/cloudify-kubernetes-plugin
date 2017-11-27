@@ -70,8 +70,6 @@ def resource_task(retrieve_resource_definition, retrieve_mapping):
                 raise OperationRetry('{0}'.format(str(e)))
             except NonRecoverableError as e:
                 raise NonRecoverableError('{0}'.format(str(e)))
-            except Exception as e:
-                raise RecoverableError('{0}'.format(str(e)))
         return wrapper
     return decorator
 

@@ -15,9 +15,19 @@
 
 import json
 
-from oauth2client.service_account import ServiceAccountCredentials
-
 from .exceptions import KuberentesAuthenticationError
+
+from google.oauth2.service_account import Credentials
+
+# from cloudify.exceptions import NonRecoverableError
+# try:
+#     import google
+#     lib_directory = os.path.dirname(__file__) + '/lib'
+#     google.__path__ = \
+#         [os.path.join(lib_directory, 'google')] + google.__path__
+#     from google.oauth2.service_account import Credentials
+# except ImportError as e:
+#     raise NonRecoverableError(str(e))
 
 
 class KubernetesApiAuthentication(object):
@@ -67,12 +77,11 @@ class GCPServiceAccountAuthentication(KubernetesApiAuthentication):
                 service_account_file_content = \
                     json.loads(service_account_file_content)
 
-            credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+            credentials = Credentials.from_service_account_info(
                 service_account_file_content,
-                self.SCOPES
-            )
+                scopes=self.SCOPES)
 
-            token = credentials.get_access_token().access_token
+            token = credentials._make_authorization_grant_assertion()
 
             api.configuration.api_key[self.K8S_API_AUTHORIZATION] = token
             api.configuration.api_key_prefix[self.K8S_API_AUTHORIZATION]\

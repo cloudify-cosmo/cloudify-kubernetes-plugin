@@ -19,6 +19,8 @@ import yaml
 
 from .exceptions import KuberentesApiInitializationFailedError
 
+CONFIG = type.__call__(kubernetes.client.Configuration)
+
 
 class KubernetesApiConfiguration(object):
 
@@ -78,7 +80,7 @@ class BlueprintFileConfiguration(KubernetesApiConfiguration):
                 ):
                     self.get_kube_config_loader_from_file(
                         config_file=manager_file_path
-                    ).load_and_set()
+                    ).load_and_set(CONFIG)
 
                     return kubernetes.client
             except Exception as e:
@@ -104,7 +106,7 @@ class ManagerFilePathConfiguration(KubernetesApiConfiguration):
             ):
                 self.get_kube_config_loader_from_file(
                     config_file=manager_file_path
-                ).load_and_set()
+                ).load_and_set(CONFIG)
 
                 return kubernetes.client
 
@@ -120,7 +122,7 @@ class FileContentConfiguration(KubernetesApiConfiguration):
             file_content = self.configuration_data[self.FILE_CONTENT_KEY]
 
             self.get_kube_config_loader(config_dict=file_content)\
-                .load_and_set()
+                .load_and_set(CONFIG)
 
             return kubernetes.client
 
