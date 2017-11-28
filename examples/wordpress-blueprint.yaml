@@ -5,7 +5,7 @@ description: >
 
 imports:
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
-  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.2/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.3.1/plugin.yaml
 
 inputs:
 
@@ -131,10 +131,11 @@ node_templates:
         spec:
           ports:
             - port: 80
+              nodePort: 30080
           selector:
             app: wordpress
             tier: frontend
-          # type: LoadBalancer
+          type: LoadBalancer
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master

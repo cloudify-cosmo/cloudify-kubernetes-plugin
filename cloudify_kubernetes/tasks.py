@@ -113,8 +113,21 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
 
-    lifecycle = ctx.node.properties.get('lifecycle', {})
-    if not isinstance(lifecycle, dict):
+    # Read All resources.
+    read_response = _do_resource_read(
+        client,
+        api_mapping,
+        _retrieve_id(ctx.instance),
+        **kwargs
+    )
+
+    # Store read response.
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+        read_response
+
+    # Exit if lifecycle spec is not provided.
+    lifecycle = ctx.node.properties.get('lifecycle')
+    if lifecycle is None or not isinstance(lifecycle, dict):
         return
 
     response_path_map = lifecycle.get('response_path', '')
@@ -134,16 +147,6 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     pass_logic = logic.get('pass')
     if not fail_logic or not poll_logic or not pass_logic:
         return
-
-    read_response = _do_resource_read(
-        client,
-        api_mapping,
-        _retrieve_id(ctx.instance),
-        **kwargs
-    )
-
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        read_response
 
     response_path_type = lifecycle.get('response_path_type', {})
     if isinstance(response_path_type, dict):
