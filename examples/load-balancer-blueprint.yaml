@@ -1,0 +1,145 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/lb-blueprint/plugin.yaml
+
+inputs:
+
+  kubernetes_master_ip:
+    type: string
+    default: { get_secret: kubernetes_master_ip }
+
+  kubernetes_master_port:
+    type: string
+    default: { get_secret: kubernetes_master_port }
+
+  kubernetes_certificate_authority_data:
+    default: { get_secret: kubernetes_certificate_authority_data }
+
+  kubernetes-admin_client_certificate_data:
+    default: { get_secret: kubernetes-admin_client_certificate_data }
+
+  kubernetes-admin_client_key_data:
+    default: { get_secret: kubernetes-admin_client_key_data }
+
+  kubernetes_master_configuration:
+    default:
+      apiVersion: v1
+      kind: Config
+      preferences: {}
+      current-context: kubernetes-admin@kubernetes
+      clusters:
+      - name: kubernetes
+        cluster:
+          certificate-authority-data: { get_input: kubernetes_certificate_authority_data }
+          server: { concat: [ 'https://', { get_input: kubernetes_master_ip}, ':', { get_input: kubernetes_master_port } ] }
+      contexts:
+      - name: kubernetes-admin@kubernetes
+        context:
+          cluster: kubernetes
+          user: kubernetes-admin
+      users:
+      - name: kubernetes-admin
+        user:
+          client-certificate-data: { get_input: kubernetes-admin_client_certificate_data }
+          client-key-data:  { get_input: kubernetes-admin_client_key_data }
+
+node_types:
+
+  cloudify.kubernetes.resources.Ingress:
+    derived_from: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
+    properties:
+      api_mapping:
+        default:
+          create:
+            api: ExtensionsV1beta1Api
+            method: create_namespaced_ingress
+            payload: V1beta1Ingress
+          read:
+            api: ExtensionsV1beta1Api
+            method: read_namespaced_ingress
+          delete:
+            api: ExtensionsV1beta1Api
+            method: delete_namespaced_ingress
+            payload: V1DeleteOptions
+
+node_templates:
+
+  kubernetes_master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: kubernetes_master_configuration }
+
+  nginx_deployment:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: nginx-deployment
+        spec:
+          selector:
+            matchLabels:
+              app: nginx
+          replicas: 2
+          template:
+            metadata:
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: nginx:1.7.9
+                ports:
+                - containerPort: 80
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+
+  nginx_service:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          labels:
+            app: nginx
+          name: nginx
+        spec:
+          ports:
+            - port: 80
+          selector:
+            app: nginx
+            tier: frontend
+          type: LoadBalancer
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: nginx_deployment
+
+  nginx_ingress:
+    type: cloudify.kubernetes.resources.Ingress
+    properties:
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Ingress
+        metadata:
+          name: basic-ingress
+        spec:
+          backend:
+            serviceName: nginx
+            servicePort: 80
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: nginx_service
+
+outputs:
+  lb_out:
+    value: { get_attribute: [ nginx_service, kubernetes, status, load_balancer, ingress, 0, ip ] }
