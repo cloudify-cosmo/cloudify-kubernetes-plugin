@@ -29,6 +29,7 @@ setup(
     install_requires=[
         'cloudify-plugins-common>=3.3.1',
         'kubernetes==1.0.2',
-        'pyyaml'
+        'pyyaml',
+        'pyasn1-modules<0.2.1'
     ]
 )
