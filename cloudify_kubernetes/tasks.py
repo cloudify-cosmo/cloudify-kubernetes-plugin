@@ -15,7 +15,6 @@
 
 
 from cloudify import ctx
-from cloudify.decorators import operation
 from cloudify.exceptions import (
     NonRecoverableError,
     OperationRetry,
@@ -88,7 +87,6 @@ def _do_resource_delete(client, api_mapping, id, **kwargs):
     ).to_dict()
 
 
-@operation
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
@@ -103,7 +101,6 @@ def resource_create(client, api_mapping, resource_definition, **kwargs):
             **kwargs)
 
 
-@operation
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
@@ -167,7 +164,6 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     return
 
 
-@operation
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
@@ -200,7 +196,6 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
             'Delete respone: {0}'.format(delete_response))
 
 
-@operation
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
@@ -215,7 +210,6 @@ def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
             **kwargs)
 
 
-@operation
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
@@ -230,7 +224,6 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
     )
 
 
-@operation
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_file,
@@ -266,7 +259,6 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
             = result
 
 
-@operation
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_file,
@@ -283,7 +275,6 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
     )
 
 
-@operation
 def multiple_file_resource_create(**kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES]\
         = {}
@@ -297,7 +288,6 @@ def multiple_file_resource_create(**kwargs):
         file_resource_create(file=file_resource, **kwargs)
 
 
-@operation
 def multiple_file_resource_delete(**kwargs):
     file_resources = kwargs.get(
         NODE_PROPERTY_FILES,
