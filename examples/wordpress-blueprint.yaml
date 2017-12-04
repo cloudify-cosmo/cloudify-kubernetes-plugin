@@ -303,3 +303,7 @@ node_templates:
     properties:
       configuration:
         file_content: { get_input: kubernetes_master_configuration }
+
+outputs:
+  wordpress:
+    value: { get_attribute: [ wordpress_svc, kubernetes, status, load_balancer, ingress, 0, ip ] }

@@ -76,6 +76,34 @@ def _do_resource_read(client, api_mapping, id, **kwargs):
     ).to_dict()
 
 
+def _do_resource_status_check(resource_kind, response):
+
+    if "Pod" == resource_kind:
+        status = response['status']['phase']
+        if status in ['Failed']:
+            raise NonRecoverableError(
+                'status {0} in phase {1}'.format(
+                    status, ['Failed']))
+        elif status in ['Pending', 'Unknown']:
+            raise OperationRetry(
+                'status {0} in phase {1}'.format(
+                    status, ['Pending', 'Unknown']))
+        elif status in ['Running', 'Succeeded']:
+            ctx.logger.debug(
+                'status {0} in phase {1}'.format(
+                    status, ['Running', 'Succeeded']))
+
+    elif "Service" in resource_kind:
+        status = response['status']
+        if status in [{'load_balancer': {'ingress': None}}]:
+            raise OperationRetry(
+                'status {0} in phase {1}'.format(
+                    status,
+                    [{'load_balancer': {'ingress': None}}]))
+        else:
+            ctx.logger.debug('status {0}'.format(status))
+
+
 def _do_resource_delete(client, api_mapping, id, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
@@ -122,46 +150,11 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
         read_response
 
-    # Exit if lifecycle spec is not provided.
-    lifecycle = ctx.node.properties.get('lifecycle')
-    if lifecycle is None or not isinstance(lifecycle, dict):
-        return
-
-    response_path_map = lifecycle.get('response_path', '')
-    if not isinstance(response_path_map, basestring):
-        return
-
-    response_path = response_path_map.split('.')
-    if len(response_path) == 1 and response_path[0] == '':
-        return
-
-    logic = lifecycle.get('logic')
-    if not isinstance(logic, dict):
-        return
-
-    fail_logic = logic.get('fail')
-    poll_logic = logic.get('poll')
-    pass_logic = logic.get('pass')
-    if not fail_logic or not poll_logic or not pass_logic:
-        return
-
-    response_path_type = lifecycle.get('response_path_type', {})
-    if isinstance(response_path_type, dict):
-        current_state = read_response
-        for level in response_path:
-            current_state = current_state[level]
-        message = '{0} in {1}'
-        if current_state in fail_logic:
-            raise NonRecoverableError(
-                message.format(current_state, fail_logic))
-        elif current_state in poll_logic:
-            raise OperationRetry(
-                message.format(current_state, poll_logic))
-        elif current_state in pass_logic:
-            ctx.logger.debug(
-                message.format(current_state, pass_logic))
-
-    return
+    resource_type = getattr(resource_definition, 'kind')
+    if resource_type:
+        _do_resource_status_check(resource_type, read_response)
+        ctx.logger.info(
+            'Resource definition: {0}'.format(resource_type))
 
 
 @with_kubernetes_client
