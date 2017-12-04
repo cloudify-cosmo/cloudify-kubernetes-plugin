@@ -31,6 +31,6 @@ setup(
         'kubernetes==1.0.2',
         'pyyaml>=3.12',
         'pyasn1>=0.1.7',
-        'pyasn1-modules>=0.0.5,<0.2.1', #
+        'pyasn1-modules>=0.0.5,<0.2.1',
     ]
 )
