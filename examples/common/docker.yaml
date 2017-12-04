@@ -1,0 +1,17 @@
+node_types:
+  cloudify.docker.ImageBuilder:
+    derived_from: cloudify.nodes.Root
+    properties:
+      name:
+        type: string
+      dockerfile_content:
+        type: string
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_task
+          inputs:
+            tasks_file:
+              default: scripts/docker/image_builder.py
+            task_name:
+              default: create

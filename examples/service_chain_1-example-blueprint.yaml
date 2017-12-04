@@ -1,0 +1,298 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  This runs a service chain scenario on kubernetes:  client + router VNF + server.
+  Expects that you have first uploaded "vnf-example-blueprint".
+  You can do it using command line: "cfy blueprints upload vnf-example-blueprint.yaml -b service_chain_vnf_component".
+  Also install the wagon (for all needed plugins: cloudify-kubernetes-plugin, cloudify-fabric-plugin, cloudify-utilities-plugin)
+  with the command: "cfy plugins upload PATH_TO_WAGON".
+
+imports:
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.0.1/resources/rest-service/cloudify/types/types.yaml
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-fabric-plugin/1.5/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-utilities-plugin/1.2.5/plugin.yaml
+  - common/networking.yaml
+
+inputs:
+# proxy plugin configuration
+  vnf_blueprint_id:
+    type: string
+    default: 'service_chain_vnf_component'
+
+# docker images configuration
+  client_docker_image_name:
+    type: string
+    default: 'kubernetes_sfc_example:client'
+
+  router_docker_image_name:
+    type: string
+    default: 'kubernetes_sfc_example:router_vnf'
+
+  server_docker_image_name:
+    type: string
+    default: 'kubernetes_sfc_example:server'
+
+#kubernetes
+  kubernetes_master_ip:
+    type: string
+    default: { get_secret: kubernetes_master_ip }
+
+  kubernetes_master_user:
+    type: string
+    default: { get_secret: kubernetes_master_user }
+
+  kubernetes_master_ssh_key_path :
+    type: string
+    default: { get_secret: kubernetes_master_ssh_key_path  }
+
+  kubernetes_master_config_file:
+    default:
+      apiVersion: v1
+      clusters:
+      - cluster:
+          certificate-authority: /etc/kubernetes/pki/ca.pem
+          server: http://10.239.2.85:8080
+        name: default-cluster
+      contexts:
+      - context:
+          cluster: default-cluster
+          user: default-admin
+        name: default-system
+      current-context: default-system
+      kind: Config
+      preferences: {}
+      users:
+      - name: default-admin
+        user:
+          client-certificate: /etc/kubernetes/pki/sa-pub.pem
+          client-key: /etc/kubernetes/pki/sa-key.pem
+
+# pods configuration
+  client_pod_name:
+    type: string
+    default: 'client'
+
+  router_pod_name:
+    type: string
+    default: 'router'
+
+  server_pod_name:
+    type: string
+    default: 'server'
+
+# interfaces configuration
+  client_access_ip:
+    type: string
+    default: '192.168.1.254'
+
+  client_access_interface:
+    type: string
+    default: 'eth0'
+
+  client_out_ip:
+    type: string
+    default: '10.10.1.1'
+
+  client_out_interface:
+    type: string
+    default: 'veth00'
+
+  router_access_ip:
+    type: string
+    default: '192.168.1.4'
+
+  router_access_interface:
+    type: string
+    default: 'eth0'
+
+  router_in_ip:
+    type: string
+    default: '10.10.1.2'
+
+  router_in_interface:
+    type: string
+    default: 'veth10'
+
+  router_out_ip:
+    type: string
+    default: '10.10.2.1'
+
+  router_out_interface:
+    type: string
+    default: 'veth11'
+
+  server_access_ip:
+    type: string
+    default: '192.168.1.7'
+
+  server_access_interface:
+    type: string
+    default: 'eth0'
+
+# L2 networks configuration
+  client_router_link_name:
+    type: string
+    default: 'br01'
+
+  client_router_link_ip:
+    type: string
+    default: '10.10.1.3'
+
+# L3 networks configuration
+  client_router_network_cidr:
+    type: string
+    default: '10.10.1.0/24'
+
+  access_network_cidr:
+    type: string
+    default: '192.168.1.0/24'
+
+dsl_definitions:
+  interfaces: &inject_fabric_env_to_interfaces
+    cloudify.interfaces.lifecycle:
+      create:
+        inputs:
+          fabric_env:
+            host_string: { get_input: kubernetes_master_ip }
+            user: { get_input: kubernetes_master_user }
+            key_filename: { get_input: kubernetes_master_ssh_key_path }
+      delete:
+        inputs:
+          fabric_env:
+            host_string: { get_input: kubernetes_master_ip }
+            user: { get_input: kubernetes_master_user }
+            key_filename: { get_input: kubernetes_master_ssh_key_path }
+
+node_templates:
+  client_deployment:
+    type: cloudify.nodes.DeploymentProxy
+    properties:
+      resource_config:
+        blueprint:
+          external_resource: true
+          id: { get_input: vnf_blueprint_id }
+        deployment:
+          id: 'service_chain_client'
+          inputs:
+            kubernetes_master_ip: { get_input: kubernetes_master_ip }
+            kubernetes_master_user: { get_input: kubernetes_master_user }
+            kubernetes_master_ssh_key_path: { get_input: kubernetes_master_ssh_key_path }
+            kubernetes_master_config_file: { get_input: kubernetes_master_config_file }
+            docker_image_name: { get_input: client_docker_image_name }
+            dockerfile_content:
+              - FROM centos:6.8
+              - RUN yum install -y net-tools network-tools bridge-utils iproute iptables-services ifconfig traceroute tcpdump telnet openssh-clients
+              - ENTRYPOINT /bin/bash
+            pod_name: { get_input: client_pod_name }
+            access_ip: { get_input: client_access_ip }
+            access_interface: { get_input: client_access_interface }
+            access_interface_down: true
+            in_ip: ''
+            in_interface: ''
+            out_ip: { get_input: client_out_ip }
+            out_interface: { get_input: client_out_interface }
+          outputs:
+            id: id
+            out_interface: out_interface
+
+  router_vnf_deployment:
+    type: cloudify.nodes.DeploymentProxy
+    properties:
+      resource_config:
+        blueprint:
+          external_resource: true
+          id: { get_input: vnf_blueprint_id }
+        deployment:
+          id: 'service_chain_router_vnf'
+          inputs:
+            kubernetes_master_ip: { get_input: kubernetes_master_ip }
+            kubernetes_master_user: { get_input: kubernetes_master_user }
+            kubernetes_master_ssh_key_path: { get_input: kubernetes_master_ssh_key_path }
+            kubernetes_master_config_file: { get_input: kubernetes_master_config_file }
+            docker_image_name: { get_input: router_docker_image_name }
+            dockerfile_content:
+              - FROM centos:6.8
+              - RUN yum install -y net-tools network-tools bridge-utils iproute iptables-services ifconfig traceroute tcpdump telnet
+              - ENTRYPOINT /bin/bash
+            pod_name: { get_input: router_pod_name }
+            access_ip: { get_input: router_access_ip }
+            access_interface: { get_input: router_access_interface }
+            in_ip: { get_input: router_in_ip }
+            in_interface: { get_input: router_in_interface }
+            out_ip: { get_input: router_out_ip }
+            out_interface: { get_input: router_out_interface }
+          outputs:
+            id: id
+            in_interface: in_interface
+            out_interface: out_interface
+
+  server_deployment:
+    type: cloudify.nodes.DeploymentProxy
+    properties:
+      resource_config:
+        blueprint:
+          external_resource: true
+          id: { get_input: vnf_blueprint_id }
+        deployment:
+          id: 'service_chain_server'
+          inputs:
+            kubernetes_master_ip: { get_input: kubernetes_master_ip }
+            kubernetes_master_user: { get_input: kubernetes_master_user }
+            kubernetes_master_ssh_key_path: { get_input: kubernetes_master_ssh_key_path }
+            kubernetes_master_config_file: { get_input: kubernetes_master_config_file }
+            docker_image_name: { get_input: server_docker_image_name }
+            dockerfile_content:
+              - FROM centos:6.8
+              - RUN yum install -y net-tools network-tools bridge-utils iproute iptables-services ifconfig traceroute tcpdump telnet
+              - RUN yum install -y openssh-server openssh-clients
+              - RUN useradd test
+              - RUN echo "test:test" | chpasswd
+              - RUN chkconfig sshd on
+              - ENTRYPOINT service sshd start && python -m SimpleHTTPServer 8080 & /bin/bash
+            pod_name: { get_input: server_pod_name }
+            access_ip: { get_input: server_access_ip }
+            access_interface: { get_input: server_access_interface }
+            in_ip: ''
+            in_interface: ''
+            out_ip: ''
+            out_interface: ''
+          outputs:
+            id: id
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: router_vnf_deployment
+
+  client_router_link:
+    type: cloudify.kubernetes.networking.linux.VirtualLink
+    properties:
+      name: { get_input: client_router_link_name }
+      ip: { get_input: client_router_link_ip }
+      input_interface: { get_attribute: [client_deployment, deployment, outputs, out_interface] }
+      output_interface: { get_attribute: [router_vnf_deployment, deployment, outputs, in_interface] }
+    interfaces: *inject_fabric_env_to_interfaces
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: client_deployment
+      - type: cloudify.relationships.connected_to
+        target: router_vnf_deployment
+
+  service_chain:
+    type: cloudify.kubernetes.networking.linux.ForwardingPath
+    properties:
+      members:
+        - name: { get_attribute: [client_deployment, deployment, outputs, id] }
+          network: { get_input: access_network_cidr }
+          next_hop: { get_input: router_in_ip }
+        - name: { get_attribute: [server_deployment, deployment, outputs, id] }
+          network: { get_input: client_router_network_cidr }
+          next_hop: { get_input: router_access_ip }
+    interfaces: *inject_fabric_env_to_interfaces
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: client_deployment
+      - type: cloudify.relationships.depends_on
+        target: router_vnf_deployment
+      - type: cloudify.relationships.depends_on
+        target: server_deployment
+      - type: cloudify.relationships.depends_on
+        target: client_router_link
