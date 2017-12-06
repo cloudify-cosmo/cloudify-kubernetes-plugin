@@ -99,9 +99,22 @@ class FileContentConfiguration(KubernetesApiConfiguration):
         if self.FILE_CONTENT_KEY in self.configuration_data:
             file_content = self.configuration_data[self.FILE_CONTENT_KEY]
 
+            loader = kubernetes.config.kube_config.KubeConfigLoader(config_dict=file_content)
+
             kubernetes.config.load_kube_config(
-                context=file_content
+               context=loader.current_context['name']
             )
+
+            v1 = kubernetes.client.CoreV1Api()
+            self.logger.error("Listing pods with their IPs:")
+            ret = v1.list_pod_for_all_namespaces(watch=False)
+            for item in ret.items:
+                self.logger.error(
+                    "%s\t%s\t%s" %
+                    (item.status.pod_ip,
+                     item.metadata.namespace,
+                     item.metadata.name))
+
             return kubernetes.client
 
         return None
