@@ -15,8 +15,6 @@
 
 import json
 
-from oauth2client.service_account import ServiceAccountCredentials
-
 from .exceptions import KuberentesAuthenticationError
 
 
@@ -56,6 +54,8 @@ class GCPServiceAccountAuthentication(KubernetesApiAuthentication):
     TOKEN_PREFIX = 'Bearer'
 
     def _do_authenticate(self, api):
+        from oauth2client.service_account import ServiceAccountCredentials
+
         service_account_file_content = self.authentication_data.get(
             self.PROPERTY_GCE_SERVICE_ACCOUNT
         )
