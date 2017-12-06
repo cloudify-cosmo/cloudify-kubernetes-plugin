@@ -22,24 +22,6 @@ from .exceptions import KuberentesApiInitializationFailedError
 
 class KubernetesApiConfiguration(object):
 
-    @classmethod
-    def get_kube_config_loader(cls, **kwargs):
-        return kubernetes.config.kube_config.KubeConfigLoader(
-            get_google_credentials=lambda: '',
-            **kwargs
-        )
-
-    @classmethod
-    def get_kube_config_loader_from_file(cls, config_file, **kwargs):
-        with open(config_file) as file:
-            return cls.get_kube_config_loader(
-                config_dict=yaml.load(file),
-                config_base_path=os.path.abspath(
-                    os.path.dirname(config_file)
-                ),
-                **kwargs
-            )
-
     def __init__(self, logger, configuration_data, **kwargs):
         self.logger = logger
         self.configuration_data = configuration_data
@@ -76,10 +58,9 @@ class BlueprintFileConfiguration(KubernetesApiConfiguration):
                 if manager_file_path and os.path.isfile(
                     os.path.expanduser(manager_file_path)
                 ):
-                    self.get_kube_config_loader_from_file(
+                    kubernetes.config.load_kube_config(
                         config_file=manager_file_path
-                    ).load_and_set()
-
+                    )
                     return kubernetes.client
             except Exception as e:
                 self.logger.error(
@@ -102,10 +83,9 @@ class ManagerFilePathConfiguration(KubernetesApiConfiguration):
             if manager_file_path and os.path.isfile(
                 os.path.expanduser(manager_file_path)
             ):
-                self.get_kube_config_loader_from_file(
+                kubernetes.config.load_kube_config(
                     config_file=manager_file_path
-                ).load_and_set()
-
+                )
                 return kubernetes.client
 
         return None
@@ -119,9 +99,9 @@ class FileContentConfiguration(KubernetesApiConfiguration):
         if self.FILE_CONTENT_KEY in self.configuration_data:
             file_content = self.configuration_data[self.FILE_CONTENT_KEY]
 
-            self.get_kube_config_loader(config_dict=file_content)\
-                .load_and_set()
-
+            kubernetes.config.load_kube_config(
+                context=file_content
+            )
             return kubernetes.client
 
         return None

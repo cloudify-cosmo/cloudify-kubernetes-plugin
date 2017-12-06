@@ -1,0 +1,314 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.1/types.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.3.1.1/plugin.yaml
+
+inputs:
+
+  kubernetes-admin_client_key_data:
+    default: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBK0pseGlHVEMrM0pTTzlMaTFCbFpRUlMzWTUrUUhYbDZUdjlwNTJudDVLRllFOHpFCjhidVE0R2cxM0NocDFMQmR5ZWZLd29JdlplQ0Ntd1VSUGhOaVM4amlvVlZrVVlCN2ZIdXhXcEhVQ2hqVFdUclkKaEhRdXBtQ1JkYjRpV0tQY1EraWEzMHBXLzQvSVZCb0U3UWpaUUlWaDVGaTFWWGgyWnhMSHA3VW0vcU1aSExjWgpKdERBZlp6c2FmTy84d202RUxROHE3Z2NhWWR2VW1EZVJ4RHBiZVhUemVteEY4MFhodWM5Vjl6RHIzUUw1SEdTCmxCY3NlYVAzcDZRdnBGRm5JWVZHWE1Cc3dwMEpBQkpjdFZ0dW1BSUdZNGJ5ZnYxdm1YMytRdmpQTE1rVHIwbzIKZWc2UVI5NDcvTHJUZVBiOTRpZktNZVZlY3JoWktQTjFSNkZNVXdJREFRQUJBb0lCQUJSYXkvYjArUm9KZEQ0OQp1Q0RScW9NdnBReGRKam1qbHFZZE41aWhEYjlvam9PZ2dvZWdhZTVWMmdNYXMvK2NLVEc4N3RjYVBiTkR2SzNnCnJsYTgwNUdNOHpGdWduWkI1TnArYmprU002QllCQVlNVVdvVzhUTGlPVWJBdUtNMVYzV2Y5LzVNWWU4dTRLSXkKTnpFSlJuQ0grMG50RVh2Y0R5WEZYZCtYYjRmdHZYSjZOZ2JnVm1ZdTdvZGtDaGRZUytkckhoZzYyZ0lVQVRKYwpjYUE0bk1PODQvS2lvNG5CRG1UZ01qUWdncmorTjZZOEp4bHZuWVJmYVJGU0NpZGhtczlnNVNNVSt4cW4vWVQ4ClVzZWhiNjRxbDJJREhTK3AwNE0zK2pHTlY5TVpWcXZlalBGTVJaNEFFbURtbVM2Q0V5NTZXRGhNaHg0WHBSRFEKRXVhaHBkRUNnWUVBK2duQnB5VGVoaVRQSHAybjVjdzBzY2lseGloelZQWTFEME5YK3pscGZPYnRIVnpBQWNnUAo3Mi80K01Ja3F3YzJCMjVsTUUrWDNJcXJ3RE92YTBzZGtHVGk1MlJIdUQ4NVBaR1UvODdjaWdGRVZHVTVNZmE5Ck04RHpvSVpJWWZOOVZJV2tzbXErT3dXakM4QnFrNkhhNWJKZ3pKUm0zcG0yUldLcGJTRUI1eWNDZ1lFQS9vYm4Kcm5ML0RGVHNmbVdhSGgzd3BLNWpnRjhvREROa2llM0FkNVZyUTkwTmh6dmttSDBJYnJOSjZTbEsvdXN0M0k1TApHb2pnVGU0cGVrM3RpbDBIMTlXK0hNRFdyanV1TmQ1cmI1cWhSb0VSbGt0SHgzWGlBS05yR1E5dnc3NmhvYmVSCkR1V1BLeEp4WGN3L3ZSRnhzbkorMHI0dm5sbmcwVCtDRGZBRXpQVUNnWUJsK2g2eU5kWlA3YWxQdWtzazdSRTgKeFRIZlROWWsrN21PUFJBZ0ZUMVJ4TGxHZFhLV0IydUFZekd1K3plTFRZaWFwVXE5MW1pQWVVb3RQS2M1NGt2dgpmVVlSeTVONHNNaCt0T2FKSW14T0dOQXVmNDVCTTNuZEpyLzJZMjRZRFArN3ZqbjZ6cEJCY0Q0Y1orRFB6MzZBCm1pemlvMUFGVDduSU9NSVRFUmcrbHdLQmdRQ1MzOUl0cnBwU3lXYTNBWFpQenNNZ3BLa3lXTGJKWTVhdXFRMloKZEJXejBZbU84aGJWajhFZjhFSEVWRm04aElXd2NrUVFpYysxNktyeXNxbFNZS0M0QWRWMHppcVQzRWlKT1ZJUgowczhoMmpVRjMyY0tTSklrQUNrN0N0ZFp3MVdOOWxtMG1POW0wWHV0dnNGQkh5SFc4WThSbVVIdFJMd2d3MThQCkgrUUZTUUtCZ1FDRjBISDA1SktpTjdvcnRQK2JTSDJlN2xsbDR6b3B1cmMvTC8yS3NpLzUzMUJIbHRIT0ltU2kKakFKU2hWME5ZaEdmdFpWS0VIVytaMFJxOEpQVWQzZG9Zb0xyWXpDc2JwTUpsU2FYWTlwY1REK2tQNStPYUtjMgpzQVJKbTlwSHEzaXB2Y1VNZjFhZDFvS2drM0dFbUxzcWhFOENuZ3ZTS2lFYm84aWFLKzMvUVE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+
+  kubernetes_master_ip:
+    default: 172.16.168.162
+
+  kubernetes_master_port:
+    default: 6443
+
+  kubernetes-admin_client_key_data:
+    default: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBK0pseGlHVEMrM0pTTzlMaTFCbFpRUlMzWTUrUUhYbDZUdjlwNTJudDVLRllFOHpFCjhidVE0R2cxM0NocDFMQmR5ZWZLd29JdlplQ0Ntd1VSUGhOaVM4amlvVlZrVVlCN2ZIdXhXcEhVQ2hqVFdUclkKaEhRdXBtQ1JkYjRpV0tQY1EraWEzMHBXLzQvSVZCb0U3UWpaUUlWaDVGaTFWWGgyWnhMSHA3VW0vcU1aSExjWgpKdERBZlp6c2FmTy84d202RUxROHE3Z2NhWWR2VW1EZVJ4RHBiZVhUemVteEY4MFhodWM5Vjl6RHIzUUw1SEdTCmxCY3NlYVAzcDZRdnBGRm5JWVZHWE1Cc3dwMEpBQkpjdFZ0dW1BSUdZNGJ5ZnYxdm1YMytRdmpQTE1rVHIwbzIKZWc2UVI5NDcvTHJUZVBiOTRpZktNZVZlY3JoWktQTjFSNkZNVXdJREFRQUJBb0lCQUJSYXkvYjArUm9KZEQ0OQp1Q0RScW9NdnBReGRKam1qbHFZZE41aWhEYjlvam9PZ2dvZWdhZTVWMmdNYXMvK2NLVEc4N3RjYVBiTkR2SzNnCnJsYTgwNUdNOHpGdWduWkI1TnArYmprU002QllCQVlNVVdvVzhUTGlPVWJBdUtNMVYzV2Y5LzVNWWU4dTRLSXkKTnpFSlJuQ0grMG50RVh2Y0R5WEZYZCtYYjRmdHZYSjZOZ2JnVm1ZdTdvZGtDaGRZUytkckhoZzYyZ0lVQVRKYwpjYUE0bk1PODQvS2lvNG5CRG1UZ01qUWdncmorTjZZOEp4bHZuWVJmYVJGU0NpZGhtczlnNVNNVSt4cW4vWVQ4ClVzZWhiNjRxbDJJREhTK3AwNE0zK2pHTlY5TVpWcXZlalBGTVJaNEFFbURtbVM2Q0V5NTZXRGhNaHg0WHBSRFEKRXVhaHBkRUNnWUVBK2duQnB5VGVoaVRQSHAybjVjdzBzY2lseGloelZQWTFEME5YK3pscGZPYnRIVnpBQWNnUAo3Mi80K01Ja3F3YzJCMjVsTUUrWDNJcXJ3RE92YTBzZGtHVGk1MlJIdUQ4NVBaR1UvODdjaWdGRVZHVTVNZmE5Ck04RHpvSVpJWWZOOVZJV2tzbXErT3dXakM4QnFrNkhhNWJKZ3pKUm0zcG0yUldLcGJTRUI1eWNDZ1lFQS9vYm4Kcm5ML0RGVHNmbVdhSGgzd3BLNWpnRjhvREROa2llM0FkNVZyUTkwTmh6dmttSDBJYnJOSjZTbEsvdXN0M0k1TApHb2pnVGU0cGVrM3RpbDBIMTlXK0hNRFdyanV1TmQ1cmI1cWhSb0VSbGt0SHgzWGlBS05yR1E5dnc3NmhvYmVSCkR1V1BLeEp4WGN3L3ZSRnhzbkorMHI0dm5sbmcwVCtDRGZBRXpQVUNnWUJsK2g2eU5kWlA3YWxQdWtzazdSRTgKeFRIZlROWWsrN21PUFJBZ0ZUMVJ4TGxHZFhLV0IydUFZekd1K3plTFRZaWFwVXE5MW1pQWVVb3RQS2M1NGt2dgpmVVlSeTVONHNNaCt0T2FKSW14T0dOQXVmNDVCTTNuZEpyLzJZMjRZRFArN3ZqbjZ6cEJCY0Q0Y1orRFB6MzZBCm1pemlvMUFGVDduSU9NSVRFUmcrbHdLQmdRQ1MzOUl0cnBwU3lXYTNBWFpQenNNZ3BLa3lXTGJKWTVhdXFRMloKZEJXejBZbU84aGJWajhFZjhFSEVWRm04aElXd2NrUVFpYysxNktyeXNxbFNZS0M0QWRWMHppcVQzRWlKT1ZJUgowczhoMmpVRjMyY0tTSklrQUNrN0N0ZFp3MVdOOWxtMG1POW0wWHV0dnNGQkh5SFc4WThSbVVIdFJMd2d3MThQCkgrUUZTUUtCZ1FDRjBISDA1SktpTjdvcnRQK2JTSDJlN2xsbDR6b3B1cmMvTC8yS3NpLzUzMUJIbHRIT0ltU2kKakFKU2hWME5ZaEdmdFpWS0VIVytaMFJxOEpQVWQzZG9Zb0xyWXpDc2JwTUpsU2FYWTlwY1REK2tQNStPYUtjMgpzQVJKbTlwSHEzaXB2Y1VNZjFhZDFvS2drM0dFbUxzcWhFOENuZ3ZTS2lFYm84aWFLKzMvUVE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+
+  kubernetes-admin_client_certificate_data:
+    default: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM4akNDQWRxZ0F3SUJBZ0lJTVFvcS9TS0hMV2N3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB4TnpFeU1EWXhNalUzTXpGYUZ3MHhPREV5TURZeE1qVTNNek5hTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQStKbHhpR1RDKzNKU085TGkKMUJsWlFSUzNZNStRSFhsNlR2OXA1Mm50NUtGWUU4ekU4YnVRNEdnMTNDaHAxTEJkeWVmS3dvSXZaZUNDbXdVUgpQaE5pUzhqaW9WVmtVWUI3Zkh1eFdwSFVDaGpUV1RyWWhIUXVwbUNSZGI0aVdLUGNRK2lhMzBwVy80L0lWQm9FCjdRalpRSVZoNUZpMVZYaDJaeExIcDdVbS9xTVpITGNaSnREQWZaenNhZk8vOHdtNkVMUThxN2djYVlkdlVtRGUKUnhEcGJlWFR6ZW14RjgwWGh1YzlWOXpEcjNRTDVIR1NsQmNzZWFQM3A2UXZwRkZuSVlWR1hNQnN3cDBKQUJKYwp0VnR1bUFJR1k0YnlmdjF2bVgzK1F2alBMTWtUcjBvMmVnNlFSOTQ3L0xyVGVQYjk0aWZLTWVWZWNyaFpLUE4xClI2Rk1Vd0lEQVFBQm95Y3dKVEFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFFWGNtWVFEODZoaWNkWXdqS2E3WG9wVHFiWkYrOTJnekVSZwpqQlhYTWQvdXlaK3JKZHovQVVXZFl1NURNVTVudCtyRE90bjZGYm1RYzhTbEpLZFpEbitua1p6Ni9YMWNNcVdlCnNFZEZKS0NHUGxnaGhhRmNIYkxrMkg5Ylp4bUNTS0d5cjVNMWFTazNIcW02elhyQmViMnQ0MHl5ZHJxZmNPSWoKTk5zTGRKTURYMHo4ZE1hT0MrN1V4bnFzTnlIMFV3ajBqbURUMzlqMy9YbmgrZXZteExWS1dKR0dKakRxSXVHdgo3VDlkcXpCcjIzbm1jQytEU2JCRHNjeERtSU9OWWFSOWx4UmU5VXJ4NWU0RHVuOUw2dTRjQ01GSlloNVFUaEczCmNhc1NsRmRjQVZnRWl3c0tUQXh0SXRGRjdRTXpJeTNEUjJHOTQvb2lYbzUvQnpKZ2JwRT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+
+  kubernetes_certificate_authority_data:
+    default: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRFM01USXdOakV5TlRjek1Wb1hEVEkzTVRJd05ERXlOVGN6TVZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTENwCkkrektQMHo3dkxoWElSc3YyMTJ0THRhWmljN2preUtDcE1lZlVXQW1JQzhiUnZJQXQrOGFtTm1Fb2JGTHpCdHYKcGFZMVJxR3ltRU11UFhVYjhlbGQyOEk3WXBrV0t3T3pBQWgvQTBJNnFpaHNVVjFXaDcxZnRWeVNMbTJDaW1lUQpDYjE0clRxc1pPVUZ1MHV3cWNOVTdhVjBKYVNGNnlrYVRRUFc1ZXVuTHM5WXNzK0NieTRSQnlHLzRLckN3TUN2CnNGYWNSMkZVSWxvb1hsQzBxQlI2T3YzY3lUcEJHZHJZSlRFU2huam1wa3VUMTd0L21jWmtIMzhtZXUrM21wRUoKQWtkRkFYTXRYWG5IRmZ2VnlvcnRIQW9KY1NaMWFycjdMc0RlU0Y2ZWkrampLSTdPVmJQdWh1djhCNVZQOUF0OApsNkZSQnFMRk56WEpRU2kzdTA4Q0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFEbkNRaVNaL2hzY0lJSmJZOEczWGFraWl4NVUKKzFjbnlYWWZvMTVvZERTejZxQzJBenkxdC9OZWk2aEl1SDMwejBWOHVDRVJVaGlrcE1nV0s5aktFN2pPWUJBRApiazRMb0d6L05VdW1LZVUwN2VBaGl0TGF1dEN5K0pHQ0Mzd1VOWHRKczZyeXpoVjJUQnJXVnJUeWE3aVIwYnIxCm16eXVuVjl0cTlWSm5NRmk4VWdFY0s4NVRjYk1EU1JEY0dPL2llT2grbnYzZlZhVXpHSHZhV0F1Tm1ud3JBc2UKdUZGTzgxMzRPODROTGFrMUd3UkV1cFg5czE2eUlOZENMZ003cG5jNWU0eGJvQW1YT01saitsRE9Cd2I1Z1RlQQpQN2kvTzNXV3JoeG8vWlNLSXQ4S2NueWlKakZ0eTVxWVpWOXo4cDllSmpicituUTBlejRadm42VmdJYz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+
+
+node_templates:
+
+  kube:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content:
+          apiVersion: v1
+          kind: Config
+          preferences: {}
+          current-context: kubernetes-admin@kubernetes
+          clusters:
+          - name: kubernetes
+            cluster:
+              certificate-authority-data: { get_input: kubernetes_certificate_authority_data }
+              server: { concat: [ 'https://', { get_input: kubernetes_master_ip}, ':', { get_input: kubernetes_master_port } ] }
+          contexts:
+          - name: kubernetes-admin@kubernetes
+            context:
+              cluster: kubernetes
+              user: kubernetes-admin
+          users:
+          - name: kubernetes-admin
+            user:
+              client-certificate-data: { get_input: kubernetes-admin_client_certificate_data }
+              client-key-data:  { get_input: kubernetes-admin_client_key_data }
+
+  influx_deployment:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      options:
+        namespace: kube-system
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: monitoring-influxdb
+          namespace: kube-system
+        spec:
+          replicas: 1
+          template:
+            metadata:
+              labels:
+                task: monitoring
+                k8s-app: influxdb
+            spec:
+              containers:
+              - name: influxdb
+                image: gcr.io/google_containers/heapster-influxdb-amd64:v1.3.3
+                volumeMounts:
+                - mountPath: /data
+                  name: influxdb-storage
+              volumes:
+              - name: influxdb-storage
+                emptyDir: {}
+    relationships:
+    - type: cloudify.kubernetes.relationships.managed_by_master
+      target: kube
+
+  influx_service:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      options:
+        namespace: kube-system
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          labels:
+            task: monitoring
+            # For use as a Cluster add-on (https://github.com/kubernetes/kubernetes/tree/master/cluster/addons)
+            # If you are NOT using this as an addon, you should comment out this line.
+            kubernetes.io/cluster-service: 'true'
+            kubernetes.io/name: monitoring-influxdb
+          name: monitoring-influxdb
+          namespace: kube-system
+        spec:
+          ports:
+          - port: 8086
+            targetPort: 8086
+          selector:
+            k8s-app: influxdb
+    relationships:
+    - type: cloudify.kubernetes.relationships.managed_by_master
+      target: kube
+    - type: cloudify.relationships.depends_on
+      target: influx_deployment
+
+  grafana_deployment:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      options:
+        namespace: kube-system
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: monitoring-grafana
+          namespace: kube-system
+        spec:
+          replicas: 1
+          template:
+            metadata:
+              labels:
+                task: monitoring
+                k8s-app: grafana
+            spec:
+              containers:
+              - name: grafana
+                image: gcr.io/google_containers/heapster-grafana-amd64:v4.4.3
+                ports:
+                - containerPort: 3000
+                  protocol: TCP
+                volumeMounts:
+                - mountPath: /etc/ssl/certs
+                  name: ca-certificates
+                  readOnly: true
+                - mountPath: /var
+                  name: grafana-storage
+                env:
+                - name: INFLUXDB_HOST
+                  value: monitoring-influxdb
+                - name: GF_SERVER_HTTP_PORT
+                  value: "3000"
+                  # The following env variables are required to make Grafana accessible via
+                  # the kubernetes api-server proxy. On production clusters, we recommend
+                  # removing these env variables, setup auth for grafana, and expose the grafana
+                  # service using a LoadBalancer or a public IP.
+                - name: GF_AUTH_BASIC_ENABLED
+                  value: "false"
+                - name: GF_AUTH_ANONYMOUS_ENABLED
+                  value: "true"
+                - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+                  value: Admin
+                - name: GF_SERVER_ROOT_URL
+                  # If you're only using the API Server proxy, set this value instead:
+                  # value: /api/v1/proxy/namespaces/kube-system/services/monitoring-grafana/
+                  value: /
+              volumes:
+              - name: ca-certificates
+                hostPath:
+                  path: /etc/ssl/certs
+              - name: grafana-storage
+                emptyDir: {}
+    relationships:
+    - type: cloudify.kubernetes.relationships.managed_by_master
+      target: kube
+    - type: cloudify.relationships.depends_on
+      target: influx_service
+
+  grafana_service:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      options:
+        namespace: kube-system
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          labels:
+            # For use as a Cluster add-on (https://github.com/kubernetes/kubernetes/tree/master/cluster/addons)
+            # If you are NOT using this as an addon, you should comment out this line.
+            kubernetes.io/cluster-service: 'true'
+            kubernetes.io/name: monitoring-grafana
+          name: monitoring-grafana
+          namespace: kube-system
+        spec:
+          # In a production setup, we recommend accessing Grafana through an external Loadbalancer
+          # or through a public IP.
+          # type: LoadBalancer
+          # You could also use NodePort to expose the service at a randomly-generated port
+          # type: NodePort
+          ports:
+          - port: 80
+            targetPort: 3000
+          selector:
+            k8s-app: grafana
+    relationships:
+    - type: cloudify.kubernetes.relationships.managed_by_master
+      target: kube
+    - type: cloudify.relationships.depends_on
+      target: grafana_deployment
+
+  heapster_service_account:
+    type: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
+    properties:
+      options:
+        namespace: kube-system
+      definition:
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: heapster
+          namespace: kube-system
+      api_mapping:
+        create:
+          api: CoreV1Api
+          method: create_namespaced_service_account
+          payload: V1ServiceAccount
+        read:
+          api: CoreV1Api
+          method: read_namespaced_service_account
+        delete:
+          api: CoreV1Api
+          method: delete_namespaced_service_account
+          payload: V1DeleteOptions
+    relationships:
+    - type: cloudify.kubernetes.relationships.managed_by_master
+      target: kube
+
+  heapster_deployment:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      options:
+        namespace: kube-system
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: heapster
+          namespace: kube-system
+        spec:
+          replicas: 1
+          template:
+            metadata:
+              labels:
+                task: monitoring
+                k8s-app: heapster
+            spec:
+              serviceAccountName: heapster
+              containers:
+              - name: heapster
+                image: gcr.io/google_containers/heapster-amd64:v1.4.0
+                imagePullPolicy: IfNotPresent
+                command:
+                - /heapster
+                - --source=kubernetes:https://kubernetes.default
+                - --sink=influxdb:http://monitoring-influxdb.kube-system.svc:8086
+    relationships:
+    - type: cloudify.kubernetes.relationships.managed_by_master
+      target: kube
+    - type: cloudify.relationships.depends_on
+      target: grafana_service
+    - type: cloudify.relationships.depends_on
+      target: heapster_service_account
+
+  heapster_service:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      options:
+        namespace: kube-system
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          labels:
+            task: monitoring
+            # For use as a Cluster add-on (https://github.com/kubernetes/kubernetes/tree/master/cluster/addons)
+            # If you are NOT using this as an addon, you should comment out this line.
+            kubernetes.io/cluster-service: 'true'
+            kubernetes.io/name: Heapster
+          name: heapster
+          namespace: kube-system
+        spec:
+          ports:
+          - port: 80
+            targetPort: 8082
+          selector:
+            k8s-app: heapster
+    relationships:
+    - type: cloudify.kubernetes.relationships.managed_by_master
+      target: kube
+    - type: cloudify.relationships.depends_on
+      target: heapster_deployment
+
+#  heapster_rbac:
+#    type: cloudify.nodes.ApplicationServer
+#    interfaces:
+#    interfaces:
+#      cloudify.interfaces.lifecycle:
+#        create:
+#          implementation: scripts/cfy_autoscale/heapster_rbac.py
+#    relationships:
+#    - target: kubemanager
+#      type: cloudify.relationships.contained_in
+#    - type: cloudify.relationships.depends_on
+#      target: heapster_service
