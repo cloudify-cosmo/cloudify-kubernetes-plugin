@@ -46,7 +46,7 @@ SUPPORTED_API_MAPPINGS = {
         create=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',
             method='create_namespaced_deployment',
-            payload='V1beta1Deployment'
+            payload='AppsV1beta1Deployment'
         ),
         read=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',

@@ -1,3 +1,8 @@
+## kubectl delete deploy monitoring-influxdb --namespace kube-system
+## kubectl delete sa heapster --namespace kube-system
+## kubectl delete services monitoring-influxdb  --namespace kube-system
+
+
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
