@@ -29,4 +29,11 @@ def check_import(dir_name):
 
 sys.path_hooks.append(check_import)
 
+import google
 import google.auth
+
+print google.__path__ # ['.../lib/python2.7/site-packages/google', '.../lib/python2.7/site-packages/google']
+print google.__name__ # "google"
+
+print google.auth.__path__ # ['.../lib/python2.7/site-packages/google/auth']
+print google.auth.__name__ # "google.auth"
