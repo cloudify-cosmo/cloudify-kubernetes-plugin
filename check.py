@@ -16,19 +16,21 @@ class OurImporter(object):
             return sys.modules[fullname]
         except KeyError:
             pass
-        print("--- load ---")
-        print(fullname)
+
         if self.load_file:
-            print (self.dirname + "/__init__.py")
-            with open(self.dirname + "/__init__.py") as module_file:
+            with open(self.dirname + "/" + self.file_name) as module_file:
+                print "Open ====" + self.dirname + "/" + self.file_name
                 m = imp.load_source(fullname, self.dirname + "/" + self.file_name, module_file)
         else:
             m = imp.new_module(fullname)
-            m.__name__ = fullname
-            m.__file__ = self.dirname + "/" + self.file_name
-            m.__path__ = [self.dirname]
-            m.__loader__ = self
-            print (m.__path__)
+
+        m.__name__ = fullname
+        m.__file__ = self.dirname + "/" + self.file_name
+        m.__path__ = [os.path.abspath(self.dirname)]
+        m.__loader__ = self
+
+        print ("path>" + repr(m.__path__) + ":::" + fullname)
+
 
         sys.modules.setdefault(fullname, m)
 
@@ -52,19 +54,18 @@ class OurFinder(object):
                 full_name = path + "/" + real_path
 
                 if os.path.isfile(full_name + ".py"):
-                    print ">>>>" + full_name + ".py"
-                    return OurImporter(full_name, True, package_name.split(".")[-1] + ".py")
+                    return OurImporter(os.path.abspath(full_name), True, package_name.split(".")[-1] + ".py")
                 if os.path.isdir(full_name):
                     if not os.path.isfile(full_name  + "/" + "__init__.py"):
                         print "Is namespaced package: {}".format(path)
-                        return OurImporter(full_name, False, "__init__.py")
+                        return OurImporter(os.path.abspath(full_name), False, "__init__.py")
                     else:
-                        return OurImporter(full_name, True, "__init__.py")
+                        return OurImporter(os.path.abspath(full_name), True, "__init__.py")
         return None
 
 
 def check_import(dir_name):
-    print ("check_import:{}".format(repr(dir_name)))
+    print "???" + dir_name
     return OurFinder(dir_name)
 
 sys.path_hooks.append(check_import)
