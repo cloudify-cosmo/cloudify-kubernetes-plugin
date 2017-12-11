@@ -226,6 +226,10 @@ node_templates:
             app: wordpress
             tier: mysql
           clusterIP: None
+    # Needed when setting clusterIP: None.
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start: {}
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master

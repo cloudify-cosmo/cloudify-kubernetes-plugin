@@ -1,0 +1,323 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+description: >
+  Based on this example: https://github.com/kubernetes/examples/blob/master/mysql-wordpress-pd/README.md.
+
+imports:
+  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.2/resources/rest-service/cloudify/types/types.yaml
+  - http://www.getcloudify.org/spec/kubernetes-plugin/1.3.1.1/plugin.yaml
+
+inputs:
+
+  kubernetes_master_ip:
+    type: string
+    default: { get_secret: kubernetes_master_ip }
+
+  kubernetes_master_port:
+    type: string
+    default: { get_secret: kubernetes_master_port }
+
+  kubernetes_certificate_authority_data:
+    default: { get_secret: kubernetes_certificate_authority_data }
+
+  kubernetes-admin_client_certificate_data:
+    default: { get_secret: kubernetes-admin_client_certificate_data }
+
+  kubernetes-admin_client_key_data:
+    default: { get_secret: kubernetes-admin_client_key_data }
+
+  kubernetes_master_configuration:
+    default:
+      apiVersion: v1
+      kind: Config
+      preferences: {}
+      current-context: kubernetes-admin@kubernetes
+      clusters:
+      - name: kubernetes
+        cluster:
+          certificate-authority-data: { get_input: kubernetes_certificate_authority_data }
+          server: { concat: [ 'https://', { get_input: kubernetes_master_ip}, ':', { get_input: kubernetes_master_port } ] }
+      contexts:
+      - name: kubernetes-admin@kubernetes
+        context:
+          cluster: kubernetes
+          user: kubernetes-admin
+      users:
+      - name: kubernetes-admin
+        user:
+          client-certificate-data: { get_input: kubernetes-admin_client_certificate_data }
+          client-key-data:  { get_input: kubernetes-admin_client_key_data }
+
+  wordpress_password:
+    default: X0kdmdwethrngosdf88
+
+  mysql_password:
+    default: X0kdmdwethrngosdf88
+
+node_types:
+
+  cloudify.kubernetes.resources.PersistentVolumeClaim:
+    derived_from: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
+    properties:
+      api_mapping:
+        default:
+          create:
+            api: CoreV1Api
+            method: create_namespaced_persistent_volume_claim
+            payload: V1PersistentVolumeClaim
+          read:
+            api: CoreV1Api
+            method: read_namespaced_persistent_volume_claim
+          delete:
+            api: CoreV1Api
+            method: delete_namespaced_persistent_volume_claim
+            payload: V1DeleteOptions
+
+  cloudify.kubernetes.resources.StatefulSets:
+    derived_from: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
+    properties:
+      api_mapping:
+        default:
+          create:
+            api: AppsV1beta1Api
+            method: create_namespaced_stateful_set
+            payload: V1beta1StatefulSet
+          read:
+            api: AppsV1beta1Api
+            method: read_namespaced_stateful_set
+          delete:
+            api: AppsV1beta1Api
+            method: delete_namespaced_stateful_set
+            payload: V1DeleteOptions
+
+  cloudify.kubernetes.resources.Autoscaling:
+    derived_from: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
+    properties:
+      api_mapping:
+        default:
+          create:
+            api: AutoscalingV1Api
+            method: create_namespaced_horizontal_pod_autoscaler
+            payload: V1HorizontalPodAutoscaler
+          read:
+            api: AutoscalingV1Api
+            method: read_namespaced_horizontal_pod_autoscaler
+          delete:
+            api: AutoscalingV1Api
+            method: delete_namespaced_horizontal_pod_autoscaler
+            payload: V1DeleteOptions
+
+node_templates:
+
+  kubernetes_master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: kubernetes_master_configuration }
+
+  cassandra_service:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          labels:
+            app: cassandra
+          name: cassandra
+        spec:
+          clusterIP: None
+          ports:
+            - port: 9042
+              targetPort: 39402
+          selector:
+            app: cassandra
+    # Needed when setting clusterIP: None.
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start: {}
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+
+  local_pv_3:
+    type: cloudify.kubernetes.resources.PersistentVolume
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: local-pv-3
+          labels:
+            type: local
+        spec:
+          capacity:
+            storage: 20Gi
+          accessModes:
+            - ReadWriteOnce
+          hostPath:
+            path: /tmp/data/pv-3
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+
+  local_pv_4:
+    type: cloudify.kubernetes.resources.PersistentVolume
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: local-pv-4
+          labels:
+            type: local
+        spec:
+          capacity:
+            storage: 20Gi
+          accessModes:
+            - ReadWriteOnce
+          hostPath:
+            path: /tmp/data/pv-4
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+
+  cassandra_claim:
+    type: cloudify.kubernetes.resources.PersistentVolumeClaim
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: cassandra-data-claim
+          labels:
+            app: cassandra
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 20Gi
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: local_pv_4
+      - type: cloudify.relationships.depends_on
+        target: local_pv_3
+      - type: cloudify.relationships.depends_on
+        target: cassandra_service
+
+  cassandra_stateful_set:
+    type: cloudify.kubernetes.resources.StatefulSets
+    properties:
+      definition:
+        apiVersion: "apps/v1beta1"
+        kind: StatefulSet
+        metadata:
+          name: cassandra
+        spec:
+          serviceName: cassandra
+          replicas: 3
+          template:
+            metadata:
+              labels:
+                app: cassandra
+            spec:
+              containers:
+              - name: cassandra
+                image: gcr.io/google-samples/cassandra:v12
+                imagePullPolicy: Always
+                ports:
+                - containerPort: 7000
+                  name: intra-node
+                - containerPort: 7001
+                  name: tls-intra-node
+                - containerPort: 7199
+                  name: jmx
+                - containerPort: 9042
+                  name: cql
+                resources:
+                  limits:
+                    cpu: "500m"
+                    memory: 1Gi
+                  requests:
+                   cpu: "500m"
+                   memory: 1Gi
+                securityContext:
+                  capabilities:
+                    add:
+                      - IPC_LOCK
+                lifecycle:
+                  preStop:
+                    exec:
+                      command: ["/bin/sh", "-c", "PID=$(pidof java) && kill $PID && while ps -p $PID > /dev/null; do sleep 1; done"]
+                env:
+                  - name: MAX_HEAP_SIZE
+                    value: 512M
+                  - name: HEAP_NEWSIZE
+                    value: 100M
+                  - name: CASSANDRA_SEEDS
+                    value: "cassandra-0.cassandra.default.svc.cluster.local"
+                  - name: CASSANDRA_CLUSTER_NAME
+                    value: "K8Demo"
+                  - name: CASSANDRA_DC
+                    value: "DC1-K8Demo"
+                  - name: CASSANDRA_RACK
+                    value: "Rack1-K8Demo"
+                  - name: CASSANDRA_AUTO_BOOTSTRAP
+                    value: "false"
+                  - name: POD_IP
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: status.podIP
+                readinessProbe:
+                  exec:
+                    command:
+                    - /bin/bash
+                    - -c
+                    - /ready-probe.sh
+                  initialDelaySeconds: 15
+                  timeoutSeconds: 5
+                # These volume mounts are persistent. They are like inline claims,
+                # but not exactly because the names need to match exactly one of
+                # the stateful pod volumes.
+                volumeMounts:
+                - name: cassandra-data
+                  mountPath: /cassandra_data
+              volumes:
+              - name: cassandra-data
+                persistentVolumeClaim:
+                  claimName: cassandra-data-claim
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: cassandra_claim
+
+  cassandra_autoscaling:
+    type: cloudify.kubernetes.resources.Autoscaling
+    properties:
+      definition:
+        apiVersion: autoscaling/v1
+        kind: HorizontalPodAutoscaler
+        metadata:
+          name: cassandra
+          namespace: default
+        spec:
+          scaleTargetRef:
+            apiVersion: apps/v1beta1
+            kind: StatefulSets
+            name: cassandra
+          minReplicas: 2
+          maxReplicas: 10
+          metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              targetAverageUtilization: 50
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: cloudify.relationships.depends_on
+        target: cassandra_stateful_set
