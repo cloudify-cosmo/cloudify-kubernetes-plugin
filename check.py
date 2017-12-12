@@ -18,7 +18,10 @@ class OurImporter(object):
             pass
 
         if self.load_file:
-            fp, pathname, description = imp.find_module(package_name.split(".")[-1], ["/".join(os.path.abspath(self.dirname).split("/")[:-1])])
+            fp, pathname, description = imp.find_module(
+                    package_name.split(".")[-1],
+                    ["/".join(os.path.abspath(self.dirname).split("/")[:-1])]
+            )
             m = imp.load_module(package_name, fp, pathname, description)
         else:
             m = imp.new_module(package_name)
@@ -29,8 +32,8 @@ class OurImporter(object):
 
         sys.modules.setdefault(package_name, m)
 
-        print ("name:\t" + repr(m.__name__))
-        print ("path:\t" + repr(m.__path__))
+        # print ("name:\t" + repr(m.__name__))
+        # print ("path:\t" + repr(m.__path__))
         return m
 
 class OurFinder(object):
@@ -39,21 +42,18 @@ class OurFinder(object):
         print ("finder:\t{}".format(repr(dir_name)))
 
     def find_module(self, package_name):
-        print ("find_module: {}".format(repr(package_name)))
         real_path = "/".join(package_name.split("."))
         for path in sys.path:
-            if path[:len("/usr")] == "/usr":
-                 continue
+            #if path[:len("/usr")] == "/usr":
+            #     continue
+
+            full_name = path + "/" + real_path
 
             if os.path.isfile(path + "/" + "/".join(package_name.split("."))  + ".py"):
-                print "File?" + path + "/" + "/".join(package_name.split("."))  + ".py"
                 return OurImporter(os.path.abspath(full_name), True, "__init__.py")
             elif not os.path.isfile(path + "/" + package_name.split(".")[0]  + "/" + "__init__.py"):
-                full_name = path + "/" + real_path
-
                 if os.path.isdir(full_name):
                     if not os.path.isfile(full_name  + "/" + "__init__.py"):
-                        print "Is namespaced package!: {}".format(path)
                         return OurImporter(os.path.abspath(full_name), False, "__init__.py")
                     else:
                         return OurImporter(os.path.abspath(full_name), True, "__init__.py")
@@ -76,5 +76,5 @@ import google
 print google.__path__ # ['.../lib/python2.7/site-packages/google', '.../lib/python2.7/site-packages/google']
 print google.__name__ # "google"
 
-#print google.auth.__path__ # ['.../lib/python2.7/site-packages/google/auth']
-#print google.auth.__name__ # "google.auth"
+print google.auth.__path__ # ['.../lib/python2.7/site-packages/google/auth']
+print google.auth.__name__ # "google.auth"
