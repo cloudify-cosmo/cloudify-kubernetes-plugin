@@ -15,19 +15,19 @@
 import sys
 import imp
 import os
-from cloudify import ctx
+# from cloudify import ctx
 
 
 class OurImporter(object):
 
     def __init__(self, dir_name, load_file, name):
-        ctx.logger.info("importer:{}/{}".format(dir_name, load_file))
+        # ctx.logger.info("importer:{}/{}".format(dir_name, load_file))
         self.dirname = dir_name
         self.load_file = load_file
         self.file_name = name
 
     def load_module(self, package_name):
-        ctx.logger.info("load_module: {}".format(package_name))
+        # ctx.logger.info("load_module: {}".format(package_name))
         try:
             return sys.modules[package_name]
         except KeyError:
@@ -53,7 +53,8 @@ class OurImporter(object):
 class _OurFinder(object):
 
     def __init__(self, dir_name):
-        ctx.logger.info("finder:\t{}".format(dir_name))
+        # ctx.logger.info("finder:\t{}".format(dir_name))
+        pass
 
     def find_module(self, package_name):
         real_path = "/".join(package_name.split("."))

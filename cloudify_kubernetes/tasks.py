@@ -22,7 +22,6 @@ from cloudify.exceptions import (
     RecoverableError)
 
 try:
-    ctx.logger.info("Try load google.auth")
     import google.auth
 except ImportError:
     from .loader import register_callback
