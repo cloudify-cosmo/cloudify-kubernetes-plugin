@@ -9,13 +9,12 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import kubernetes
 import os
-import yaml
 
 from .exceptions import KuberentesApiInitializationFailedError
 
@@ -99,10 +98,12 @@ class FileContentConfiguration(KubernetesApiConfiguration):
         if self.FILE_CONTENT_KEY in self.configuration_data:
             file_content = self.configuration_data[self.FILE_CONTENT_KEY]
 
-            loader = kubernetes.config.kube_config.KubeConfigLoader(config_dict=file_content)
+            loader = kubernetes.config.kube_config.KubeConfigLoader(
+                config_dict=file_content
+            )
 
             kubernetes.config.load_kube_config(
-               context=loader.current_context['name']
+                context=loader.current_context['name']
             )
 
             return kubernetes.client

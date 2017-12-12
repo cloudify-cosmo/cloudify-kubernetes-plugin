@@ -9,9 +9,9 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 from cloudify import ctx
@@ -20,6 +20,14 @@ from cloudify.exceptions import (
     NonRecoverableError,
     OperationRetry,
     RecoverableError)
+
+try:
+    ctx.logger.info("Try load google.auth")
+    import google.auth
+except ImportError:
+    from .loader import register_callback
+    register_callback()
+    import google.auth
 
 from k8s.exceptions import KuberentesApiOperationError
 from .decorators import (resource_task,
@@ -56,31 +64,31 @@ def _retrieve_path(kwargs):
 
 
 def _cleanuped_list(resource):
-  for k,v in enumerate(resource):
-    if isinstance(v, list):
-        _cleanuped_list(v)
-    elif isinstance(v, dict):
-        _cleanuped_dict(v)
-    elif isinstance(v, datetime):
-        resource[k] = str(v)
+    for k, v in enumerate(resource):
+        if isinstance(v, list):
+            _cleanuped_list(v)
+        elif isinstance(v, dict):
+            _cleanuped_dict(v)
+        elif isinstance(v, datetime):
+            resource[k] = str(v)
 
 
 def _cleanuped_dict(resource):
-  for k in resource:
-    if isinstance(resource[k], list):
-        _cleanuped_list(resource[k])
-    elif isinstance(resource[k], dict):
-        _cleanuped_dict(resource[k])
-    elif isinstance(resource[k], datetime):
-        resource[k] = str(resource[k])
+    for k in resource:
+        if isinstance(resource[k], list):
+            _cleanuped_list(resource[k])
+        elif isinstance(resource[k], dict):
+            _cleanuped_dict(resource[k])
+        elif isinstance(resource[k], datetime):
+            resource[k] = str(resource[k])
 
 
 def _cleanuped(resource):
-   if isinstance(resource, list):
-     _cleanuped_list(resource)
-   elif isinstance(resource, dict):
-     _cleanuped_dict(resource)
-   return resource
+    if isinstance(resource, list):
+        _cleanuped_list(resource)
+    elif isinstance(resource, dict):
+        _cleanuped_dict(resource)
+    return resource
 
 
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):

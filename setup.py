@@ -33,6 +33,6 @@ setup(
         'pyasn1>=0.1.7',
         'pyasn1-modules>=0.0.5,<0.2.1',
         'google-auth==1.2.1',
-        'oauth2client', # used only in GCPServiceAccountAuthentication
+        'oauth2client',  # used only in GCPServiceAccountAuthentication
     ]
 )
