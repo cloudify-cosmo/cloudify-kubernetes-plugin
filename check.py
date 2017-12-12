@@ -10,23 +10,24 @@ class OurImporter(object):
         self.load_file = load_file
         self.file_name = name
 
-    def load_module(self, fullname):
-        print ("load_module: {}".format(repr(fullname)))
+    def load_module(self, package_name):
+        print ("load_module: {}".format(repr(package_name)))
         try:
-            return sys.modules[fullname]
+            return sys.modules[package_name]
         except KeyError:
             pass
 
         if self.load_file:
-            m = imp.load_source(fullname, self.dirname + "/" + self.file_name)
+            fp, pathname, description = imp.find_module(package_name.split(".")[-1], ["/".join(os.path.abspath(self.dirname).split("/")[:-1])])
+            m = imp.load_module(package_name, fp, pathname, description)
         else:
-            m = imp.new_module(fullname)
+            m = imp.new_module(package_name)
 
-            m.__name__ = fullname
+            m.__name__ = package_name
             m.__path__ = [os.path.abspath(self.dirname)]
             m.__doc__ = None
 
-        sys.modules.setdefault(fullname, m)
+        sys.modules.setdefault(package_name, m)
 
         print ("name:\t" + repr(m.__name__))
         print ("path:\t" + repr(m.__path__))
@@ -44,7 +45,10 @@ class OurFinder(object):
             if path[:len("/usr")] == "/usr":
                  continue
 
-            if not os.path.isfile(path + "/" + package_name.split(".")[0]  + "/" + "__init__.py"):
+            if os.path.isfile(path + "/" + "/".join(package_name.split("."))  + ".py"):
+                print "File?" + path + "/" + "/".join(package_name.split("."))  + ".py"
+                return OurImporter(os.path.abspath(full_name), True, "__init__.py")
+            elif not os.path.isfile(path + "/" + package_name.split(".")[0]  + "/" + "__init__.py"):
                 full_name = path + "/" + real_path
 
                 if os.path.isdir(full_name):
@@ -52,13 +56,7 @@ class OurFinder(object):
                         print "Is namespaced package!: {}".format(path)
                         return OurImporter(os.path.abspath(full_name), False, "__init__.py")
                     else:
-                        try:
-                             fp, pathname, description =  imp.find_module(package_name.split(".")[-1], ["/".join(os.path.abspath(full_name).split("/")[:-1])])
-                             print repr(imp.load_module(package_name, fp, pathname, description))
-                        except Exception as e:
-                             print repr(e)
-                        return None
-                        # return OurImporter(os.path.abspath(full_name), True, "__init__.py")
+                        return OurImporter(os.path.abspath(full_name), True, "__init__.py")
         return None
 
 
