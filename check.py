@@ -74,5 +74,10 @@ def _check_import(dir_name):
     return _OurFinder(dir_name)
 
 
-def register_callback():
-    sys.path_hooks.append(_check_import)
+sys.path_hooks.append(_check_import)
+sys.path.append("../lib/python2.7/site-packages")
+
+import datetime
+import kubernetes
+import google.auth
+import google
