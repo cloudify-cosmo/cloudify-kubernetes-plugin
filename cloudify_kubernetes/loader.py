@@ -67,8 +67,8 @@ class _OurFinder(object):
 
     def find_module(self, package_name):
         with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-            file.write("import {} from {} with path: {}\n".format(
-                repr(package_name), repr(self.dir_name), repr(sys.path)
+            file.write("import {} from {}\n".format(
+                repr(package_name), repr(self.dir_name)
             ))
 
         real_path = "/".join(package_name.split("."))
