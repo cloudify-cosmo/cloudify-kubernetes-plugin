@@ -30,11 +30,14 @@ class _OurImporter(object):
             pass
 
         if self.load_file:
-            fp, pathname, description = imp.find_module(
-                package_name.split(".")[-1],
-                ["/".join(os.path.abspath(self.dirname).split("/")[:-1])]
-            )
-            m = imp.load_module(package_name, fp, pathname, description)
+            try:
+                fp, pathname, description = imp.find_module(
+                    package_name.split(".")[-1],
+                    ["/".join(os.path.abspath(self.dirname).split("/")[:-1])]
+                )
+                m = imp.load_module(package_name, fp, pathname, description)
+            except ImportError as e:
+                raise Exception(repr((e, package_name, self.dirname)))
         else:
             m = imp.new_module(package_name)
 
