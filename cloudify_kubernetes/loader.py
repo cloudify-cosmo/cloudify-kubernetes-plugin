@@ -15,6 +15,9 @@
 import sys
 import imp
 import os
+import time
+
+STAMP = time.time()
 
 
 class _OurImporter(object):
@@ -24,7 +27,7 @@ class _OurImporter(object):
         self.load_file = load_file
 
     def load_module(self, package_name):
-        with open("/tmp/import.log", 'a+') as file:
+        with open("/tmp/import" + STAMP + ".log", 'a+') as file:
             file.write("import {} by {} is fake: {}\n".format(
                 repr(package_name), repr(self.dirname), repr(self.load_file)
             ))
@@ -42,9 +45,12 @@ class _OurImporter(object):
                 )
                 m = imp.load_module(package_name, fp, pathname, description)
             except ImportError as e:
-                with open("/tmp/import.log", 'a+') as file:
-                   file.write("Failed {}\n".format(repr(package_name)))
-                raise Exception(repr((e, package_name, self.dirname, sys.path)))
+                with open("/tmp/import" + STAMP + ".log", 'a+') as file:
+                   file.write("Failed {}, reason {}\n"
+                              .format(repr(package_name), repr(e)))
+                raise Exception(repr((
+                   e, package_name, self.dirname, sys.path
+                )))
         else:
             m = imp.new_module(package_name)
 
