@@ -37,7 +37,7 @@ class _OurImporter(object):
                 )
                 m = imp.load_module(package_name, fp, pathname, description)
             except ImportError as e:
-                raise Exception(repr((e, package_name, self.dirname)))
+                raise Exception(repr((e, package_name, self.dirname, sys.path)))
         else:
             m = imp.new_module(package_name)
 
