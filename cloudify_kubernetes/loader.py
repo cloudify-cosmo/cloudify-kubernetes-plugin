@@ -17,7 +17,7 @@ import imp
 import os
 import time
 
-STAMP = time.time()
+STAMP = str(time.time())
 
 
 class _OurImporter(object):
