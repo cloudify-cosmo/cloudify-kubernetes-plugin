@@ -56,6 +56,8 @@ class _OurImporter(object):
             m.__path__ = [os.path.abspath(self.dirname)]
             m.__doc__ = None
 
+        m.__loader__ = self
+
         sys.modules.setdefault(package_name, m)
         return m
 

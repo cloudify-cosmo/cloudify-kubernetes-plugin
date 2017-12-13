@@ -13,71 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sys
-import imp
-import os
 
+from cloudify_kubernetes.loader import register_callback
+register_callback()
 
-class _OurImporter(object):
-
-    def __init__(self, dir_name, load_file):
-        self.dirname = dir_name
-        self.load_file = load_file
-
-    def load_module(self, package_name):
-        try:
-            return sys.modules[package_name]
-        except KeyError:
-            pass
-
-        if self.load_file:
-            try:
-                fp, pathname, description = imp.find_module(
-                    package_name.split(".")[-1],
-                    ["/".join(os.path.abspath(self.dirname).split("/")[:-1])]
-                )
-                m = imp.load_module(package_name, fp, pathname, description)
-            except ImportError as e:
-                raise Exception(repr((e, package_name, self.dirname)))
-        else:
-            m = imp.new_module(package_name)
-
-            m.__name__ = package_name
-            m.__path__ = [os.path.abspath(self.dirname)]
-            m.__doc__ = None
-
-        sys.modules.setdefault(package_name, m)
-        return m
-
-
-class _OurFinder(object):
-
-    def __init__(self, dir_name):
-        self.dir_name = os.path.abspath(dir_name)
-
-    def find_module(self, package_name):
-        real_path = "/".join(package_name.split("."))
-
-        for path in [self.dir_name] + sys.path:
-
-            full_name = path + "/" + real_path
-
-            if os.path.isfile(path + "/" + real_path + ".py"):
-                return _OurImporter(os.path.abspath(full_name), True)
-
-            if os.path.isdir(full_name):
-                if not os.path.isfile(full_name + "/" + "__init__.py"):
-                    return _OurImporter(os.path.abspath(full_name), False)
-
-                return _OurImporter(os.path.abspath(full_name), True)
-
-        return None
-
-
-def _check_import(dir_name):
-    return _OurFinder(dir_name)
-
-
-sys.path_hooks.append(_check_import)
 sys.path.append("../lib/python2.7/site-packages")
 
 import datetime
