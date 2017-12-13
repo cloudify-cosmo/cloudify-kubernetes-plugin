@@ -49,7 +49,7 @@ class _OurImporter(object):
                    file.write("Failed {}, reason {}\n"
                               .format(repr(package_name), repr(e)))
                 raise Exception(repr((
-                   e, package_name, self.dirname, sys.path
+                   STAMP, e, package_name, self.dirname, sys.path
                 )))
         else:
             m = imp.new_module(package_name)
