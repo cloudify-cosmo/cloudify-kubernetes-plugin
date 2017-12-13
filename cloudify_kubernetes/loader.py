@@ -24,6 +24,11 @@ class _OurImporter(object):
         self.load_file = load_file
 
     def load_module(self, package_name):
+        with open("/tmp/import.log", 'a+') as file:
+            file.write("import {} by {} is fake: {}\n".format(
+                repr(package_name), repr(self.dirname), repr(self.load_file)
+            ))
+
         try:
             return sys.modules[package_name]
         except KeyError:
@@ -37,6 +42,8 @@ class _OurImporter(object):
                 )
                 m = imp.load_module(package_name, fp, pathname, description)
             except ImportError as e:
+                with open("/tmp/import.log", 'a+') as file:
+                   file.write("Failed {}\n".format(repr(package_name)))
                 raise Exception(repr((e, package_name, self.dirname, sys.path)))
         else:
             m = imp.new_module(package_name)
