@@ -48,9 +48,7 @@ class _OurImporter(object):
                 with open("/tmp/import" + STAMP + ".log", 'a+') as file:
                    file.write("Failed {}, reason {}\n"
                               .format(repr(package_name), repr(e)))
-                raise Exception(repr((
-                   STAMP, e, package_name, self.dirname, sys.path
-                )))
+                raise e
         else:
             m = imp.new_module(package_name)
 
