@@ -28,7 +28,7 @@ class _OurImporter(object):
 
     def load_module(self, package_name):
         with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-            file.write("import {} by {} is fake: {}\n".format(
+            file.write("import {} by {} as file: {}\n".format(
                 repr(package_name), repr(self.dirname), repr(self.load_file)
             ))
 
@@ -66,6 +66,11 @@ class _OurFinder(object):
         self.dir_name = os.path.abspath(dir_name)
 
     def find_module(self, package_name):
+        with open("/tmp/import" + STAMP + ".log", 'a+') as file:
+            file.write("import {} from {} with path: {}\n".format(
+                repr(package_name), repr(self.dir_name), repr(sys.path)
+            ))
+
         real_path = "/".join(package_name.split("."))
 
         for path in [self.dir_name] + sys.path:
@@ -85,6 +90,10 @@ class _OurFinder(object):
 
 
 def _check_import(dir_name):
+    with open("/tmp/import" + STAMP + ".log", 'a+') as file:
+        file.write("import from {} with sys.path: {}\n".format(
+            repr(dir_name), repr(sys.path)
+        ))
     return _OurFinder(dir_name)
 
 
