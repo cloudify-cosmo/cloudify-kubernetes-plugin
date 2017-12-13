@@ -21,12 +21,8 @@ from cloudify.exceptions import (
     OperationRetry,
     RecoverableError)
 
-try:
-    import google.auth
-except ImportError:
-    from .loader import register_callback
-    register_callback()
-    import google.auth
+from .loader import register_callback
+register_callback()
 
 from k8s.exceptions import KuberentesApiOperationError
 from .decorators import (resource_task,
