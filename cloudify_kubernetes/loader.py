@@ -46,8 +46,8 @@ class _OurImporter(object):
                 m = imp.load_module(package_name, fp, pathname, description)
             except ImportError as e:
                 with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-                   file.write("Failed {}, reason {}\n"
-                              .format(repr(package_name), repr(e)))
+                    file.write("Failed {}, reason {}\n"
+                               .format(repr(package_name), repr(e)))
                 raise e
         else:
             m = imp.new_module(package_name)
@@ -103,7 +103,7 @@ def register_callback():
     sys.path_hooks.append(_check_import)
     try:
         import google.auth
-    except ImportError as e:
+    except ImportError:
         finder = _OurFinder("")
-        importer = find_module("google.auth")
+        importer = finder.find_module("google.auth")
         importer.load_module("google.auth")
