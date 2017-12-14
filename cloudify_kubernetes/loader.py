@@ -16,6 +16,8 @@ import sys
 import imp
 import os
 import time
+import __builtin__
+
 
 STAMP = str(time.time())
 
@@ -101,9 +103,25 @@ def _check_import(dir_name):
 
 def register_callback():
     sys.path_hooks.append(_check_import)
-    try:
-        import google.auth
-    except ImportError:
-        finder = _OurFinder("")
-        importer = finder.find_module("google.auth")
-        importer.load_module("google.auth")
+
+    save_import = __builtin__.__import__
+
+    def new_import(*argv, **kwargs):
+        try:
+            module = save_import(*argv, **kwargs)
+        except ImportError as e:
+            with open("/tmp/import" + STAMP + ".log", 'a+') as file:
+                file.write("Can't import {} with error {}\n".format(
+                    repr(argv[0]), repr(e)
+                ))
+            raise e
+
+        if not module:
+            with open("/tmp/import" + STAMP + ".log", 'a+') as file:
+                file.write("Can't import {} \n".format(
+                    repr(argv[0])
+                ))
+
+        return module
+
+    __builtin__.__import__ = new_import
