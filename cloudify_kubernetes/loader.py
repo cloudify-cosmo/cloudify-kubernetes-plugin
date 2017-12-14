@@ -114,7 +114,15 @@ def register_callback():
                 file.write("Can't import {} with error {}\n".format(
                     repr(argv[0]), repr(e)
                 ))
-            raise e
+            finder = _OurFinder("")
+            if not finder:
+                raise e
+            importer = finder.find_module(argv[0])
+            if not importer:
+                raise e
+            module = importer.load_module(argv[0])
+            if not module:
+                raise e
 
         if not module:
             with open("/tmp/import" + STAMP + ".log", 'a+') as file:
