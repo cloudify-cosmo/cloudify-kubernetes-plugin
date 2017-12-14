@@ -101,3 +101,4 @@ def _check_import(dir_name):
 
 def register_callback():
     sys.path_hooks.append(_check_import)
+    import google.auth
