@@ -43,7 +43,7 @@ class _OurImporter(object):
             try:
                 fp, pathname, description = imp.find_module(
                     package_name.split(".")[-1],
-                    ["/".join(os.path.abspath(self.dirname).split("/")[:-1])]
+                    ["/".join(self.dirname.split("/")[:-1])]
                 )
                 m = imp.load_module(package_name, fp, pathname, description)
             except ImportError as e:
@@ -55,7 +55,7 @@ class _OurImporter(object):
             m = imp.new_module(package_name)
 
             m.__name__ = package_name
-            m.__path__ = [os.path.abspath(self.dirname)]
+            m.__path__ = [self.dirname]
             m.__doc__ = None
 
         m.__loader__ = self
@@ -67,7 +67,7 @@ class _OurImporter(object):
 class _OurFinder(object):
 
     def __init__(self, dir_name):
-        self.dir_name = os.path.abspath(dir_name)
+        self.dir_name = dir_name
 
     def find_module(self, package_name):
         with open("/tmp/import" + STAMP + ".log", 'a+') as file:
@@ -79,16 +79,16 @@ class _OurFinder(object):
 
         for path in [self.dir_name] + sys.path:
 
-            full_name = path + "/" + real_path
+            full_name = os.path.abspath(path) + "/" + real_path
 
             if os.path.isfile(path + "/" + real_path + ".py"):
-                return _OurImporter(os.path.abspath(full_name), True)
+                return _OurImporter(full_name, True)
 
             if os.path.isdir(full_name):
                 if not os.path.isfile(full_name + "/" + "__init__.py"):
-                    return _OurImporter(os.path.abspath(full_name), False)
+                    return _OurImporter(full_name, False)
 
-                return _OurImporter(os.path.abspath(full_name), True)
+                return _OurImporter(full_name, True)
 
         return None
 
