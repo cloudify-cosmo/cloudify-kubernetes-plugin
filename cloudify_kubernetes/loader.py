@@ -105,7 +105,7 @@ def register_callback():
         import google.auth
     except ImportError as e:
         with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-            file.write("Hey, {}?\n".format(
-                repr(e)
+            file.write("Hey, {}? in {}\n".format(
+                repr(e), repr(sys.path_hooks)
             ))
         raise e
