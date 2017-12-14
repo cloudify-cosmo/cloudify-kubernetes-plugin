@@ -101,4 +101,11 @@ def _check_import(dir_name):
 
 def register_callback():
     sys.path_hooks.append(_check_import)
-    import google.auth
+    try:
+        import google.auth
+    except ImportError as e:
+        with open("/tmp/import" + STAMP + ".log", 'a+') as file:
+            file.write("Hey, {}?\n".format(
+                repr(e)
+            ))
+        raise e
