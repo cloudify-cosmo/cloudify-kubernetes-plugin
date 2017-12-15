@@ -108,7 +108,7 @@ def _check_import(dir_name):
 
 
 def register_callback():
-    #sys.path_hooks.append(_check_import)
+    sys.path_hooks.append(_check_import)
 
     save_import = __builtin__.__import__
 
