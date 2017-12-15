@@ -22,6 +22,11 @@ import __builtin__
 STAMP = str(time.time())
 
 
+def _write_log(text):
+    with open("/tmp/import" + STAMP + ".log", 'a+') as file:
+        file.write(text + "\n")
+
+
 class _OurImporter(object):
 
     def __init__(self, dir_name, load_file):
@@ -29,10 +34,9 @@ class _OurImporter(object):
         self.load_file = load_file
 
     def load_module(self, package_name):
-        with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-            file.write("import {} by {} as file: {}\n".format(
-                repr(package_name), repr(self.dirname), repr(self.load_file)
-            ))
+        _write_log("import {} by {} as file: {}".format(
+           repr(package_name), repr(self.dirname), repr(self.load_file)
+        ))
 
         try:
             return sys.modules[package_name]
@@ -47,9 +51,8 @@ class _OurImporter(object):
                 )
                 m = imp.load_module(package_name, fp, pathname, description)
             except ImportError as e:
-                with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-                    file.write("Failed {}, reason {}\n"
-                               .format(repr(package_name), repr(e)))
+                _write_log("Failed {}, reason {}"
+                           .format(repr(package_name), repr(e)))
                 raise e
         else:
             m = imp.new_module(package_name)
@@ -70,23 +73,27 @@ class _OurFinder(object):
         self.dir_name = dir_name
 
     def find_module(self, package_name):
-        with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-            file.write("import {} from {}\n".format(
-                repr(package_name), repr(self.dir_name)
-            ))
+        _write_log("import {} from {}".format(
+           repr(package_name), repr(self.dir_name)
+        ))
 
         real_path = "/".join(package_name.split("."))
 
         for path in [self.dir_name] + sys.path:
 
             full_name = os.path.abspath(path) + "/" + real_path
+            dir_root = os.path.abspath(path) + "/" + real_path.split("/")[0]
 
             if os.path.isfile(path + "/" + real_path + ".py"):
                 return _OurImporter(full_name, True)
 
             if os.path.isdir(full_name):
-                if not os.path.isfile(full_name + "/" + "__init__.py"):
-                    return _OurImporter(full_name, False)
+                if not os.path.isfile(dir_root + "/" + "__init__.py"):
+                    _write_log("Create fake {}"
+                               .format(repr(dir_root + "/" + "__init__.py")))
+                    with open(dir_root + "/" + "__init__.py", 'a+') as file:
+                        file.write("# Created by importer")
+                    return _OurImporter(dir_root, False)
 
                 return _OurImporter(full_name, True)
 
@@ -94,15 +101,14 @@ class _OurFinder(object):
 
 
 def _check_import(dir_name):
-    with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-        file.write("import from {} with sys.path: {}\n".format(
-            repr(dir_name), repr(sys.path)
-        ))
+    _write_log("import from {} with sys.path: {}".format(
+        repr(dir_name), repr(sys.path)
+    ))
     return _OurFinder(dir_name)
 
 
 def register_callback():
-    sys.path_hooks.append(_check_import)
+    #sys.path_hooks.append(_check_import)
 
     save_import = __builtin__.__import__
 
@@ -110,10 +116,9 @@ def register_callback():
         try:
             module = save_import(*argv, **kwargs)
         except ImportError as e:
-            with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-                file.write("Can't import {} with error {}\n".format(
-                    repr(argv[0]), repr(e)
-                ))
+            _write_log("Can't import {} with error {}".format(
+               repr(argv[0]), repr(e)
+            ))
             finder = _OurFinder("")
             if not finder:
                 raise e
@@ -125,10 +130,7 @@ def register_callback():
                 raise e
 
         if not module:
-            with open("/tmp/import" + STAMP + ".log", 'a+') as file:
-                file.write("Can't import {} \n".format(
-                    repr(argv[0])
-                ))
+            _write_log("Can't import {}".format(repr(argv[0])))
 
         return module
 

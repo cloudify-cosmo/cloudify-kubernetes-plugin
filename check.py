@@ -21,3 +21,5 @@ sys.path.append("../lib/python2.7/site-packages")
 
 import datetime
 import kubernetes
+
+print "Success"
