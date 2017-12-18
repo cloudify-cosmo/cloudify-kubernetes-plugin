@@ -16,6 +16,7 @@
 import kubernetes
 import os
 
+from kubernetes.client import Configuration
 from .exceptions import KuberentesApiInitializationFailedError
 
 
@@ -98,13 +99,15 @@ class FileContentConfiguration(KubernetesApiConfiguration):
         if self.FILE_CONTENT_KEY in self.configuration_data:
             file_content = self.configuration_data[self.FILE_CONTENT_KEY]
 
+            self.logger.debug("Used config: {}".format(file_content))
+
             loader = kubernetes.config.kube_config.KubeConfigLoader(
                 config_dict=file_content
             )
 
-            kubernetes.config.load_kube_config(
-                context=loader.current_context['name']
-            )
+            config = type.__call__(Configuration)
+            loader.load_and_set(config)
+            Configuration.set_default(config)
 
             return kubernetes.client
 
