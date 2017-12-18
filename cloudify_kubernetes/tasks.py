@@ -127,7 +127,7 @@ def _do_resource_status_check(resource_kind, response):
 
     elif "Service" in resource_kind:
         status = response['status']
-        if status in [{'load_balancer': {'ingress': None}}]:
+        if status in [{'load_balancer': {'ingress': None}}] and False:
             raise OperationRetry(
                 'status {0} in phase {1}'.format(
                     status,
