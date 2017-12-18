@@ -119,6 +119,10 @@ data_types:
         type: cloudify.kubernetes.types.ApiMappingEntry
         description: >
           Python Kubernetes API objects and methods definitions for read operation
+      update:
+        type: cloudify.kubernetes.types.ApiMappingEntry
+        description: >
+          Python Kubernetes API objects and methods definitions for update operation
       delete:
         type: cloudify.kubernetes.types.ApiMappingEntry
         description: >
@@ -218,6 +222,8 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
+        update:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_update
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
 

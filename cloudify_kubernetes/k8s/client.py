@@ -22,8 +22,8 @@ from .exceptions import (KuberentesApiOperationError,
                          KuberentesInvalidPayloadClassError)
 from .operations import (KubernetesDeleteOperation,
                          KubernetesReadOperation,
+                         KubernetesUpdateOperation,
                          KubernetesCreateOperation)
-
 
 class KubernetesResourceDefinition(object):
 
@@ -127,6 +127,15 @@ class CloudifyKubernetesClient(object):
         options['name'] = resource_id
         return self._execute(self._prepare_operation(
             KubernetesReadOperation, **vars(mapping.read)
+        ), options)
+
+    def update_resource(self, mapping, resource_definition, options):
+        options['body'] = self._prepare_payload(
+            mapping.create.payload, resource_definition
+        )
+        options['name'] = resource_definition.metadata['name']
+        return self._execute(self._prepare_operation(
+            KubernetesUpdateOperation, **vars(mapping.update)
         ), options)
 
     def delete_resource(self, mapping, resource_id, options):
