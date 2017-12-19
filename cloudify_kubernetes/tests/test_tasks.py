@@ -381,11 +381,12 @@ class TestTasks(unittest.TestCase):
                 return expected_value
 
         class _DeleteResource(object):
-            def __call__(self, api_mapping, id, options):
+            def __call__(self, api_mapping, resource_definition, id, options):
                 if api_mapping == 'fake_api_mapping':
-                    if id == 'fake_id':
-                        if options['first'] == 'second':
-                            return _Result()
+                    if resource_definition == 'fake_resource_definition':
+                        if id == 'fake_id':
+                            if options['first'] == 'second':
+                                return _Result()
 
         client = MagicMock()
         client.delete_resource = _DeleteResource()
@@ -393,7 +394,8 @@ class TestTasks(unittest.TestCase):
         result = tasks._do_resource_delete(
             client=client,
             api_mapping='fake_api_mapping',
-            id='fake_id'
+            resource_definition='fake_resource_definition',
+            resource_id='fake_id'
         )
 
         self.assertEqual(result, expected_value)

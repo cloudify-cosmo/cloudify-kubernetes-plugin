@@ -5,7 +5,7 @@ description: >
 
 imports:
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
-  - http://www.getcloudify.org/spec/kubernetes-plugin/1.3.1.1/plugin.yaml
+  - https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/blob/45-Add-support-for-cascading-deletion-policy/plugin.yaml
 
 inputs:
 
@@ -112,6 +112,10 @@ node_templates:
               - name: wordpress-persistent-storage
                 persistentVolumeClaim:
                   claimName: wp-pv-claim
+      options:
+        grace_period_seconds: 5
+        propagation_policy: 'Foreground'
+        namespace: 'default'
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
@@ -203,6 +207,10 @@ node_templates:
               - name: mysql-persistent-storage
                 persistentVolumeClaim:
                   claimName: mysql-pv-claim
+      options:
+        grace_period_seconds: 5
+        propagation_policy: 'Foreground'
+        namespace: 'default'
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
