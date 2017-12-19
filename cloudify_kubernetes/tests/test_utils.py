@@ -65,6 +65,16 @@ class TestUtils(unittest.TestCase):
 
         self.assertTrue(
             isinstance(
+                mapping.update,
+                KubernetesSingleOperationApiMapping
+            )
+        )
+
+        self.assertEqual(mapping.update.api, 'CoreV1Api')
+        self.assertEqual(mapping.update.method, 'replace_namespaced_pod')
+
+        self.assertTrue(
+            isinstance(
                 mapping.delete,
                 KubernetesSingleOperationApiMapping
             )
@@ -129,6 +139,10 @@ class TestUtils(unittest.TestCase):
             'read': {
                 'api': 'CoreV1Api',
                 'method': 'read_namespaced_pod',
+            },
+            'update': {
+                'api': 'CoreV1Api',
+                'method': 'replace_namespaced_pod',
             },
             'delete': {
                 'api': 'CoreV1Api',
