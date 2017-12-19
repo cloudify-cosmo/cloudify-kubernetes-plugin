@@ -42,7 +42,7 @@ class KubernetesApiMapping(object):
 
 
 SUPPORTED_API_MAPPINGS = {
-    'RoleDefinition': KubernetesApiMapping(
+    'ClusterRoleBinding': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1beta1Api',
             method='create_cluster_role_binding',

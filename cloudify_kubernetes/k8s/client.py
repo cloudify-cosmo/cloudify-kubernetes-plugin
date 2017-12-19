@@ -28,7 +28,7 @@ from .operations import (KubernetesDeleteOperation,
 class KubernetesResourceDefinition(object):
 
     def __init__(self, kind, apiVersion, metadata, spec=None, parameters=None,
-                 provisioner=None, data=None):
+                 provisioner=None, data=None, roleRef=None, subjects=None):
         self.kind = kind.split('.')[-1]
         self.api_version = apiVersion
         self.metadata = metadata
@@ -43,6 +43,12 @@ class KubernetesResourceDefinition(object):
         # Config class
         if data:
             self.data = data
+        # roleRef
+        if roleRef:
+            self.role_ref = roleRef
+        # subjects
+        if subjects:
+            self.subjects = subjects
 
 
 class CloudifyKubernetesClient(object):
