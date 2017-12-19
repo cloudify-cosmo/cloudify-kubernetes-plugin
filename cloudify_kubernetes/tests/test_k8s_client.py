@@ -140,7 +140,11 @@ class TestClient(unittest.TestCase):
         client_api = MagicMock()
 
         def del_func(body, name, first):
-            return (body, name, first)
+            mock = MagicMock()
+            mock.to_dict = MagicMock(return_value={
+                'body': body, 'name': name, 'first': first,
+            })
+            return mock
 
         def read_func(name, first):
             return (name, first)
@@ -193,6 +197,7 @@ class TestClient(unittest.TestCase):
         mappingMock.update.method = 'update'
 
         mappingMock.delete = MagicMock()
+        mappingMock.delete.payload = 'api_payload_version'
         mappingMock.delete.api = 'api_client_version'
         mappingMock.delete.method = 'delete'
 
@@ -262,9 +267,18 @@ class TestClient(unittest.TestCase):
 
         self.assertEqual(
             instance.delete_resource(
-                mappingMock, "resource_id", {'first': 'b'}
-            ),
-            ({}, 'resource_id', 'b')
+                mappingMock,
+                KubernetesResourceDefinition(kind="1.2.3.4",
+                                             apiVersion="v1",
+                                             metadata="metadata",
+                                             spec="spec"),
+                "resource_id", {'first': 'b'}
+            ).to_dict(),
+            {
+                'body': {'payload_param': 'payload_value'},
+                'name': 'resource_id',
+                'first': 'b',
+            }
         )
 
     def test_execute_read_resource(self):

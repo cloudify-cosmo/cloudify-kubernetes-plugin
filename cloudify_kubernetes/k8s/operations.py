@@ -73,4 +73,4 @@ class KubernetesUpdateOperation(KubernetesOperartion):
 
 class KubernetesDeleteOperation(KubernetesOperartion):
 
-    API_ACCEPTED_ARGUMENTS = ['grace_period_seconds', 'orphan_dependents']
+    API_ACCEPTED_ARGUMENTS = ['grace_period_seconds', 'propagation_policy']

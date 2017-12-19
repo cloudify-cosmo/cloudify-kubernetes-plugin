@@ -173,10 +173,10 @@ class TestKubernetesDeleteOperation(unittest.TestCase):
         self.assertEqual(
             instance._prepare_arguments({
                 'a': 'd', 'b': 'e', 'exact': 'f',
-                'grace_period_seconds': 'g', 'orphan_dependents': 'i'
+                'grace_period_seconds': 'g', 'propagation_policy': 'i'
             }), {
                 'a': 'd', 'b': 'e', 'grace_period_seconds': 'g',
-                'orphan_dependents': 'i'
+                'propagation_policy': 'i'
             }
         )
 

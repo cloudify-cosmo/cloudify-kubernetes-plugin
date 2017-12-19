@@ -14,7 +14,9 @@
 # limitations under the License.
 
 import inspect
+
 from kubernetes.client.rest import ApiException
+from kubernetes.client import V1DeleteOptions
 
 from .exceptions import (KuberentesApiOperationError,
                          KuberentesInvalidApiClassError,
@@ -69,6 +71,7 @@ class CloudifyKubernetesClient(object):
 
     def _prepare_payload(self, class_name, resource_definition):
         if hasattr(self.api, class_name):
+            self.logger.info('Kubernetes API initialized successfully')
             return getattr(self.api, class_name)(
                 **vars(resource_definition)
             )
@@ -102,16 +105,33 @@ class CloudifyKubernetesClient(object):
         api_method, api_method_arguments_names = self._prepare_api_method(
             api, method
         )
-        self.logger.info('Prepering operation with api method: {0} '
+        self.logger.info('Preparing operation with api method: {0} '
                          '(mandatory arguments: {1})'
                          .format(api_method, api_method_arguments_names))
 
         return operation(api_method, api_method_arguments_names)
 
+    def _prepare_delete_options_resource(self, class_name,
+                                         resource_definition, options):
+        if resource_definition.kind != 'ReplicationController':
+            if options:
+                if hasattr(self.api, class_name):
+                    node_options =\
+                        {k: v for k, v in options.items()
+                         if hasattr(getattr(self.api, class_name), k)}
+
+                    return getattr(self.api, class_name)(**node_options)
+
+            # This is the default should be provided even if the user does not
+            # provide the ``propagation_policy`` as part of the option
+            return getattr(self.api, class_name)(
+                **{'propagation_policy': 'Foreground'})
+
+        return None
+
     def _execute(self, operation, arguments):
         try:
             self.logger.info('Executing operation {0}'.format(operation))
-
             result = operation.execute(arguments)
             self.logger.info('Operation executed successfully')
             self.logger.debug('Result: {0}'.format(result))
@@ -145,9 +165,34 @@ class CloudifyKubernetesClient(object):
             KubernetesUpdateOperation, **vars(mapping.update)
         ), options)
 
-    def delete_resource(self, mapping, resource_id, options):
-        options['name'] = resource_id
-        options['body'] = {}
+    def delete_resource(self, mapping, resource_definition,
+                        resource_id, options):
+
+        if resource_definition.kind != 'ReplicationController':
+
+            # Set name of resource
+            options['name'] = resource_id
+
+            # Generate body object with available options
+            delete_resource =\
+                self._prepare_delete_options_resource(mapping.delete.payload,
+                                                      resource_definition,
+                                                      options)
+            options['body'] = delete_resource
+
+            # Check if body exists that mean the type is ``V1DeleteOptions``
+            #  and the options for ``V1DeleteOptions`` is already on the body
+
+            # Trim '_' from ``delete_resource`` instance keys
+            # Since these represent options args
+            if isinstance(delete_resource, V1DeleteOptions):
+                delete_resource =\
+                    {k[1:0]: v for k, v in vars(delete_resource).items()}
+
+            # Pass options that did not include on the ``delete_resource``
+            options = {k: v for k, v in options.items()
+                       if k not in delete_resource.keys()}
+
         return self._execute(self._prepare_operation(
             KubernetesDeleteOperation, **vars(mapping.delete)), options
         )
