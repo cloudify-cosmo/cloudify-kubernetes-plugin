@@ -25,6 +25,7 @@ from .operations import (KubernetesDeleteOperation,
                          KubernetesUpdateOperation,
                          KubernetesCreateOperation)
 
+
 class KubernetesResourceDefinition(object):
 
     def __init__(self, kind, apiVersion, metadata, spec=None, parameters=None,
