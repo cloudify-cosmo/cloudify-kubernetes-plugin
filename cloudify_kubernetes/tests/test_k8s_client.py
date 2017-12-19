@@ -152,9 +152,17 @@ class TestClient(unittest.TestCase):
             })
             return mock
 
+        def update_func(body, first):
+            mock = MagicMock()
+            mock.to_dict = MagicMock(return_value={
+                'body': body, 'first': first
+            })
+            return mock
+
         client_api.delete = del_func
         client_api.read = read_func
         client_api.create = create_func
+        client_api.update = update_func
 
         mock_api.api_client_version = MagicMock(
             return_value=client_api
@@ -179,6 +187,11 @@ class TestClient(unittest.TestCase):
         mappingMock.read.api = 'api_client_version'
         mappingMock.read.method = 'read'
 
+        mappingMock.update = MagicMock()
+        mappingMock.update.payload = 'api_payload_version'
+        mappingMock.update.api = 'api_client_version'
+        mappingMock.update.method = 'update'
+
         mappingMock.delete = MagicMock()
         mappingMock.delete.api = 'api_client_version'
         mappingMock.delete.method = 'delete'
@@ -195,6 +208,25 @@ class TestClient(unittest.TestCase):
                 KubernetesResourceDefinition(kind="1.2.3.4",
                                              apiVersion="v1",
                                              metadata="metadata",
+                                             spec="spec"),
+                {'first': 'b'}
+            ).to_dict(),
+            {
+                'body': {'payload_param': 'payload_value'},
+                'first': 'b'
+            }
+        )
+
+    def test_execute_update_resource(self):
+
+        instance, mappingMock = self._prepere_mocks()
+
+        self.assertEqual(
+            instance.update_resource(
+                mappingMock,
+                KubernetesResourceDefinition(kind="1.2.3.4",
+                                             apiVersion="v1",
+                                             metadata={"name": 'name1'},
                                              spec="spec"),
                 {'first': 'b'}
             ).to_dict(),
