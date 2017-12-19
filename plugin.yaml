@@ -146,6 +146,33 @@ data_types:
           Kuberneres resource object specification
         default: {}
 
+  cloudify.kubernetes.types.RoleDefinition:
+    description: >
+      Type defining single Kubernetes resource e.g. Role, ...
+      It is some kind of wrapper for native Kubernetes YAML definition
+    properties:
+      apiVersion:
+        type: string
+        description: >
+          Kubernetes API version as a string
+        default: v1
+      kind:
+        type: string
+        required: false
+      metadata:
+        description: >
+          Metadata section related to single Kubernetes resource
+        default: {}
+      roleRef:
+        description: >
+          RoleRef can only reference a ClusterRole in the global namespace.
+          If the RoleRef cannot be resolved, the Authorizer must return an error.
+        default: {}
+      subjects:
+        description: >
+          Subjects holds references to the objects the role applies to.
+        default: {}
+
   cloudify.kubernetes.types.ConfigClassResourceDefinition:
     derived_from: cloudify.kubernetes.types.ResourceDefinition
     description: >
@@ -218,6 +245,22 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
+        delete:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
+
+  cloudify.kubernetes.resources.ClusterRoleBinding:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.RoleDefinition
+        description: >
+          Definition of role using native Kubernetes YAML spec
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
+        start:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
 
