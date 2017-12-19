@@ -111,10 +111,6 @@ class FileContentConfiguration(KubernetesApiConfiguration):
             loader.load_and_set(config)
             Configuration.set_default(config)
 
-            #kubernetes.config.load_kube_config(
-            #    context=loader.current_context['name']
-            #)
-
             return kubernetes.client
 
         return None
