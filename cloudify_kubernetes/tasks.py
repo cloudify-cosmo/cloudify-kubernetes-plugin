@@ -86,7 +86,7 @@ def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     ).to_dict()
 
-  
+
 def _do_resource_status_check(resource_kind, response):
 
     if "Pod" == resource_kind:
