@@ -105,3 +105,6 @@ def register_callback():
         return module
 
     __builtin__.__import__ = new_import
+
+
+register_callback()

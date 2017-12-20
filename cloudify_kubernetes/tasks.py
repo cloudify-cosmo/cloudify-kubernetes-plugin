@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# hack for import namespaced modules
+import cloudify_kubernetes.loader # noqa
 
 from cloudify import ctx
 from datetime import datetime
@@ -20,9 +22,6 @@ from cloudify.exceptions import (
     NonRecoverableError,
     OperationRetry,
     RecoverableError)
-
-from .loader import register_callback
-register_callback()
 
 from k8s.exceptions import KuberentesApiOperationError
 from .decorators import (resource_task,
