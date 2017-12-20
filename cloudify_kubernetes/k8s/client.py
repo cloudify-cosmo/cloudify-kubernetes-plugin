@@ -140,8 +140,9 @@ class CloudifyKubernetesClient(object):
 
         options['name'] = resource_id
         options['body'] = self._prepare_payload(
-            mapping.delete.payload, {options['grace_period_seconds'],
-                                     options['propagation_policy']}
+            mapping.delete.payload,
+            {'grace_period_seconds': options['grace_period_seconds'],
+             'propagation_policy': options['propagation_policy']}
         )
 
         del options['grace_period_seconds']
