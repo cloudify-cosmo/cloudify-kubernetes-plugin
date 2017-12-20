@@ -30,7 +30,7 @@ from .decorators import (resource_task,
 from .utils import (mapping_by_data,
                     mapping_by_kind,
                     resource_definition_from_blueprint,
-                    resource_definition_from_file)
+                    resource_definition_from_file,)
 
 
 DEFAULT_NAMESPACE = 'default'
@@ -136,14 +136,32 @@ def _do_resource_status_check(resource_kind, response):
             ctx.logger.debug('status {0}'.format(status))
 
 
-def _do_resource_delete(client, api_mapping, id, **kwargs):
-    if 'namespace' not in kwargs:
-        kwargs['namespace'] = DEFAULT_NAMESPACE
+def _do_resource_delete(client, api_mapping, resource_definition,
+                        resource_id, **kwargs):
+
+    options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    if 'namespace' not in options:
+        options['namespace'] = DEFAULT_NAMESPACE
+
+    # The required fields for all kubernetes resources are
+    # - name
+    # - namespace
+    # - body
+
+    # But the ``ReplicationController`` resource have only one required arg
+    # which is namespace
+
+    # Moreover all resources have also payload with type ``V1DeleteOptions``
+    #  except ``ReplicationController`` that does not have one
+
+    # The resource is not a type of ``ReplicationController`` then we must
+    # pass all the required fields
 
     return _cleanuped(client.delete_resource(
         api_mapping,
-        id,
-        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+        resource_definition,
+        resource_id,
+        options,
     ).to_dict())
 
 
@@ -192,7 +210,7 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
-    retrieve_mapping=mapping_by_kind
+    retrieve_mapping=mapping_by_kind,
 )
 def resource_delete(client, api_mapping, resource_definition, **kwargs):
 
@@ -214,9 +232,11 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
         delete_response = _do_resource_delete(
             client,
             api_mapping,
+            resource_definition,
             _retrieve_id(ctx.instance),
             **kwargs
         )
+
         raise OperationRetry(
             'Delete respone: {0}'.format(delete_response))
 

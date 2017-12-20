@@ -53,7 +53,7 @@ def _retrieve_property(resource_instance, property_name):
     return configuration
 
 
-def resource_task(retrieve_resource_definition, retrieve_mapping):
+def resource_task(retrieve_resource_definition, retrieve_mapping,):
     def decorator(task, **kwargs):
         def wrapper(**kwargs):
             try:
