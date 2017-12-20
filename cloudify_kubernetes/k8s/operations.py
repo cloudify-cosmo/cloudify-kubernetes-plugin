@@ -67,6 +67,10 @@ class KubernetesReadOperation(KubernetesOperartion):
     API_ACCEPTED_ARGUMENTS = ['exact', 'export']
 
 
+class KubernetesUpdateOperation(KubernetesOperartion):
+    pass
+
+
 class KubernetesDeleteOperation(KubernetesOperartion):
 
     API_ACCEPTED_ARGUMENTS = ['grace_period_seconds', 'orphan_dependents']

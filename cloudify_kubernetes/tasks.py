@@ -108,6 +108,17 @@ def _do_resource_read(client, api_mapping, id, **kwargs):
     ).to_dict())
 
 
+def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
+    if 'namespace' not in kwargs:
+        kwargs['namespace'] = DEFAULT_NAMESPACE
+
+    return client.update_resource(
+        api_mapping,
+        resource_definition,
+        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    ).to_dict()
+
+
 def _do_resource_status_check(resource_kind, response):
 
     if "Pod" == resource_kind:
@@ -194,6 +205,20 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind
 )
+def resource_update(client, api_mapping, resource_definition, **kwargs):
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+        _do_resource_update(
+            client,
+            api_mapping,
+            resource_definition,
+            **kwargs)
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_kind
+)
 def resource_delete(client, api_mapping, resource_definition, **kwargs):
 
     try:
@@ -229,6 +254,20 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
 def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
         _do_resource_create(
+            client,
+            api_mapping,
+            resource_definition,
+            **kwargs)
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_data
+)
+def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+        _do_resource_update(
             client,
             api_mapping,
             resource_definition,

@@ -46,6 +46,10 @@ class TestTasks(unittest.TestCase):
                         api='api_client_version',
                         method='read',
                     ),
+                    update=KubernetesSingleOperationApiMapping(
+                        api='api_client_version',
+                        method='update',
+                    ),
                     delete=KubernetesSingleOperationApiMapping(
                         api='api_client_version',
                         method='delete',
@@ -81,8 +85,16 @@ class TestTasks(unittest.TestCase):
             })
             return mock
 
+        def update_func(body, first):
+            mock = MagicMock()
+            mock.to_dict = MagicMock(return_value={
+                'body': body, 'first': first
+            })
+            return mock
+
         self.client_api.delete = del_func
         self.client_api.create = create_func
+        self.client_api.update = update_func
 
         self.mock_client.api_client_version = MagicMock(
             return_value=self.client_api
@@ -201,6 +213,38 @@ class TestTasks(unittest.TestCase):
         client.create_resource = _CreateResource()
 
         result = tasks._do_resource_create(
+            client=client,
+            api_mapping='fake_api_mapping',
+            resource_definition='fake_resource_definition'
+        )
+
+        self.assertEqual(result, expected_value)
+
+    def test_do_resource_update(self):
+        self._prepare_master_node()
+
+        expected_value = {
+            'kubernetes': {
+                'body': {'payload_param': 'payload_value'},
+                'first': 'second'
+            }
+        }
+
+        class _Result(object):
+            def to_dict(self):
+                return expected_value
+
+        class _UpdateResource(object):
+            def __call__(self, api_mapping, resource_definition, options):
+                if api_mapping == 'fake_api_mapping':
+                    if resource_definition == 'fake_resource_definition':
+                        if options['first'] == 'second':
+                            return _Result()
+
+        client = MagicMock()
+        client.update_resource = _UpdateResource()
+
+        result = tasks._do_resource_update(
             client=client,
             api_mapping='fake_api_mapping',
             resource_definition='fake_resource_definition'

@@ -50,6 +50,7 @@ class TestMapping(unittest.TestCase):
         instance = KubernetesApiMapping(
             read='read',
             create='create',
+            update='update',
             delete='delete'
         )
 
@@ -68,6 +69,11 @@ class TestMapping(unittest.TestCase):
                 'api': 'c_api',
                 'method': 'c_method',
                 'payload': 'c_payload'
+            },
+            update={
+                'api': 'u_api',
+                'method': 'u_method',
+                'payload': 'u_payload'
             },
             delete={
                 'api': 'd_api',
@@ -97,6 +103,17 @@ class TestMapping(unittest.TestCase):
         self.assertEqual(instance.create.api, 'c_api')
         self.assertEqual(instance.create.method, 'c_method')
         self.assertEqual(instance.create.payload, 'c_payload')
+
+        self.assertTrue(
+            isinstance(
+                instance.update,
+                KubernetesSingleOperationApiMapping
+            )
+        )
+
+        self.assertEqual(instance.update.api, 'u_api')
+        self.assertEqual(instance.update.method, 'u_method')
+        self.assertEqual(instance.update.payload, 'u_payload')
 
         self.assertTrue(
             isinstance(
@@ -140,6 +157,17 @@ class TestMapping(unittest.TestCase):
         self.assertEqual(mapping.create.api, 'CoreV1Api')
         self.assertEqual(mapping.create.method, 'create_namespaced_pod')
         self.assertEqual(mapping.create.payload, 'V1Pod')
+
+        self.assertTrue(
+            isinstance(
+                mapping.update,
+                KubernetesSingleOperationApiMapping
+            )
+        )
+
+        self.assertEqual(mapping.update.api, 'CoreV1Api')
+        self.assertEqual(mapping.update.method, 'replace_namespaced_pod')
+        self.assertEqual(mapping.update.payload, None)
 
         self.assertTrue(
             isinstance(

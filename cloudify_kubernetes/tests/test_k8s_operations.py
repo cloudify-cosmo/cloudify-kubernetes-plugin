@@ -18,6 +18,7 @@ from kubernetes.client.rest import ApiException
 
 from cloudify_kubernetes.k8s.operations import (KubernetesCreateOperation,
                                                 KubernetesReadOperation,
+                                                KubernetesUpdateOperation,
                                                 KubernetesDeleteOperation)
 from cloudify_kubernetes.k8s.exceptions import KuberentesApiOperationError
 
@@ -102,6 +103,58 @@ class TestKubernetesReadOperation(unittest.TestCase):
             "Invalid input data for execution of Kubernetes API method: "
             "input argument b is not defined but is mandatory"
         )
+
+
+class TestKubernetesUpdateOperation(unittest.TestCase):
+
+    def test_init(self):
+        instance = KubernetesUpdateOperation("api_method", ['a', 'b'])
+        self.assertEqual(instance.api_method, 'api_method')
+        self.assertEqual(instance.api_method_arguments_names, ['a', 'b'])
+
+    def test_prepare_arguments(self):
+        instance = KubernetesUpdateOperation("api_method", ['a', 'b'])
+        self.assertEqual(
+            instance._prepare_arguments({'a': 'c', 'b': 'd'}),
+            {'a': 'c', 'b': 'd'}
+        )
+        self.assertEqual(
+            instance._prepare_arguments({'a': 'd', 'b': 'e', 'c': 'f'}),
+            {'a': 'd', 'b': 'e'}
+        )
+
+        with self.assertRaises(KuberentesApiOperationError) as error:
+            instance._prepare_arguments({'a': 'd', 'c': 'f'})
+
+        self.assertEqual(
+            str(error.exception),
+            "Invalid input data for execution of Kubernetes API method: "
+            "input argument b is not defined but is mandatory"
+        )
+
+    def test_execute(self):
+        call_mock = MagicMock(return_value="!")
+        instance = KubernetesUpdateOperation(call_mock, ['a', 'b'])
+
+        self.assertEqual(
+            instance.execute({'a': 'd', 'b': 'e', 'c': 'f'}),
+            "!"
+        )
+        call_mock.assert_called_with(a='d', b='e')
+
+    def test_execute_ApiException(self):
+        call_mock = MagicMock(side_effect=ApiException("!"))
+        instance = KubernetesUpdateOperation(call_mock, ['a', 'b'])
+
+        with self.assertRaises(KuberentesApiOperationError) as error:
+            instance.execute({'a': 'd', 'b': 'e', 'c': 'f'})
+
+        self.assertEqual(
+            str(error.exception),
+            "Operation execution failed. Exception during Kubernetes API "
+            "call: (!)\nReason: None\n"
+        )
+        call_mock.assert_called_with(a='d', b='e')
 
 
 class TestKubernetesDeleteOperation(unittest.TestCase):
