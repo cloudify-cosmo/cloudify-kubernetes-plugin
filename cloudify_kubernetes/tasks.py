@@ -112,11 +112,11 @@ def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return client.update_resource(
+    return _cleanuped(client.update_resource(
         api_mapping,
         resource_definition,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict()
+    ).to_dict())
 
 
 def _do_resource_status_check(resource_kind, response):

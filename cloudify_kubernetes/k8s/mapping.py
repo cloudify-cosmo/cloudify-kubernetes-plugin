@@ -56,6 +56,10 @@ SUPPORTED_API_MAPPINGS = {
             api='RbacAuthorizationV1beta1Api',
             method='read_cluster_role_binding',
         ),
+        update=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='replace_cluster_role_binding',
+        ),
         delete=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1beta1Api',
             method='delete_cluster_role_binding',
