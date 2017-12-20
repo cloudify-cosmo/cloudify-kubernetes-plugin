@@ -123,6 +123,7 @@ class CloudifyKubernetesClient(object):
             )
 
     def create_resource(self, mapping, resource_definition, options):
+        self.logger.info('Resource definition is {}'.format(resource_definition))
         options['body'] = self._prepare_payload(
             mapping.create.payload, resource_definition
         )
