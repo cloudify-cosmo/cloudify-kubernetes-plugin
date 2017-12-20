@@ -110,7 +110,8 @@ class CloudifyKubernetesClient(object):
     def _execute(self, operation, arguments):
         try:
             self.logger.info('Executing operation {0}'.format(operation))
-
+            self.logger.info(
+                'Options For operation {}'.format(arguments))
             result = operation.execute(arguments)
             self.logger.info('Operation executed successfully')
             self.logger.debug('Result: {0}'.format(result))
@@ -136,8 +137,17 @@ class CloudifyKubernetesClient(object):
         ), options)
 
     def delete_resource(self, mapping, resource_id, options):
+
         options['name'] = resource_id
-        options['body'] = {}
+        options['body'] = self._prepare_payload(
+            mapping.delete.payload, {options['grace_period_seconds'],
+                                     options['propagation_policy']}
+        )
+
+        del options['grace_period_seconds']
+        del options['propagation_policy']
+
+        self.logger.info('Options For Delete Deployment {}'.format(options))
         return self._execute(self._prepare_operation(
             KubernetesDeleteOperation, **vars(mapping.delete)), options
         )
