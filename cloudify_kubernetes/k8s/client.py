@@ -140,11 +140,14 @@ class CloudifyKubernetesClient(object):
     def delete_resource(self, mapping, resource_id, options):
 
         options['name'] = resource_id
-        options['body'] = self._prepare_payload(
-            mapping.delete.payload,
-            {'grace_period_seconds': options['grace_period_seconds'],
-             'propagation_policy': options['propagation_policy']}
-        )
+        # options['body'] = self._prepare_payload(
+        #     mapping.delete.payload,
+        #     {'grace_period_seconds': options['grace_period_seconds'],
+        #      'propagation_policy': options['propagation_policy']}
+        # )
+
+        options['body'] = self.api.V1DeleteOptions(
+            propagation_policy='Foreground', grace_period_seconds=5)
 
         del options['grace_period_seconds']
         del options['propagation_policy']
