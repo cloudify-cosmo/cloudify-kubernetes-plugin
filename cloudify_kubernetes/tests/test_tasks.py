@@ -9,14 +9,17 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from mock import MagicMock, patch
 import unittest
+from datetime import datetime
 
-from cloudify.exceptions import RecoverableError, OperationRetry
+from cloudify.exceptions import (RecoverableError,
+                                 OperationRetry,
+                                 NonRecoverableError)
 from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
 
@@ -167,10 +170,116 @@ class TestTasks(unittest.TestCase):
         current_ctx.set(_ctx)
         return managed_master_node, _ctx
 
+    def test_cleanuped_resource(self):
+        self.assertEqual(tasks._cleanuped({
+            'a': 'b',
+            'c': [{
+                'd': 'f',
+                'f': 'e',
+                'date': datetime(2017, 1, 1, 1, 1)
+            }]
+        }), {
+            'a': 'b',
+            'c': [{
+                'd': 'f',
+                'f': 'e',
+                'date': '2017-01-01 01:01:00'
+            }]
+        })
+
+        self.assertEqual(tasks._cleanuped([
+            'a', 'b', [datetime(2017, 1, 2, 1, 1)]
+        ]), [
+            'a', 'b', ['2017-01-02 01:01:00']
+        ])
+
     def test_retrieve_id(self):
         _, _ctx = self._prepare_master_node()
         self.assertEqual(tasks._retrieve_id(_ctx.instance),
                          'kubernetes_id')
+
+    def test_retrieve_id_with_file(self):
+        _, _ctx = self._prepare_master_node()
+        _ctx.instance.runtime_properties[
+            tasks.INSTANCE_RUNTIME_PROPERTY_KUBERNETES
+        ] = {"other_field": {
+            'metadata': {
+                'name': "id"
+            }
+        }}
+        self.assertEqual(tasks._retrieve_id(_ctx.instance, "other_field"),
+                         'id')
+
+    def test_do_resource_status_check_unknow(self):
+        # never raise exception on unknown types
+        tasks._do_resource_status_check("unknow", {})
+
+    def test_do_resource_status_check_pod(self):
+        # never raise exception on 'Running', 'Succeeded'
+        self._prepare_master_node()
+        tasks._do_resource_status_check("Pod", {
+            'status': {'phase': 'Running'}
+        })
+        tasks._do_resource_status_check("Pod", {
+            'status': {'phase': 'Succeeded'}
+        })
+        tasks._do_resource_status_check("Pod", {
+            'status': {'phase': 'Other'}
+        })
+
+    def test_do_resource_status_check_pod_retry(self):
+        # raise exception on 'Pending', 'Unknown'
+        self._prepare_master_node()
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("Pod", {
+                'status': {'phase': 'Pending'}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "status Pending in phase ['Pending', 'Unknown']"
+        )
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("Pod", {
+                'status': {'phase': 'Unknown'}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "status Unknown in phase ['Pending', 'Unknown']"
+        )
+
+    def test_do_resource_status_check_pod_failed(self):
+        # raise exception on 'Failed'
+        self._prepare_master_node()
+
+        with self.assertRaises(NonRecoverableError) as error:
+            tasks._do_resource_status_check("Pod", {
+                'status': {'phase': 'Failed'}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "status Failed in phase ['Failed']"
+        )
+
+    def test_do_resource_status_check_service(self):
+        # never raise exception on empty status
+        self._prepare_master_node()
+        tasks._do_resource_status_check("Service", {
+            'status': {}
+        })
+
+    def test_do_resource_status_check_service_fail(self):
+        # raise exception on empty balancer
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("Service", {
+                'status': {'load_balancer': {'ingress': None}}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "status {'load_balancer': {'ingress': None}} in phase "
+            "[{'load_balancer': {'ingress': None}}]"
+        )
 
     def test_retrieve_path(self):
         self.assertEquals(
@@ -311,8 +420,7 @@ class TestTasks(unittest.TestCase):
         with patch('os.path.isfile', mock_isfile):
             with patch(
                     'cloudify_kubernetes.k8s.config.'
-                    'KubernetesApiConfiguration.'
-                    'get_kube_config_loader_from_file',
+                    'kubernetes.config.load_kube_config',
                     MagicMock()
             ):
                 tasks.resource_create(
@@ -355,8 +463,7 @@ class TestTasks(unittest.TestCase):
         with patch('os.path.isfile', mock_isfile):
             with patch(
                     'cloudify_kubernetes.k8s.config.'
-                    'KubernetesApiConfiguration.'
-                    'get_kube_config_loader_from_file',
+                    'kubernetes.config.load_kube_config',
                     MagicMock()
             ):
                 with patch(

@@ -9,36 +9,19 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import kubernetes
 import os
-import yaml
 
+from kubernetes.config.kube_config import KUBE_CONFIG_DEFAULT_LOCATION
+from kubernetes.client import Configuration
 from .exceptions import KuberentesApiInitializationFailedError
 
 
 class KubernetesApiConfiguration(object):
-
-    @classmethod
-    def get_kube_config_loader(cls, **kwargs):
-        return kubernetes.config.kube_config.KubeConfigLoader(
-            get_google_credentials=lambda: '',
-            **kwargs
-        )
-
-    @classmethod
-    def get_kube_config_loader_from_file(cls, config_file, **kwargs):
-        with open(config_file) as file:
-            return cls.get_kube_config_loader(
-                config_dict=yaml.load(file),
-                config_base_path=os.path.abspath(
-                    os.path.dirname(config_file)
-                ),
-                **kwargs
-            )
 
     def __init__(self, logger, configuration_data, **kwargs):
         self.logger = logger
@@ -76,10 +59,9 @@ class BlueprintFileConfiguration(KubernetesApiConfiguration):
                 if manager_file_path and os.path.isfile(
                     os.path.expanduser(manager_file_path)
                 ):
-                    self.get_kube_config_loader_from_file(
+                    kubernetes.config.load_kube_config(
                         config_file=manager_file_path
-                    ).load_and_set()
-
+                    )
                     return kubernetes.client
             except Exception as e:
                 self.logger.error(
@@ -102,10 +84,9 @@ class ManagerFilePathConfiguration(KubernetesApiConfiguration):
             if manager_file_path and os.path.isfile(
                 os.path.expanduser(manager_file_path)
             ):
-                self.get_kube_config_loader_from_file(
+                kubernetes.config.load_kube_config(
                     config_file=manager_file_path
-                ).load_and_set()
-
+                )
                 return kubernetes.client
 
         return None
@@ -119,8 +100,16 @@ class FileContentConfiguration(KubernetesApiConfiguration):
         if self.FILE_CONTENT_KEY in self.configuration_data:
             file_content = self.configuration_data[self.FILE_CONTENT_KEY]
 
-            self.get_kube_config_loader(config_dict=file_content)\
-                .load_and_set()
+            loader = kubernetes.config.kube_config.KubeConfigLoader(
+                config_dict=file_content,
+                config_base_path=os.path.abspath(os.path.dirname(
+                    os.path.expanduser(KUBE_CONFIG_DEFAULT_LOCATION)
+                ))
+            )
+
+            config = type.__call__(Configuration)
+            loader.load_and_set(config)
+            Configuration.set_default(config)
 
             return kubernetes.client
 

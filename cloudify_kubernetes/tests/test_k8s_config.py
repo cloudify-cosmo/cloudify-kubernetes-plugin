@@ -9,11 +9,12 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import unittest
-from mock import MagicMock, patch, ANY
+import os
+from mock import MagicMock, patch
 
 from cloudify_kubernetes.k8s.config import (KubernetesApiConfigurationVariants,
                                             ManagerFilePathConfiguration,
@@ -60,10 +61,8 @@ class TestBlueprintFileConfiguration(unittest.TestCase):
         mock_download_resource = MagicMock()
         mock_logger = MagicMock()
         mock_client = MagicMock()
-        mock_load_and_set = MagicMock()
         mock_loader = MagicMock()
-        mock_loader.load_and_set = mock_load_and_set
-        mock_get_kube_config_loader_from_file = MagicMock(
+        mock_kubernetes_config_load_kube_config = MagicMock(
             return_value=mock_loader
         )
         mock_download_resource = MagicMock(
@@ -81,9 +80,8 @@ class TestBlueprintFileConfiguration(unittest.TestCase):
         with patch('os.path.isfile', mock_isfile):
             with patch(
                     'cloudify_kubernetes.k8s.config.'
-                    'KubernetesApiConfiguration.'
-                    'get_kube_config_loader_from_file',
-                    mock_get_kube_config_loader_from_file
+                    'kubernetes.config.load_kube_config',
+                    mock_kubernetes_config_load_kube_config
             ):
                 with patch('kubernetes.client', mock_client):
                     self.assertEqual(
@@ -91,8 +89,7 @@ class TestBlueprintFileConfiguration(unittest.TestCase):
                     )
 
         mock_download_resource.assert_called_with('kubernetes.conf')
-        mock_load_and_set.assert_called_with()
-        mock_get_kube_config_loader_from_file.assert_called_with(
+        mock_kubernetes_config_load_kube_config.assert_called_with(
             config_file='downloaded_resource'
         )
 
@@ -113,10 +110,8 @@ class TestManagerFilePathConfiguration(unittest.TestCase):
     def test_ManagerFilePathConfiguration(self):
         mock_logger = MagicMock()
         mock_client = MagicMock()
-        mock_load_and_set = MagicMock()
         mock_loader = MagicMock()
-        mock_loader.load_and_set = mock_load_and_set
-        mock_get_kube_config_loader_from_file = MagicMock(
+        mock_kubernetes_config_load_kube_config = MagicMock(
             return_value=mock_loader
         )
 
@@ -129,9 +124,8 @@ class TestManagerFilePathConfiguration(unittest.TestCase):
         with patch('os.path.isfile', mock_isfile):
             with patch(
                     'cloudify_kubernetes.k8s.config.'
-                    'KubernetesApiConfiguration.'
-                    'get_kube_config_loader_from_file',
-                    mock_get_kube_config_loader_from_file
+                    'kubernetes.config.load_kube_config',
+                    mock_kubernetes_config_load_kube_config
             ):
                 with patch('kubernetes.client', mock_client):
                     self.assertEqual(
@@ -139,8 +133,7 @@ class TestManagerFilePathConfiguration(unittest.TestCase):
                     )
 
         mock_isfile.assert_called_with('kubernetes.conf')
-        mock_load_and_set.assert_called_with()
-        mock_get_kube_config_loader_from_file.assert_called_with(
+        mock_kubernetes_config_load_kube_config.assert_called_with(
             config_file='kubernetes.conf'
         )
 
@@ -182,7 +175,7 @@ class TestFileContentConfiguration(unittest.TestCase):
 
         mock_config.assert_called_with(
             config_dict='kubernetes.conf',
-            get_google_credentials=ANY
+            config_base_path=os.path.expanduser('~/.kube')
         )
 
 
@@ -257,7 +250,7 @@ class TestKubernetesApiConfigurationVariants(unittest.TestCase):
 
         mock_config.assert_called_with(
             config_dict='kubernetes.conf',
-            get_google_credentials=ANY
+            config_base_path=os.path.expanduser('~/.kube')
         )
 
 

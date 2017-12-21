@@ -9,9 +9,9 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 from mock import (MagicMock, patch)
@@ -148,8 +148,7 @@ class TestDecorators(unittest.TestCase):
         with patch('os.path.isfile', mock_isfile):
             with patch(
                     'cloudify_kubernetes.k8s.config.'
-                    'KubernetesApiConfiguration.'
-                    'get_kube_config_loader_from_file',
+                    'kubernetes.config.load_kube_config',
                     MagicMock()
             ):
                 decorators.with_kubernetes_client(function)()

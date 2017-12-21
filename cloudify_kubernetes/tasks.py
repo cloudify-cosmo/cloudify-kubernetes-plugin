@@ -9,12 +9,15 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+# hack for import namespaced modules
+import cloudify_importer # noqa
 
 from cloudify import ctx
+from datetime import datetime
 from cloudify.exceptions import (
     NonRecoverableError,
     OperationRetry,
@@ -54,37 +57,65 @@ def _retrieve_path(kwargs):
         .get(NODE_PROPERTY_FILE_RESOURCE_PATH, '')
 
 
+def _cleanuped_list(resource):
+    for k, v in enumerate(resource):
+        if isinstance(v, list):
+            _cleanuped_list(v)
+        elif isinstance(v, dict):
+            _cleanuped_dict(v)
+        elif isinstance(v, datetime):
+            resource[k] = str(v)
+
+
+def _cleanuped_dict(resource):
+    for k in resource:
+        if isinstance(resource[k], list):
+            _cleanuped_list(resource[k])
+        elif isinstance(resource[k], dict):
+            _cleanuped_dict(resource[k])
+        elif isinstance(resource[k], datetime):
+            resource[k] = str(resource[k])
+
+
+def _cleanuped(resource):
+    if isinstance(resource, list):
+        _cleanuped_list(resource)
+    elif isinstance(resource, dict):
+        _cleanuped_dict(resource)
+    return resource
+
+
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return client.create_resource(
+    return _cleanuped(client.create_resource(
         api_mapping,
         resource_definition,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict()
+    ).to_dict())
 
 
 def _do_resource_read(client, api_mapping, id, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return client.read_resource(
+    return _cleanuped(client.read_resource(
         api_mapping,
         id,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict()
+    ).to_dict())
 
 
 def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return client.update_resource(
+    return _cleanuped(client.update_resource(
         api_mapping,
         resource_definition,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict()
+    ).to_dict())
 
 
 def _do_resource_status_check(resource_kind, response):
@@ -119,11 +150,11 @@ def _do_resource_delete(client, api_mapping, id, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return client.delete_resource(
+    return _cleanuped(client.delete_resource(
         api_mapping,
         id,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict()
+    ).to_dict())
 
 
 @with_kubernetes_client
