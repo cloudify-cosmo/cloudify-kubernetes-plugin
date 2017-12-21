@@ -56,69 +56,79 @@ def _retrieve_path(kwargs):
         .get(NODE_PROPERTY_FILE_RESOURCE_PATH, '')
 
 
-def _cleanuped_list(resource):
-    for k, v in enumerate(resource):
-        if isinstance(v, list):
-            _cleanuped_list(v)
-        elif isinstance(v, dict):
-            _cleanuped_dict(v)
-        elif (not isinstance(v, int) and  # integer and bool
-              not isinstance(v, str) and
-              not isinstance(v, unicode)):
-            resource[k] = str(v)
+class JsonCleanuper(object):
 
+    def __init__(self, ob):
+        resource = ob.to_dict()
 
-def _cleanuped_dict(resource):
-    for k in resource:
-        if isinstance(resource[k], list):
-            _cleanuped_list(resource[k])
-        elif isinstance(resource[k], dict):
-            _cleanuped_dict(resource[k])
-        elif (not isinstance(resource[k], int) and  # integer and bool
-              not isinstance(resource[k], str) and
-              not isinstance(resource[k], unicode)):
-            resource[k] = str(resource[k])
+        if isinstance(resource, list):
+            self._cleanuped_list(resource)
+        elif isinstance(resource, dict):
+            self._cleanuped_dict(resource)
 
+        self.value = resource
 
-def _cleanuped(resource):
-    if isinstance(resource, list):
-        _cleanuped_list(resource)
-    elif isinstance(resource, dict):
-        _cleanuped_dict(resource)
-    return resource
+    def _cleanuped_list(self, resource):
+        for k, v in enumerate(resource):
+            if not v:
+                continue
+            if isinstance(v, list):
+                self._cleanuped_list(v)
+            elif isinstance(v, dict):
+                self._cleanuped_dict(v)
+            elif (not isinstance(v, int) and  # integer and bool
+                  not isinstance(v, str) and
+                  not isinstance(v, unicode)):
+                resource[k] = str(v)
+
+    def _cleanuped_dict(self, resource):
+        for k in resource:
+            if not resource[k]:
+                continue
+            if isinstance(resource[k], list):
+                self._cleanuped_list(resource[k])
+            elif isinstance(resource[k], dict):
+                self._cleanuped_dict(resource[k])
+            elif (not isinstance(resource[k], int) and  # integer and bool
+                  not isinstance(resource[k], str) and
+                  not isinstance(resource[k], unicode)):
+                resource[k] = str(resource[k])
+
+    def to_dict(self):
+        return self.value
 
 
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return _cleanuped(client.create_resource(
+    return JsonCleanuper(client.create_resource(
         api_mapping,
         resource_definition,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict())
+    )).to_dict()
 
 
 def _do_resource_read(client, api_mapping, id, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return _cleanuped(client.read_resource(
+    return JsonCleanuper(client.read_resource(
         api_mapping,
         id,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict())
+    )).to_dict()
 
 
 def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return _cleanuped(client.update_resource(
+    return JsonCleanuper(client.update_resource(
         api_mapping,
         resource_definition,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict())
+    )).to_dict()
 
 
 def _do_resource_status_check(resource_kind, response):
@@ -153,11 +163,11 @@ def _do_resource_delete(client, api_mapping, id, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return _cleanuped(client.delete_resource(
+    return JsonCleanuper(client.delete_resource(
         api_mapping,
         id,
         ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ).to_dict())
+    )).to_dict()
 
 
 @with_kubernetes_client

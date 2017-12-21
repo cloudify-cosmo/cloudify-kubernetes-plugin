@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import MagicMock, patch
+from mock import MagicMock, Mock, patch
 import unittest
 from datetime import datetime
 
@@ -171,25 +171,30 @@ class TestTasks(unittest.TestCase):
         return managed_master_node, _ctx
 
     def test_cleanuped_resource(self):
-        self.assertEqual(tasks._cleanuped({
+        ob = Mock()
+        ob.to_dict = MagicMock(return_value={
             'a': 'b',
             'c': [{
                 'd': 'f',
                 'f': 'e',
-                'date': datetime(2017, 1, 1, 1, 1)
-            }]
-        }), {
+                'date': datetime(2017, 1, 1, 1, 1),
+                'g': None
+            }, None]
+        })
+        self.assertEqual(tasks.JsonCleanuper(ob).to_dict(), {
             'a': 'b',
             'c': [{
                 'd': 'f',
                 'f': 'e',
-                'date': '2017-01-01 01:01:00'
-            }]
+                'date': '2017-01-01 01:01:00',
+                'g': None
+            }, None]
         })
 
-        self.assertEqual(tasks._cleanuped([
+        ob.to_dict = MagicMock(return_value=[
             'a', 'b', [datetime(2017, 1, 2, 1, 1)]
-        ]), [
+        ])
+        self.assertEqual(tasks.JsonCleanuper(ob).to_dict(), [
             'a', 'b', ['2017-01-02 01:01:00']
         ])
 
