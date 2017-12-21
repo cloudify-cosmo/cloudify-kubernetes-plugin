@@ -9,9 +9,9 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import inspect
 from kubernetes.client.rest import ApiException
@@ -29,7 +29,7 @@ from .operations import (KubernetesDeleteOperation,
 class KubernetesResourceDefinition(object):
 
     def __init__(self, kind, apiVersion, metadata, spec=None, parameters=None,
-                 provisioner=None, data=None):
+                 provisioner=None, data=None, roleRef=None, subjects=None):
         self.kind = kind.split('.')[-1]
         self.api_version = apiVersion
         self.metadata = metadata
@@ -44,6 +44,12 @@ class KubernetesResourceDefinition(object):
         # Config class
         if data:
             self.data = data
+        # roleRef
+        if roleRef:
+            self.role_ref = roleRef
+        # subjects
+        if subjects:
+            self.subjects = subjects
 
 
 class CloudifyKubernetesClient(object):

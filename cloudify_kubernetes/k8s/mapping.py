@@ -9,9 +9,9 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from .exceptions import KuberentesMappingNotFoundError
 
@@ -46,11 +46,31 @@ class KubernetesApiMapping(object):
 
 
 SUPPORTED_API_MAPPINGS = {
+    'ClusterRoleBinding': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='create_cluster_role_binding',
+            payload='V1beta1ClusterRoleBinding'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='read_cluster_role_binding',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='replace_cluster_role_binding',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='delete_cluster_role_binding',
+            payload='V1DeleteOptions'
+        ),
+    ),
     'Deployment': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',
             method='create_namespaced_deployment',
-            payload='V1beta1Deployment'
+            payload='AppsV1beta1Deployment'
         ),
         read=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',

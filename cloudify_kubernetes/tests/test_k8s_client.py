@@ -9,9 +9,9 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-#    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    * See the License for the specific language governing permissions and
-#    * limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import unittest
 from mock import MagicMock
@@ -217,6 +217,26 @@ class TestClient(unittest.TestCase):
             }
         )
 
+    def test_execute_create_role_resource(self):
+
+        instance, mappingMock = self._prepere_mocks()
+
+        self.assertEqual(
+            instance.create_resource(
+                mappingMock,
+                KubernetesResourceDefinition(kind="ClusterRoleBinding",
+                                             apiVersion="v1",
+                                             metadata="metadata",
+                                             roleRef="roleRef",
+                                             subjects="subjects"),
+                {'first': 'b'}
+            ).to_dict(),
+            {
+                'body': {'payload_param': 'payload_value'},
+                'first': 'b'
+            }
+        )
+
     def test_execute_update_resource(self):
 
         instance, mappingMock = self._prepere_mocks()
@@ -283,6 +303,30 @@ class TestKubernetesResourceDefinition(unittest.TestCase):
         self.assertEqual(instance.metadata, "metadata")
         self.assertEqual(instance.parameters, "parameters")
         self.assertEqual(instance.provisioner, "provisioner")
+
+    def test_KubernetesRole(self):
+        instance = KubernetesResourceDefinition(kind="1.2.3.4",
+                                                apiVersion="v1",
+                                                metadata="metadata",
+                                                roleRef="roleRef",
+                                                subjects="subjects")
+
+        self.assertEqual(instance.kind, "4")
+        self.assertEqual(instance.api_version, "v1")
+        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.role_ref, "roleRef")
+        self.assertEqual(instance.subjects, "subjects")
+
+    def test_KubernetesConfig(self):
+        instance = KubernetesResourceDefinition(kind="1.2.3.4",
+                                                apiVersion="v1",
+                                                metadata="metadata",
+                                                data="data")
+
+        self.assertEqual(instance.kind, "4")
+        self.assertEqual(instance.api_version, "v1")
+        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.data, "data")
 
 
 if __name__ == '__main__':
