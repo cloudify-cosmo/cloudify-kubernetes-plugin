@@ -17,7 +17,6 @@
 import cloudify_importer # noqa
 
 from cloudify import ctx
-from datetime import datetime
 from cloudify.exceptions import (
     NonRecoverableError,
     OperationRetry,
@@ -63,7 +62,9 @@ def _cleanuped_list(resource):
             _cleanuped_list(v)
         elif isinstance(v, dict):
             _cleanuped_dict(v)
-        elif isinstance(v, datetime):
+        elif (not isinstance(v, int) and  # integer and bool
+              not isinstance(v, str) and
+              not isinstance(v, unicode)):
             resource[k] = str(v)
 
 
@@ -73,7 +74,9 @@ def _cleanuped_dict(resource):
             _cleanuped_list(resource[k])
         elif isinstance(resource[k], dict):
             _cleanuped_dict(resource[k])
-        elif isinstance(resource[k], datetime):
+        elif (not isinstance(resource[k], int) and  # integer and bool
+              not isinstance(resource[k], str) and
+              not isinstance(resource[k], unicode)):
             resource[k] = str(resource[k])
 
 
