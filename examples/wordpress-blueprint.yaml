@@ -116,10 +116,6 @@ node_templates:
         grace_period_seconds: 5
         propagation_policy: 'Foreground'
         namespace: 'default'
-    options:
-      grace_period_seconds: 5
-      propagation_policy: 'Foreground'
-      namespace: 'default'
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
