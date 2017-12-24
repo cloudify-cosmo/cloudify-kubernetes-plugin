@@ -1,8 +1,8 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
-  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.2/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
+  - plugin.yaml
 
 inputs:
 
@@ -45,6 +45,10 @@ node_templates:
                 image: nginx:1.7.9
                 ports:
                 - containerPort: { get_input: container_port }
+#      options:
+#        grace_period_seconds: 5
+#        propagation_policy: 'Foreground'
+#        namespace: 'default'
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master

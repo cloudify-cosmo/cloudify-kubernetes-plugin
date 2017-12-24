@@ -16,6 +16,7 @@
 
 import yaml
 
+
 from cloudify import ctx
 
 from .k8s import (KubernetesApiMapping,
@@ -28,6 +29,7 @@ from .k8s import (KubernetesApiMapping,
 NODE_PROPERTY_API_MAPPING = 'api_mapping'
 NODE_PROPERTY_DEFINITION = 'definition'
 NODE_PROPERTY_FILE = 'file'
+NODE_PROPERTY_OPTIONS = 'options'
 
 
 def _yaml_from_file(
@@ -68,7 +70,7 @@ def mapping_by_kind(resource_definition, **kwargs):
     return get_mapping(kind=resource_definition.kind)
 
 
-def resource_definition_from_blueprint(**kwargs):
+def get_definition_object(**kwargs):
     definition = kwargs.get(
         NODE_PROPERTY_DEFINITION,
         ctx.node.properties.get(NODE_PROPERTY_DEFINITION, None)
@@ -84,6 +86,11 @@ def resource_definition_from_blueprint(**kwargs):
             if isinstance(ctx.node.type, basestring)\
             else ''
 
+    return definition
+
+
+def resource_definition_from_blueprint(**kwargs):
+    definition = get_definition_object(**kwargs)
     return KubernetesResourceDefinition(**definition)
 
 
