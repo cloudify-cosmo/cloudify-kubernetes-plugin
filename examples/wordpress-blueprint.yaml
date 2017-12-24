@@ -5,8 +5,8 @@ description: >
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
+  # - http://www.getcloudify.org/spec/kubernetes-plugin/2.0.0/plugin.yaml
   - plugin.yaml
-  # - http://www.getcloudify.org/spec/kubernetes-plugin/1.4.0/plugin.yaml
 
 inputs:
 
@@ -73,6 +73,9 @@ node_types:
             api: CoreV1Api
             method: delete_namespaced_persistent_volume_claim
             payload: V1DeleteOptions
+          update:
+            api: CoreV1Api
+            method: patch_namespaced_persistent_volume_claim
 
 node_templates:
 
