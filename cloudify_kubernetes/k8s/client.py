@@ -16,6 +16,7 @@
 import inspect
 
 from kubernetes.client.rest import ApiException
+from kubernetes.client import V1DeleteOptions
 
 from .exceptions import (KuberentesApiOperationError,
                          KuberentesInvalidApiClassError,
@@ -115,9 +116,9 @@ class CloudifyKubernetesClient(object):
         if resource_definition.kind != 'ReplicationController':
             if options:
                 if hasattr(self.api, class_name):
-                    node_options =\
+                    node_options = \
                         {k: v for k, v in options.items()
-                         if hasattr(self.api.class_name, k)}
+                         if hasattr(getattr(self.api, class_name), k)}
 
                     return getattr(self.api, class_name)(**node_options)
 
@@ -173,7 +174,7 @@ class CloudifyKubernetesClient(object):
             options['name'] = resource_id
 
             # Generate body object with available options
-            delete_resource =\
+            delete_resource = \
                 self._prepare_delete_options_resource(mapping.delete.payload,
                                                       resource_definition,
                                                       options)
@@ -184,8 +185,8 @@ class CloudifyKubernetesClient(object):
 
             # Trim '_' from ``delete_resource`` instance keys
             # Since these represent options args
-            if hasattr(delete_resource, 'vars'):
-                delete_resource =\
+            if isinstance(delete_resource, V1DeleteOptions):
+                delete_resource = \
                     {k[1:0]: v for k, v in vars(delete_resource).items()}
 
             # Pass options that did not include on the ``delete_resource``
