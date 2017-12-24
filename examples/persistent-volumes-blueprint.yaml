@@ -6,8 +6,9 @@ description: >
   Also install the wagon with the command: "cfy plugins upload PATH_TO_WAGON".
 
 imports:
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
-  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/1.2.2/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
+  - plugin.yaml
+  # - http://www.getcloudify.org/spec/kubernetes-plugin/1.4.0/plugin.yaml
   - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-openstack-plugin/2.2.0/plugin.yaml
 
 inputs:

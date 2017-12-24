@@ -4,8 +4,9 @@ description: >
   Based on this example: https://github.com/kubernetes/examples/blob/master/mysql-wordpress-pd/README.md.
 
 imports:
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-manager/4.1/resources/rest-service/cloudify/types/types.yaml
-  - https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/blob/45-Add-support-for-cascading-deletion-policy/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
+  - plugin.yaml
+  # - http://www.getcloudify.org/spec/kubernetes-plugin/1.4.0/plugin.yaml
 
 inputs:
 
