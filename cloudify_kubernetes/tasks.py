@@ -239,11 +239,11 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
         read_response
 
-    resource_type = getattr(resource_definition, 'kind')
-    if resource_type:
-        _do_resource_status_check(resource_type, read_response)
-        ctx.logger.info(
-            'Resource definition: {0}'.format(resource_type))
+    # resource_type = getattr(resource_definition, 'kind')
+    # if resource_type:
+    #     _do_resource_status_check(resource_type, read_response)
+    #     ctx.logger.info(
+    #         'Resource definition: {0}'.format(resource_type))
 
     status_response = _do_resource_get_status(client,
                                               api_mapping,
