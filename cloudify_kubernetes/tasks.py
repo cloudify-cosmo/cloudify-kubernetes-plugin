@@ -315,6 +315,7 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
     _do_resource_delete(
         client,
         api_mapping,
+        resource_definition,
         _retrieve_id(ctx.instance),
         **kwargs
     )
@@ -366,6 +367,7 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
     _do_resource_delete(
         client,
         api_mapping,
+        resource_definition,
         _retrieve_id(ctx.instance, path),
         **kwargs
     )
