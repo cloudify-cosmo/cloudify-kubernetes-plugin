@@ -62,6 +62,10 @@ class KubernetesCreateOperation(KubernetesOperartion):
     pass
 
 
+class KubernetesReadStatusOperation(KubernetesOperartion):
+    pass
+
+
 class KubernetesReadOperation(KubernetesOperartion):
 
     API_ACCEPTED_ARGUMENTS = ['exact', 'export']

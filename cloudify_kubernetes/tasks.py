@@ -120,6 +120,17 @@ def _do_resource_read(client, api_mapping, id, **kwargs):
     )).to_dict()
 
 
+def _do_resource_get_status(client, api_mapping, id, **kwargs):
+    if 'namespace' not in kwargs:
+        kwargs['namespace'] = DEFAULT_NAMESPACE
+
+    return JsonCleanuper(client.read_status_resource(
+        api_mapping,
+        id,
+        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    )).to_dict()
+
+
 def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
@@ -231,6 +242,15 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
         _do_resource_status_check(resource_type, read_response)
         ctx.logger.info(
             'Resource definition: {0}'.format(resource_type))
+
+    status_response = _do_resource_get_status(client,
+                                              api_mapping,
+                                              _retrieve_id(ctx.instance),
+                                              **kwargs)
+
+    ctx.logger.info(
+        'Status Response API: {0}'.format(status_response))
+
 
 
 @with_kubernetes_client
