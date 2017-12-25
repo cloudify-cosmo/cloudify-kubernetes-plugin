@@ -147,29 +147,29 @@ def _do_resource_status_check(resource_kind, response):
     if "Pod" == resource_kind:
         status = response['status']['phase']
         ctx.logger.debug('status {0}'.format(status))
-        # if status in ['Failed']:
-        #     raise NonRecoverableError(
-        #         'status {0} in phase {1}'.format(
-        #             status, ['Failed']))
-        # elif status in ['Pending', 'Unknown']:
-        #     raise OperationRetry(
-        #         'status {0} in phase {1}'.format(
-        #             status, ['Pending', 'Unknown']))
-        # elif status in ['Running', 'Succeeded']:
-        #     ctx.logger.debug(
-        #         'status {0} in phase {1}'.format(
-        #             status, ['Running', 'Succeeded']))
+        if status in ['Failed']:
+            raise NonRecoverableError(
+                'status {0} in phase {1}'.format(
+                    status, ['Failed']))
+        elif status in ['Pending', 'Unknown']:
+            raise OperationRetry(
+                'status {0} in phase {1}'.format(
+                    status, ['Pending', 'Unknown']))
+        elif status in ['Running', 'Succeeded']:
+            ctx.logger.debug(
+                'status {0} in phase {1}'.format(
+                    status, ['Running', 'Succeeded']))
 
     elif "Service" in resource_kind:
         status = response['status']
         ctx.logger.debug('status {0}'.format(status))
-        # if status in [{'load_balancer': {'ingress': None}}]:
-        #     raise OperationRetry(
-        #         'status {0} in phase {1}'.format(
-        #             status,
-        #             [{'load_balancer': {'ingress': None}}]))
-        # else:
-        #     ctx.logger.debug('status {0}'.format(status))
+        if status in [{'load_balancer': {'ingress': None}}]:
+            raise OperationRetry(
+                'status {0} in phase {1}'.format(
+                    status,
+                    [{'load_balancer': {'ingress': None}}]))
+        else:
+            ctx.logger.debug('status {0}'.format(status))
 
 
 def _do_resource_delete(client, api_mapping, resource_definition,
@@ -225,35 +225,36 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     """
 
     # Read All resources.
-    # read_response = _do_resource_read(
-    #     client,
-    #     api_mapping,
-    #     _retrieve_id(ctx.instance),
-    #     **kwargs
-    # )
-    #
-    # ctx.logger.info(
-    #     'Read Response API: {0}'.format(read_response))
+    read_response = _do_resource_read(
+        client,
+        api_mapping,
+        _retrieve_id(ctx.instance),
+        **kwargs
+    )
+
+    resource_type = getattr(resource_definition, 'kind')
+    ctx.logger.info(
+        'Read Response API Resource: {0} is : {1}'.format(resource_type,
+                                                          read_response))
 
     # Store read response.
-    # ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-    #     read_response
-
-    # resource_type = getattr(resource_definition, 'kind')
-    # if resource_type:
-    #     _do_resource_status_check(resource_type, read_response)
-    #     ctx.logger.info(
-    #         'Resource definition: {0}'.format(resource_type))
-
-    status_response = _do_resource_get_status(client,
-                                              api_mapping,
-                                              _retrieve_id(ctx.instance),
-                                              **kwargs)
-    ctx.logger.info(
-        'Status Response API: {0}'.format(status_response))
-
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        status_response
+        read_response
+
+    if resource_type:
+        _do_resource_status_check(resource_type, read_response)
+        ctx.logger.info(
+            'Resource definition: {0}'.format(resource_type))
+
+    # status_response = _do_resource_get_status(client,
+    #                                           api_mapping,
+    #                                           _retrieve_id(ctx.instance),
+    #                                           **kwargs)
+    # ctx.logger.info(
+    #     'Status Response API: {0}'.format(status_response))
+    #
+    # ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+    #     status_response
 
 
 @with_kubernetes_client
