@@ -219,6 +219,9 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
         **kwargs
     )
 
+    ctx.logger.info(
+        'Read Response API: {0}'.format(read_response))
+
     # Store read response.
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
         read_response
