@@ -242,19 +242,19 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
         read_response
 
     if resource_type:
-        _do_resource_status_check(resource_type, read_response)
+        # _do_resource_status_check(resource_type, read_response)
         ctx.logger.info(
             'Resource definition: {0}'.format(resource_type))
 
-    # status_response = _do_resource_get_status(client,
-    #                                           api_mapping,
-    #                                           _retrieve_id(ctx.instance),
-    #                                           **kwargs)
-    # ctx.logger.info(
-    #     'Status Response API: {0}'.format(status_response))
-    #
-    # ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-    #     status_response
+    status_response = _do_resource_get_status(client,
+                                              api_mapping,
+                                              _retrieve_id(ctx.instance),
+                                              **kwargs)
+    ctx.logger.info(
+        'Status Response API: {0}'.format(status_response))
+
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+        status_response
 
 
 @with_kubernetes_client
