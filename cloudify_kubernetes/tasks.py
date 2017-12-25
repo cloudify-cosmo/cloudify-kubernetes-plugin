@@ -146,28 +146,30 @@ def _do_resource_status_check(resource_kind, response):
 
     if "Pod" == resource_kind:
         status = response['status']['phase']
-        if status in ['Failed']:
-            raise NonRecoverableError(
-                'status {0} in phase {1}'.format(
-                    status, ['Failed']))
-        elif status in ['Pending', 'Unknown']:
-            raise OperationRetry(
-                'status {0} in phase {1}'.format(
-                    status, ['Pending', 'Unknown']))
-        elif status in ['Running', 'Succeeded']:
-            ctx.logger.debug(
-                'status {0} in phase {1}'.format(
-                    status, ['Running', 'Succeeded']))
+        ctx.logger.debug('status {0}'.format(status))
+        # if status in ['Failed']:
+        #     raise NonRecoverableError(
+        #         'status {0} in phase {1}'.format(
+        #             status, ['Failed']))
+        # elif status in ['Pending', 'Unknown']:
+        #     raise OperationRetry(
+        #         'status {0} in phase {1}'.format(
+        #             status, ['Pending', 'Unknown']))
+        # elif status in ['Running', 'Succeeded']:
+        #     ctx.logger.debug(
+        #         'status {0} in phase {1}'.format(
+        #             status, ['Running', 'Succeeded']))
 
     elif "Service" in resource_kind:
         status = response['status']
-        if status in [{'load_balancer': {'ingress': None}}]:
-            raise OperationRetry(
-                'status {0} in phase {1}'.format(
-                    status,
-                    [{'load_balancer': {'ingress': None}}]))
-        else:
-            ctx.logger.debug('status {0}'.format(status))
+        ctx.logger.debug('status {0}'.format(status))
+        # if status in [{'load_balancer': {'ingress': None}}]:
+        #     raise OperationRetry(
+        #         'status {0} in phase {1}'.format(
+        #             status,
+        #             [{'load_balancer': {'ingress': None}}]))
+        # else:
+        #     ctx.logger.debug('status {0}'.format(status))
 
 
 def _do_resource_delete(client, api_mapping, resource_definition,
@@ -247,10 +249,8 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
                                               api_mapping,
                                               _retrieve_id(ctx.instance),
                                               **kwargs)
-
     ctx.logger.info(
         'Status Response API: {0}'.format(status_response))
-
 
 
 @with_kubernetes_client
