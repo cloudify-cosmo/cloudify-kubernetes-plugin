@@ -253,7 +253,7 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     ctx.logger.info(
         'Status Response API: {0}'.format(status_response))
 
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+    ctx.instance.runtime_properties['status_response'] = \
         status_response
 
 
