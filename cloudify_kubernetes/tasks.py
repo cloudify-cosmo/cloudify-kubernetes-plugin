@@ -225,19 +225,19 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     """
 
     # Read All resources.
-    read_response = _do_resource_read(
-        client,
-        api_mapping,
-        _retrieve_id(ctx.instance),
-        **kwargs
-    )
-
-    ctx.logger.info(
-        'Read Response API: {0}'.format(read_response))
+    # read_response = _do_resource_read(
+    #     client,
+    #     api_mapping,
+    #     _retrieve_id(ctx.instance),
+    #     **kwargs
+    # )
+    #
+    # ctx.logger.info(
+    #     'Read Response API: {0}'.format(read_response))
 
     # Store read response.
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        read_response
+    # ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+    #     read_response
 
     # resource_type = getattr(resource_definition, 'kind')
     # if resource_type:
@@ -251,6 +251,9 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
                                               **kwargs)
     ctx.logger.info(
         'Status Response API: {0}'.format(status_response))
+
+    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+        status_response
 
 
 @with_kubernetes_client
