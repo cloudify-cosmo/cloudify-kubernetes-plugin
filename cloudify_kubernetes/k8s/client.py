@@ -160,8 +160,8 @@ class CloudifyKubernetesClient(object):
     def read_status_resource(self, mapping, resource_id, options):
         options['name'] = resource_id
         return self._execute(self._prepare_operation(
-            KubernetesReadStatusOperation, api='ExtensionsV1beta1Api',
-            method='read_namespaced_deployment_status'
+            KubernetesReadStatusOperation, api='CoreV1Api',
+            method='read_namespaced_pod_status'
         ), options)
 
     def update_resource(self, mapping, resource_definition, options):
