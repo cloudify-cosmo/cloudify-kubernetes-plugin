@@ -72,9 +72,7 @@ class CloudifyKubernetesClient(object):
     def _prepare_payload(self, class_name, resource_definition):
         if hasattr(self.api, class_name):
             self.logger.info('Kubernetes API initialized successfully')
-            return getattr(self.api, class_name)(
-                **vars(resource_definition)
-            )
+            return getattr(self.api, class_name)(**vars(resource_definition))
 
         raise KuberentesInvalidPayloadClassError(
             'Cannot create instance of Kubernetes API payload class: {0}. '
@@ -187,7 +185,7 @@ class CloudifyKubernetesClient(object):
             # Since these represent options args
             if isinstance(delete_resource, V1DeleteOptions):
                 delete_resource = \
-                    {k[1:0]: v for k, v in vars(delete_resource).items()}
+                    {k[1:]: v for k, v in vars(delete_resource).items()}
 
             # Pass options that did not include on the ``delete_resource``
             options = {k: v for k, v in options.items()
