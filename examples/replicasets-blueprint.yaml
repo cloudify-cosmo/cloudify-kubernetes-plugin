@@ -45,10 +45,10 @@ node_templates:
                 image: nginx:1.7.9
                 ports:
                 - containerPort: { get_input: container_port }
-#      options:
-#        grace_period_seconds: 5
-#        propagation_policy: 'Foreground'
-#        namespace: 'default'
+      options:
+        grace_period_seconds: 5
+        propagation_policy: 'Foreground'
+        namespace: 'default'
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master

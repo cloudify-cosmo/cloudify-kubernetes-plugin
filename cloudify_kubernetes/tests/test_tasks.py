@@ -286,6 +286,159 @@ class TestTasks(unittest.TestCase):
             "[{'load_balancer': {'ingress': None}}]"
         )
 
+    def test_do_resource_status_check_deployment(self):
+        self._prepare_master_node()
+        tasks._do_resource_status_check("Deployment", {
+            'status': {'conditions': [{'type': 'Available'}]}
+        })
+
+    def test_do_resource_status_check_deployment_retry(self):
+        self._prepare_master_node()
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("Deployment", {
+                'status': {'conditions': [{'type': 'Progressing'}]}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "Deployment condition is Progressing"
+        )
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("Deployment", {
+                'status': {'conditions': None}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "Deployment condition is not ready yet"
+        )
+
+    def test_do_resource_status_check_deployment_failed(self):
+        self._prepare_master_node()
+        with self.assertRaises(NonRecoverableError) as error:
+            tasks._do_resource_status_check("Deployment", {
+                'status': {'conditions': [{'type': 'ReplicaFailure',
+                                           'reason': 'ReplicaFailure',
+                                           'message': 'ReplicaFailure'}]}
+            })
+
+        self.assertEqual(
+            str(error.exception),
+            'Deployment condition is ReplicaFailure ,'
+            'reason:ReplicaFailure, message: ReplicaFailure'
+        )
+
+    def test_do_resource_status_check_persistent_volume_claim(self):
+        self._prepare_master_node()
+        tasks._do_resource_status_check("PersistentVolumeClaim", {
+            'status': {'phase': 'Bound'}
+        })
+
+        tasks._do_resource_status_check("PersistentVolumeClaim", {
+            'status': {'phase': 'Pending'}
+        })
+
+        tasks._do_resource_status_check("PersistentVolumeClaim", {
+            'status': {'phase': 'Available'}
+        })
+
+    def test_do_resource_status_check_persistent_volume_claim_retry(self):
+        self._prepare_master_node()
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("PersistentVolumeClaim", {
+                'status': {'phase': 'Unknown'}
+            })
+
+        self.assertEqual(
+            str(error.exception),
+            "Unknown PersistentVolume status Unknown"
+        )
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("PersistentVolumeClaim", {
+                'status': {'phase': None}
+            })
+
+        self.assertEqual(
+            str(error.exception),
+            "Unknown PersistentVolume status None"
+        )
+
+    def test_do_resource_status_check_persistent_volume(self):
+        self._prepare_master_node()
+        tasks._do_resource_status_check("PersistentVolume", {
+            'status': {'phase': 'Bound'}
+        })
+
+        tasks._do_resource_status_check("PersistentVolume", {
+            'status': {'phase': 'Available'}
+        })
+
+    def test_do_resource_status_check_persistent_volume_retry(self):
+        self._prepare_master_node()
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("PersistentVolume", {
+                'status': {'phase': 'Unknown'}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "Unknown PersistentVolume status Unknown"
+        )
+
+    def test_do_resource_status_check_replica_set(self):
+        self._prepare_master_node()
+        tasks._do_resource_status_check("ReplicaSet", {
+            'status': {'ready_replicas': 2, 'replicas': 2}
+        })
+
+    def test_do_resource_status_check_replica_set_retry(self):
+        self._prepare_master_node()
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("ReplicaSet", {
+                'status': {'ready_replicas': None, 'replicas': 2}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "ReplicaSet status not ready yet"
+        )
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("ReplicaSet", {
+                'status': {'ready_replicas': 1, 'replicas': 2}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "Only 1 of 2 replicas are ready"
+        )
+
+    def test_do_resource_status_check_replication_controller(self):
+        self._prepare_master_node()
+        tasks._do_resource_status_check("ReplicationController", {
+            'status': {'ready_replicas': 2, 'replicas': 2}
+        })
+
+    def test_do_resource_status_check_replication_controller_retry(self):
+        self._prepare_master_node()
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("ReplicationController", {
+                'status': {'ready_replicas': None, 'replicas': 2}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "ReplicationController status not ready yet"
+        )
+
+        with self.assertRaises(OperationRetry) as error:
+            tasks._do_resource_status_check("ReplicationController", {
+                'status': {'ready_replicas': 1, 'replicas': 2}
+            })
+        self.assertEqual(
+            str(error.exception),
+            "Only 1 of 2 replicas are ready"
+        )
+
     def test_retrieve_path(self):
         self.assertEquals(
             tasks._retrieve_path({'file': {'resource_path': 'path'}}),

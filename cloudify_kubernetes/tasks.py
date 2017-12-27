@@ -133,7 +133,7 @@ def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
 
 def _do_resource_status_check(resource_kind, response):
 
-    if "Pod" == resource_kind:
+    if resource_kind == "Pod":
         status = response['status']['phase']
         if status in ['Failed']:
             raise NonRecoverableError(
@@ -148,15 +148,69 @@ def _do_resource_status_check(resource_kind, response):
                 'status {0} in phase {1}'.format(
                     status, ['Running', 'Succeeded']))
 
-    elif "Service" in resource_kind:
-        status = response['status']
-        if status in [{'load_balancer': {'ingress': None}}]:
+    elif resource_kind == "Service":
+        status = response.get('status')
+        load_balancer = status.get('load_balancer')
+        if load_balancer and load_balancer.get('ingress') is None:
             raise OperationRetry(
                 'status {0} in phase {1}'.format(
                     status,
                     [{'load_balancer': {'ingress': None}}]))
         else:
             ctx.logger.debug('status {0}'.format(status))
+
+    elif resource_kind == 'Deployment':
+        conditions = response['status']['conditions']
+        if isinstance(conditions, list):
+            for condition in conditions:
+                if condition['type'] == 'Available':
+                    ctx.logger.debug('Deployment condition is Available')
+
+                elif condition['type'] == 'ReplicaFailure':
+                    raise NonRecoverableError(
+                        'Deployment condition is ReplicaFailure ,'
+                        'reason:{0}, message: {1}'
+                        ''.format(condition['reason'], condition['message']))
+
+                elif condition['type'] == 'Progressing':
+                    raise OperationRetry(
+                        'Deployment condition is Progressing')
+        else:
+            raise OperationRetry('Deployment condition is not ready yet')
+
+    elif resource_kind == 'PersistentVolumeClaim':
+        status = response['status']['phase']
+        if status in ['Pending', 'Available', 'Bound']:
+            ctx.logger.debug('PersistentVolumeClaim status is Bound')
+
+        else:
+            raise OperationRetry(
+                'Unknown PersistentVolume status {0}'.format(status))
+
+    elif resource_kind == 'PersistentVolume':
+        status = response['status']['phase']
+        if status in ['Bound', 'Available']:
+            ctx.logger.debug('PersistentVolume status is {0}'.format(status))
+
+        else:
+            raise OperationRetry(
+                'Unknown PersistentVolume status {0}'.format(status))
+
+    elif resource_kind in ['ReplicaSet', 'ReplicationController']:
+        ready_replicas = response['status'].get('ready_replicas')
+        replicas = response['status'].get('replicas')
+
+        if ready_replicas is None:
+            raise OperationRetry(
+                '{0} status not ready yet'.format(resource_kind))
+
+        elif ready_replicas != replicas:
+            raise OperationRetry(
+                'Only {0} of {1} replicas are ready'.format(
+                    ready_replicas, replicas))
+
+        elif ready_replicas == replicas:
+            ctx.logger.debug('All {0} replicas are ready now'.format(replicas))
 
 
 def _do_resource_delete(client, api_mapping, resource_definition,
@@ -223,6 +277,9 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
         read_response
 
+    ctx.logger.info(
+        'Resource definition: {0}'.format(read_response))
+
     resource_type = getattr(resource_definition, 'kind')
     if resource_type:
         _do_resource_status_check(resource_type, read_response)
@@ -275,7 +332,7 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
         )
 
         raise OperationRetry(
-            'Delete respone: {0}'.format(delete_response))
+            'Delete response: {0}'.format(delete_response))
 
 
 @with_kubernetes_client
@@ -312,13 +369,31 @@ def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_data
 )
 def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
-    _do_resource_delete(
-        client,
-        api_mapping,
-        resource_definition,
-        _retrieve_id(ctx.instance),
-        **kwargs
-    )
+    try:
+        read_response = _do_resource_read(client,
+                                          api_mapping,
+                                          _retrieve_id(ctx.instance),
+                                          **kwargs)
+        ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] \
+            = read_response
+    except KuberentesApiOperationError as e:
+        if '"code":404' in str(e):
+            ctx.logger.debug(
+                'Ignoring error: {0}'.format(str(e)))
+        else:
+            raise RecoverableError(
+                'Raising error: {0}'.format(str(e)))
+    else:
+        delete_response = _do_resource_delete(
+            client,
+            api_mapping,
+            resource_definition,
+            _retrieve_id(ctx.instance),
+            **kwargs
+        )
+
+        raise OperationRetry(
+            'Delete response: {0}'.format(delete_response))
 
 
 @with_kubernetes_client
