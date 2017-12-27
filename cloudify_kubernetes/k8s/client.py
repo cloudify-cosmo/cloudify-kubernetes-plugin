@@ -25,7 +25,8 @@ from .exceptions import (KuberentesApiOperationError,
 from .operations import (KubernetesDeleteOperation,
                          KubernetesReadOperation,
                          KubernetesUpdateOperation,
-                         KubernetesCreateOperation)
+                         KubernetesCreateOperation,
+                         KubernetesReadStatusOperation)
 
 
 class KubernetesResourceDefinition(object):
@@ -154,6 +155,13 @@ class CloudifyKubernetesClient(object):
         options['name'] = resource_id
         return self._execute(self._prepare_operation(
             KubernetesReadOperation, **vars(mapping.read)
+        ), options)
+
+    def read_status_resource(self, mapping, resource_id, options):
+        options['name'] = resource_id
+        return self._execute(self._prepare_operation(
+            KubernetesReadStatusOperation, api='CoreV1Api',
+            method='read_namespaced_pod_status'
         ), options)
 
     def update_resource(self, mapping, resource_definition, options):
