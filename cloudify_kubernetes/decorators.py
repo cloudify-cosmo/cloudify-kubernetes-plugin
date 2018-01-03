@@ -14,12 +14,14 @@
 # limitations under the License.
 #
 
+import sys
 from cloudify import ctx
 from cloudify.exceptions import (
     OperationRetry,
     RecoverableError,
     NonRecoverableError
 )
+from cloudify.utils import exception_to_error_cause
 from .k8s import (CloudifyKubernetesClient,
                   KubernetesApiAuthenticationVariants,
                   KubernetesApiConfigurationVariants,
@@ -67,11 +69,22 @@ def resource_task(retrieve_resource_definition, retrieve_mapping):
                     KuberentesInvalidApiMethodError) as e:
                 raise NonRecoverableError(str(e))
             except OperationRetry as e:
-                raise OperationRetry('{0}'.format(str(e)))
+                _, exc_value, exc_traceback = sys.exc_info()
+                raise OperationRetry(
+                    '{0}'.format(str(e)),
+                    causes=[exception_to_error_cause(exc_value, exc_traceback)]
             except NonRecoverableError as e:
-                raise NonRecoverableError('{0}'.format(str(e)))
+                _, exc_value, exc_traceback = sys.exc_info()
+                raise NonRecoverableError(
+                    '{0}'.format(str(e)),
+                    causes=[exception_to_error_cause(exc_value, exc_traceback)]
+                )
             except Exception as e:
-                raise RecoverableError('{0}'.format(str(e)))
+                _, exc_value, exc_traceback = sys.exc_info()
+                raise RecoverableError(
+                    '{0}'.format(str(e)),
+                    causes=[exception_to_error_cause(exc_value, exc_traceback)]
+                )
         return wrapper
     return decorator
 
@@ -104,6 +117,10 @@ def with_kubernetes_client(function):
 
             function(**kwargs)
         except KuberentesApiInitializationFailedError as e:
-            raise RecoverableError(e)
+            _, exc_value, exc_traceback = sys.exc_info()
+            raise RecoverableError(
+                '{0}'.format(str(e)),
+                causes=[exception_to_error_cause(exc_value, exc_traceback)]
+            )
 
     return wrapper
