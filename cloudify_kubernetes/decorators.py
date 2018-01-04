@@ -73,6 +73,7 @@ def resource_task(retrieve_resource_definition, retrieve_mapping):
                 raise OperationRetry(
                     '{0}'.format(str(e)),
                     causes=[exception_to_error_cause(exc_value, exc_traceback)]
+                )
             except NonRecoverableError as e:
                 _, exc_value, exc_traceback = sys.exc_info()
                 raise NonRecoverableError(
