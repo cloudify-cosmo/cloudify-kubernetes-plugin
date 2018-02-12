@@ -102,10 +102,12 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
+    options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    ctx.logger.debug('Node options {0}'.format(options))
     return JsonCleanuper(client.create_resource(
         api_mapping,
         resource_definition,
-        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+        options
     )).to_dict()
 
 
@@ -113,10 +115,12 @@ def _do_resource_read(client, api_mapping, id, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
+    options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    ctx.logger.debug('Node options {0}'.format(options))
     return JsonCleanuper(client.read_resource(
         api_mapping,
         id,
-        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+        options
     )).to_dict()
 
 

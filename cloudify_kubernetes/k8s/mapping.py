@@ -224,6 +224,86 @@ SUPPORTED_API_MAPPINGS = {
             method='delete_namespaced_config_map',
             payload='V1DeleteOptions'
         ),
+    ),
+    'Secret': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='create_namespaced_secret',
+            payload='V1Secret'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='read_namespaced_secret',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='patch_namespaced_secret'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='delete_namespaced_secret',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'ServiceAccount': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='create_namespaced_service_account',
+            payload='V1ServiceAccount'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='read_namespaced_service_account',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='patch_namespaced_service_account'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='delete_namespaced_service_account',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'Role': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1Api',
+            method='create_namespaced_role',
+            payload='V1Role'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1Api',
+            method='read_namespaced_role',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1Api',
+            method='patch_namespaced_role'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1Api',
+            method='delete_namespaced_role',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'RoleBinding': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1Api',
+            method='create_namespaced_role_binding',
+            payload='V1RoleBinding'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1Api',
+            method='read_namespaced_role_binding',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1Api',
+            method='patch_namespaced_role_binding'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1Api',
+            method='delete_namespaced_role_binding',
+            payload='V1DeleteOptions'
+        ),
     )
 }
 
