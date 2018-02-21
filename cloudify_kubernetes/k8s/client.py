@@ -31,10 +31,13 @@ from .operations import (KubernetesDeleteOperation,
 class KubernetesResourceDefinition(object):
 
     def __init__(self, kind, apiVersion, metadata, spec=None, parameters=None,
-                 provisioner=None, data=None, roleRef=None, subjects=None):
+                 provisioner=None, data=None, roleRef=None, subjects=None,
+                 automountServiceAccountToken=False, imagePullSecrets=None,
+                 secrets=None, type=None, stringData=None, rules=None):
         self.kind = kind.split('.')[-1]
         self.api_version = apiVersion
         self.metadata = metadata
+
         # General classes
         if spec:
             self.spec = spec
@@ -43,7 +46,7 @@ class KubernetesResourceDefinition(object):
             self.parameters = parameters
         if provisioner:
             self.provisioner = provisioner
-        # Config class
+        # Config class  | Secret
         if data:
             self.data = data
         # roleRef
@@ -52,6 +55,24 @@ class KubernetesResourceDefinition(object):
         # subjects
         if subjects:
             self.subjects = subjects
+        # automountServiceAccountToken
+        if automountServiceAccountToken:
+            self.automount_service_account_token = automountServiceAccountToken
+        # imagePullSecrets
+        if imagePullSecrets:
+            self.image_pull_secrets = imagePullSecrets
+        # secrets
+        if secrets:
+            self.secrets = secrets
+        # type
+        if type:
+            self.type = type
+        # stringData
+        if stringData:
+            self.string_data = stringData
+        # rules
+        if rules:
+            self.rules = rules
 
 
 class CloudifyKubernetesClient(object):
@@ -144,6 +165,8 @@ class CloudifyKubernetesClient(object):
         options['body'] = self._prepare_payload(
             mapping.create.payload, resource_definition
         )
+
+        self.logger.debug('Options API Request {0}'.format(options))
         return self._execute(self._prepare_operation(
             KubernetesCreateOperation, **vars(mapping.create)
         ), options)

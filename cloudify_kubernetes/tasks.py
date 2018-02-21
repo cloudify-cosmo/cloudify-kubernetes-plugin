@@ -102,10 +102,12 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
+    options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    ctx.logger.debug('Node options {0}'.format(options))
     return JsonCleanuper(client.create_resource(
         api_mapping,
         resource_definition,
-        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+        options
     )).to_dict()
 
 
@@ -113,10 +115,12 @@ def _do_resource_read(client, api_mapping, id, **kwargs):
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
+    options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    ctx.logger.debug('Node options {0}'.format(options))
     return JsonCleanuper(client.read_resource(
         api_mapping,
         id,
-        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+        options
     )).to_dict()
 
 
@@ -151,7 +155,8 @@ def _do_resource_status_check(resource_kind, response):
     elif resource_kind == "Service":
         status = response.get('status')
         load_balancer = status.get('load_balancer')
-        if response.get('spec', {}).get('type', '') == 'Ingress' and load_balancer and load_balancer.get('ingress') is None:
+        if response.get('spec', {}).get('type', '') == 'Ingress' and \
+                load_balancer and load_balancer.get('ingress') is None:
             raise OperationRetry(
                 'status {0} in phase {1}'.format(
                     status,

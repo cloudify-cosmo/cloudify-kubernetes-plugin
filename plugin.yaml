@@ -3,8 +3,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.0.0'
-    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.0.0.zip
+    package_version: '2.0.1.dev0'
+    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/add-support-for-new-resources.zip
 
 data_types:
 
@@ -128,9 +128,9 @@ data_types:
         description: >
           Python Kubernetes API objects and methods definitions for delete operation
 
-  cloudify.kubernetes.types.ResourceDefinition:
+  cloudify.kubernetes.types.AbstractResource:
     description: >
-      Type defining single Kubernetes resource e.g. Pod, Sevice, ...
+      Type defining common base structure for any Kubernetes resource
       It is some kind of wrapper for native Kubernetes YAML definition
     properties:
       apiVersion:
@@ -145,28 +145,24 @@ data_types:
         description: >
           Metadata section related to single Kubernetes resource
         default: {}
+
+  cloudify.kubernetes.types.ResourceDefinition:
+    derived_from: cloudify.kubernetes.types.AbstractResource
+    description: >
+      Type defining single Kubernetes resource e.g. Pod, Sevice, ...
+      It is some kind of wrapper for native Kubernetes YAML definition
+    properties:
       spec:
         description: >
           Kuberneres resource object specification
         default: {}
 
-  cloudify.kubernetes.types.RoleDefinition:
+  cloudify.kubernetes.types.RoleBindingDefinition:
+    derived_from: cloudify.kubernetes.types.AbstractResource
     description: >
       Type defining single Kubernetes resource e.g. Role, ...
       It is some kind of wrapper for native Kubernetes YAML definition
     properties:
-      apiVersion:
-        type: string
-        description: >
-          Kubernetes API version as a string
-        default: v1
-      kind:
-        type: string
-        required: false
-      metadata:
-        description: >
-          Metadata section related to single Kubernetes resource
-        default: {}
       roleRef:
         description: >
           RoleRef can only reference a ClusterRole in the global namespace.
@@ -175,6 +171,81 @@ data_types:
       subjects:
         description: >
           Subjects holds references to the objects the role applies to.
+        default: []
+
+  cloudify.kubernetes.types.RoleDefinition:
+    derived_from: cloudify.kubernetes.types.AbstractResource
+    description: >
+      Type defining single Kubernetes resource e.g. Role, ...
+      It is some kind of wrapper for native Kubernetes YAML definition
+    properties:
+      rules:
+        description: >
+          Rules holds all the PolicyRules for this Role.
+        default: []
+
+  cloudify.kubernetes.types.StorageClassResourceDefinition:
+    derived_from: cloudify.kubernetes.types.AbstractResource
+    description: >
+      Type defining single Kubernetes resource e.g. StorageClass
+      It is some kind of wrapper for native Kubernetes YAML definition
+    properties:
+      parameters:
+        required: false
+        description: >
+          Additional parameters for object creation
+      provisioner:
+        required: false
+        description: >
+          Class provisioner for object creation
+
+  cloudify.kubernetes.types.ServiceAccountDefinition:
+    derived_from: cloudify.kubernetes.types.AbstractResource
+    description: >
+      ServiceAccount binds together: a name, understood by users,
+      and perhaps by peripheral systems, for an identity a principal
+      that can be authenticated and authorized * a set of secrets
+    properties:
+      automountServiceAccountToken:
+        description: >
+          AutomountServiceAccountToken indicates whether pods running
+          as this service account should have an API token automatically mounted.
+          Can be overridden at the pod level..
+        type: boolean
+        default: false
+      imagePullSecrets:
+        description: >
+          ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images
+          in pods that reference this ServiceAccount. ImagePullSecrets are distinct
+          from Secrets because Secrets can be mounted in the pod,
+          but ImagePullSecrets are only accessed by the kubelet.
+        default: []
+      secrets:
+        description: >
+          Secrets is the list of secrets allowed to be used by pods running using this ServiceAccount.
+        default: []
+
+  cloudify.kubernetes.types.SecretDefinition:
+    derived_from: cloudify.kubernetes.types.AbstractResource
+    description: >
+      Secret holds secret data of a certain type.
+      The total bytes of the values in the Data field must be less than MaxSecretSize bytes
+    properties:
+      type:
+        description: >
+          Used to facilitate programmatic handling of secret data.
+        type: string
+        required: false
+      data:
+        description: >
+          Data contains the secret data.
+        default: {}
+      stringData:
+        description: >
+          stringData allows specifying non-binary secret data in string form.
+          It is provided as a write-only convenience method.
+          All keys and values are merged into the data field on write,
+          overwriting any existing values. It is never output when reading from the API..
         default: {}
 
   cloudify.kubernetes.types.ConfigClassResourceDefinition:
@@ -187,31 +258,6 @@ data_types:
         description: >
           Contains data to store in ConfigMap, Secret..
         default: {}
-
-  cloudify.kubernetes.types.StorageClassResourceDefinition:
-    description: >
-      Type defining single Kubernetes resource e.g. StorageClass
-      It is some kind of wrapper for native Kubernetes YAML definition
-    properties:
-      apiVersion:
-        type: string
-        description: >
-          Kubernetes API version as a string
-        default: v1
-      kind:
-        type: string
-        required: false
-      metadata:
-        description: >
-          Metadata section related to single Kubernetes resource
-      parameters:
-        required: false
-        description: >
-          Additional parameters for object creation
-      provisioner:
-        required: false
-        description: >
-          Class provisioner for object creation
 
 node_types:
 
@@ -255,7 +301,31 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
 
   cloudify.kubernetes.resources.ClusterRoleBinding:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.RoleBindingDefinition
+        description: >
+          Definition of role binding using native Kubernetes YAML spec
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+
+  cloudify.kubernetes.resources.RoleBinding:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.RoleBindingDefinition
+        description: >
+          Definition of role binding using native Kubernetes YAML spec
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+
+  cloudify.kubernetes.resources.Role:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
         type: cloudify.kubernetes.types.RoleDefinition
@@ -263,12 +333,32 @@ node_types:
           Definition of role using native Kubernetes YAML spec
     interfaces:
       cloudify.interfaces.lifecycle:
-        create:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
         start:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
-        delete:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
+
+  cloudify.kubernetes.resources.Secret:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.SecretDefinition
+        description: >
+          Definition of secret using native Kubernetes YAML spec
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+
+  cloudify.kubernetes.resources.ServiceAccount:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.ServiceAccountDefinition
+        description: >
+          Definition of service account using native Kubernetes YAML spec
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Deployment:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
