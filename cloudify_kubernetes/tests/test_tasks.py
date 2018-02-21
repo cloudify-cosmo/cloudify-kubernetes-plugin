@@ -276,8 +276,11 @@ class TestTasks(unittest.TestCase):
 
     def test_do_resource_status_check_service_fail(self):
         # raise exception on empty balancer
+        _, _ctx = self._prepare_master_node()
+        current_ctx.set(_ctx)
         with self.assertRaises(OperationRetry) as error:
             tasks._do_resource_status_check("Service", {
+                'spec': {'type': 'Ingress'},
                 'status': {'load_balancer': {'ingress': None}}
             })
         self.assertEqual(
