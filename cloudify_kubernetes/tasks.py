@@ -155,7 +155,8 @@ def _do_resource_status_check(resource_kind, response):
     elif resource_kind == "Service":
         status = response.get('status')
         load_balancer = status.get('load_balancer')
-        if response.get('spec', {}).get('type', '') == 'Ingress' and load_balancer and load_balancer.get('ingress') is None:
+        if response.get('spec', {}).get('type', '') == 'Ingress' and \
+                load_balancer and load_balancer.get('ingress') is None:
             raise OperationRetry(
                 'status {0} in phase {1}'.format(
                     status,
