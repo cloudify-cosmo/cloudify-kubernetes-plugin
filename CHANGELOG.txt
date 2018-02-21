@@ -28,3 +28,5 @@
   - Update Kubernetes Python Client to version 4.0.0
   - Add RBAC node type.
   - Support checking statuses for Kubernetes resources.
+2.0.0.1:
+  - Fix Conditional service check
