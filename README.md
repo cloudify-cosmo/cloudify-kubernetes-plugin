@@ -176,3 +176,17 @@ As *authentication* property of Master node you can specify dictionary with key 
     Example blueprint:
   
     ```examples/simple-multiple_file_defined_resources.yaml```
+
+
+
+
+### Upload Kubernetes Dashboard UI Blueprint To Manager
+```shell
+
+1. Update dashboard input file ***dashboard_input.yaml***
+2. Install the dashboard: cfy install -b kubernetes-dashboard -n kubernetes-dashboard examples/dashboard.yaml -i examples/inputs/dashboard-inputs.yaml
+3. Run the following command: cfy deployment outputs kubernetes-dashboard
+4. The output of deployment command should generate ***dashboard_port*** &&  ***bearer_token***
+5. Access the Dashboard using ***https://MASTER_IP:{{dashboard_port}}***
+6. Login To The Dashboard using token authentication using the ***{{bearer_token}}***
+```
