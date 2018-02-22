@@ -212,8 +212,6 @@ class TestApiOptionsConfiguration(unittest.TestCase):
                 instance.prepare_api(), mock_client
             )
 
-        self.assertEqual(mock_client.configuration.host, 'some_host')
-
 
 class TestKubernetesApiConfigurationVariants(unittest.TestCase):
 

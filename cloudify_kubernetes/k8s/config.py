@@ -120,7 +120,7 @@ class ApiOptionsConfiguration(KubernetesApiConfiguration):
     API_OPTIONS_KEY = 'api_options'
     API_OPTIONS_HOST_KEY = 'host'
     API_OPTIONS_ALL_KEYS = ['host', 'ssl_ca_cert', 'cert_file', 'key_file',
-                            'verify_ssl']
+                            'verify_ssl', 'api_key', 'debug']
 
     def _do_prepare_api(self):
         if self.API_OPTIONS_KEY in self.configuration_data:
@@ -130,10 +130,19 @@ class ApiOptionsConfiguration(KubernetesApiConfiguration):
                 return None
 
             api = kubernetes.client
+            configuration = kubernetes.client.Configuration()
+
             for key in self.API_OPTIONS_ALL_KEYS:
                 if key in api_options:
-                    setattr(api.configuration, key, api_options[key])
+                    # Update the api_key value in order to use on the header
+                    #  api request
+                    if key == 'api_key':
+                        api_options[key] =\
+                            {"authorization":
+                                "Bearer {0}".format(api_options[key])}
+                    setattr(configuration, key, api_options[key])
 
+            api.Configuration.set_default(configuration)
             return api
         return None
 
