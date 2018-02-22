@@ -54,11 +54,12 @@ inputs:
 
   public_dashboard_ip:
     description: >
-      The public ip of the instance where dashboard is running
+      The public ip of the Kubernetes Master where dashboard is running
   dashboard_agent_user:
     description: >
       The username of the agent running on the dashboard instance created
       from the image. (The user agent depend on the Iaas provider)
+
 node_types:
 
   cloudify.nodes.Dashboard.TokenPortData:
@@ -337,6 +338,6 @@ outputs:
     description: Kubernetes Token
     value: { get_attribute: [dashboard_token_and_port, bearer_token] }
 
-  dashboard_port:
-    description: Kubernetes Access Port
-    value: { get_attribute: [dashboard_token_and_port, dashboard_port] }
+  dashboard_url:
+    description: Kubernetes Access Url
+    value: { concat: [ "https://", { get_input: public_dashboard_ip }, ":", { get_attribute: [dashboard_token_and_port, dashboard_port] } ] }
