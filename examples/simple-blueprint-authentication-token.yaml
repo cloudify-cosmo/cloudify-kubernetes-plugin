@@ -1,0 +1,81 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
+  - plugin.yaml
+
+inputs:
+
+  kubernetes_public_master_url:
+    type: string
+    description: >
+      This represent the host url for kubernetes public url api and it
+      should on the following format https://MASTER_IP:PORT
+      MASTER_IP: Refer to the public ip address of the kubernetes manager
+      PORT: Represent the port on which api server listen on usually it is 6443
+
+  kubernetes_authentication_token:
+    type: string
+    description: >
+      This represent the token which is an authentication token directly to the API server
+      More info for how to get the token can be found here https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/#accessing-the-cluster-api
+
+
+  kubernetes_api_debug_mode:
+    type: boolean
+    description: >
+      Debug switch to enable/track the logs generated
+    default: false
+
+
+  kubernetes_master_configuration:
+    default:
+      host: { get_input: kubernetes_public_master_url }
+      api_key: { get_input: kubernetes_authentication_token }
+      debug: { get_input: kubernetes_api_debug_mode }
+      verify_ssl: false # This will be set to false
+
+  kubernetes_api_options:
+    description: >
+      kubernetes api options
+    default: { get_input: kubernetes_master_configuration }
+
+
+node_templates:
+  master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        api_options: { get_input: kubernetes_api_options }
+
+  pod_a:
+    type: cloudify.kubernetes.resources.Pod
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: nginx
+          namespace: default
+        spec:
+          containers:
+          - name: nginx
+            image: nginx
+            volumeMounts:
+            - name: someunxists
+              mountPath: /data
+            ports:
+            - containerPort: 80
+          volumes:
+          - name: someunxists
+            flexVolume:
+              driver: "cloudify/mount"
+              fsType: "ext4"
+              options:
+                volumeID: "vol1"
+                size: "1000m"
+                volumegroup: "kube_vg"
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: master
+
