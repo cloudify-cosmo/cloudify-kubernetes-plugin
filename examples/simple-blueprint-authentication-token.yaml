@@ -19,7 +19,7 @@ inputs:
     description: >
       This represent the token which is an authentication token directly to the API server
       More info for how to get the token can be found here https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/#accessing-the-cluster-api
-
+      The generated user token may not have the enough permission to get/create/edit/delete kubernetes resources which required to grant it enough permission
 
   kubernetes_api_debug_mode:
     type: boolean
