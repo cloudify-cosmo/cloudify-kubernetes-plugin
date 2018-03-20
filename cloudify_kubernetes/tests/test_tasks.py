@@ -139,8 +139,16 @@ class TestTasks(unittest.TestCase):
         properties = {
             'definition': {
                 'apiVersion': 'v1',
-                'metadata': 'c',
-                'spec': 'd'
+                'metadata': {'name': 'kubernetes_id'},
+                'spec': {
+                    'containers': [
+                        {
+                            'name': 'hello',
+                            'image': 'hello-image',
+                            'ports': [{'port': 30080}]
+                        }
+                    ]
+                }
             },
             'options': {
                 'first': 'second'
@@ -598,6 +606,73 @@ class TestTasks(unittest.TestCase):
                 'first': 'second'
             }
         })
+
+    def test_update_resource_definiton_worflow(self):
+        _master_node, _ctx = self._prepare_master_node()
+
+        # Try to fake the Workflow Context.
+        _wctx = MagicMock()
+
+        def mock_get_node_instance(_):
+            return _ctx
+        setattr(_ctx, 'get_node_instance', mock_get_node_instance)
+        _wctx.get_node_instance = mock_get_node_instance
+        setattr(_wctx.instance,
+                'relationships',
+                [MagicMock()])
+        setattr(_wctx.instance.relationships[0],
+                'relationship',
+                _ctx.instance.relationships[0])
+        setattr(_wctx.instance.relationships[0].relationship,
+                'target_node',
+                _master_node)
+
+        xgs = \
+            {
+                'spec': {
+                    'containers': [
+                        {
+                            'name': 'hello',
+                            'image': 'hello-image',
+                            'ports': [
+                                {
+                                    'port': 30081,
+                                    'containerPort': 20080,
+                                }
+                            ]
+                        },
+                        {
+                            'name': 'goodbye',
+                            'image': 'goodbye-image'
+                        }
+                    ]
+                }
+            }
+
+        ok_result = MagicMock()
+
+        def ok_to_dict():
+            return {'metadata': {'name': 'kubernetes_id'}}
+        ok_result.to_dict = ok_to_dict
+
+        with patch('cloudify_kubernetes.k8s.'
+                   'KubernetesApiConfigurationVariants._do_prepare_api',
+                   return_value=MagicMock()):
+                with patch(
+                    'cloudify_kubernetes.k8s.client.'
+                    'CloudifyKubernetesClient.update_resource',
+                        return_value=ok_result):
+                            tasks.update_resource_definition(
+                                client=MagicMock(),
+                                api_mapping=MagicMock(),
+                                resource_definition=MagicMock(),
+                                node_instance_id='node_instance_id',
+                                resource_definition_changes=xgs,
+                                ctx=_wctx)
+
+        self.assertEqual(
+            _ctx.instance.runtime_properties['kubernetes'],
+            ok_result.to_dict())
 
     def test_resource_delete_RecoverableError(self):
         _, _ctx = self._prepare_master_node()

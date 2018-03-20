@@ -5,55 +5,51 @@ description: >
 
 imports:
   - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
-  # - http://www.getcloudify.org/spec/kubernetes-plugin/2.0.0/plugin.yaml
-  - plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-kubernetes-plugin/update-workflow/plugin.yaml
+  # - http://www.getcloudify.org/spec/kubernetes-plugin/2.1.0/plugin.yaml
 
 inputs:
 
-  kubernetes_master_ip:
+  kubernetes_public_master_url:
     type: string
-    default: { get_secret: kubernetes_master_ip }
+    description: >
+      This represent the host url for kubernetes public url api and it
+      should on the following format https://MASTER_IP:PORT
+      MASTER_IP: Refer to the public ip address of the kubernetes manager
+      PORT: Represent the port on which api server listen on usually it is 6443
+    default: { concat: [ 'https://', { get_secret: kubernetes_master_ip}, ':', { get_secret: kubernetes_master_port } ] }
 
-  kubernetes_master_port:
+  kubernetes_authentication_token:
     type: string
-    default: { get_secret: kubernetes_master_port }
+    description: >
+      This represent the token which is an authentication token directly to the API server
+      More info for how to get the token can be found here https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/#accessing-the-cluster-api
+    default: { get_secret: kubernetes_token }
 
-  kubernetes_certificate_authority_data:
-    default: { get_secret: kubernetes_certificate_authority_data }
-
-  kubernetes-admin_client_certificate_data:
-    default: { get_secret: kubernetes-admin_client_certificate_data }
-
-  kubernetes-admin_client_key_data:
-    default: { get_secret: kubernetes-admin_client_key_data }
+  kubernetes_api_debug_mode:
+    type: boolean
+    description: >
+      Debug switch to enable/track the logs generated
+    default: false
 
   kubernetes_master_configuration:
     default:
-      apiVersion: v1
-      kind: Config
-      preferences: {}
-      current-context: kubernetes-admin@kubernetes
-      clusters:
-      - name: kubernetes
-        cluster:
-          certificate-authority-data: { get_input: kubernetes_certificate_authority_data }
-          server: { concat: [ 'https://', { get_input: kubernetes_master_ip}, ':', { get_input: kubernetes_master_port } ] }
-      contexts:
-      - name: kubernetes-admin@kubernetes
-        context:
-          cluster: kubernetes
-          user: kubernetes-admin
-      users:
-      - name: kubernetes-admin
-        user:
-          client-certificate-data: { get_input: kubernetes-admin_client_certificate_data }
-          client-key-data:  { get_input: kubernetes-admin_client_key_data }
+      host: { get_input: kubernetes_public_master_url }
+      api_key: { get_input: kubernetes_authentication_token }
+      debug: { get_input: kubernetes_api_debug_mode }
+      verify_ssl: false # This will be set to false
+
+  kubernetes_api_options:
+    description: >
+      kubernetes api options
+    default: { get_input: kubernetes_master_configuration }
 
   wordpress_password:
     default: X0kdmdwethrngosdf88
 
   mysql_password:
     default: X0kdmdwethrngosdf88
+
 
 node_types:
 
@@ -318,7 +314,7 @@ node_templates:
     type: cloudify.kubernetes.nodes.Master
     properties:
       configuration:
-        file_content: { get_input: kubernetes_master_configuration }
+        api_options: { get_input: kubernetes_api_options }
 
 outputs:
   wordpress:
