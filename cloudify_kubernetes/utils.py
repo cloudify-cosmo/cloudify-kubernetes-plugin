@@ -18,6 +18,7 @@ import yaml
 
 
 from cloudify import ctx
+from cloudify.workflows.workflow_context import CloudifyWorkflowNodeInstance
 
 from .k8s import (KubernetesApiMapping,
                   KuberentesInvalidDefinitionError,
@@ -51,6 +52,24 @@ def _yaml_from_file(
     return yaml.load(file_content)
 
 
+def get_ctx_from_kwargs(_kwargs, _attribute='instance'):
+
+    _ctx = _kwargs.get('ctx') or ctx
+    node_instance_id = _kwargs.get('node_instance_id')
+    if node_instance_id:
+        get_result = _ctx.get_node_instance(node_instance_id)
+        if isinstance(get_result, CloudifyWorkflowNodeInstance):
+            if _attribute == 'node':
+                result = get_result.node
+            else:
+                result = get_result
+        else:
+            result = getattr(get_result, _attribute)
+    else:
+        result = getattr(_ctx, _attribute)
+    return _ctx, result
+
+
 def mapping_by_data(resource_definition, **kwargs):
     mapping_data = kwargs.get(
         NODE_PROPERTY_API_MAPPING,
@@ -71,9 +90,12 @@ def mapping_by_kind(resource_definition, **kwargs):
 
 
 def get_definition_object(**kwargs):
+
+    _ctx, node = get_ctx_from_kwargs(kwargs, _attribute='node')
+
     definition = kwargs.get(
         NODE_PROPERTY_DEFINITION,
-        ctx.node.properties.get(NODE_PROPERTY_DEFINITION, None)
+        node.properties.get(NODE_PROPERTY_DEFINITION, None)
     )
 
     if not definition:
@@ -82,8 +104,8 @@ def get_definition_object(**kwargs):
         )
 
     if 'kind' not in definition:
-        definition['kind'] = ctx.node.type \
-            if isinstance(ctx.node.type, basestring)\
+        definition['kind'] = node.type \
+            if isinstance(node.type, basestring)\
             else ''
 
     return definition

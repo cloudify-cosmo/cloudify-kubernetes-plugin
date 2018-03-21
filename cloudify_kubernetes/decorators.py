@@ -15,13 +15,17 @@
 #
 
 import sys
-from cloudify import ctx
 from cloudify.exceptions import (
     OperationRetry,
     RecoverableError,
     NonRecoverableError
 )
 from cloudify.utils import exception_to_error_cause
+from cloudify.workflows.workflow_context import CloudifyWorkflowContext
+from cloudify.manager import (
+    download_resource as manager_download_resource,
+    get_rest_client)
+from .utils import get_ctx_from_kwargs
 from .k8s import (CloudifyKubernetesClient,
                   KubernetesApiAuthenticationVariants,
                   KubernetesApiConfigurationVariants,
@@ -39,19 +43,60 @@ RELATIONSHIP_TYPE_MANAGED_BY_MASTER = (
 )
 
 
+class pseudo_node_instance(object):
+    # The workflow context is an abomination.
+    pass
+
+
+def build_node_instance(node_instance_id):
+    cfy_rest_client = get_rest_client()
+    node_instance_response = \
+        cfy_rest_client.node_instances.get(
+            node_instance_id,
+            evaluate_functions=True)
+    node_response = cfy_rest_client.nodes.get(
+        node_instance_response.deployment_id,
+        node_instance_response.node_id,
+        evaluate_functions=True)
+    node_instance = pseudo_node_instance()
+    setattr(node_instance, 'node_instance', node_instance_response)
+    setattr(node_instance, 'node', node_response)
+    return node_instance
+
+
 def _retrieve_master(resource_instance):
-    for relationship in resource_instance.relationships:
-        if relationship.type == RELATIONSHIP_TYPE_MANAGED_BY_MASTER:
-            return relationship.target
+    if isinstance(resource_instance, pseudo_node_instance):
+        for relationship in \
+                resource_instance.node_instance.get('relationships', []):
+            if relationship.get('type', '') == \
+                    RELATIONSHIP_TYPE_MANAGED_BY_MASTER:
+                return build_node_instance(relationship.get('target_id', ''))
+    else:
+        for relationship in resource_instance.relationships:
+            rel_type = relationship.type
+            if rel_type == RELATIONSHIP_TYPE_MANAGED_BY_MASTER:
+                return relationship.target
+    raise NonRecoverableError(
+        'No relationship to a cloudify.kubernetes.nodes.Master was provided.')
 
 
-def _retrieve_property(resource_instance, property_name):
-    target = _retrieve_master(resource_instance)
-    configuration = target.node.properties.get(property_name, {})
+def _retrieve_property(resource_instance,
+                       property_name):
+    master = _retrieve_master(resource_instance)
+    if isinstance(master, pseudo_node_instance):
+        configuration = master.node.get(
+            'properties', {}).get(
+            property_name, {})
+        configuration.update(
+            master.node_instance.get(
+                'runtime_properties', {}).get(
+                property_name, {})
+        )
+        return configuration
+    configuration = master.node.properties.get(property_name, {})
     configuration.update(
-        target.instance.runtime_properties.get(property_name, {})
+        master.instance.runtime_properties.get(property_name, {})
     )
-
     return configuration
 
 
@@ -93,26 +138,37 @@ def resource_task(retrieve_resource_definition, retrieve_mapping):
 
 def with_kubernetes_client(function):
     def wrapper(**kwargs):
+
+        _ctx, node_instance = get_ctx_from_kwargs(kwargs)
+
+        if isinstance(_ctx, CloudifyWorkflowContext):
+            node_instance = build_node_instance(node_instance.id)
+
         configuration_property = _retrieve_property(
-            ctx.instance,
+            node_instance,
             NODE_PROPERTY_CONFIGURATION
         )
 
         authentication_property = _retrieve_property(
-            ctx.instance,
+            node_instance,
             NODE_PROPERTY_AUTHENTICATION
         )
 
         try:
+            _download_resource = _ctx.download_resource
+        except AttributeError:
+            _download_resource = manager_download_resource
+
+        try:
             kwargs['client'] = CloudifyKubernetesClient(
-                ctx.logger,
+                _ctx.logger,
                 KubernetesApiConfigurationVariants(
-                    ctx.logger,
+                    _ctx.logger,
                     configuration_property,
-                    download_resource=ctx.download_resource
+                    download_resource=_download_resource
                 ),
                 KubernetesApiAuthenticationVariants(
-                    ctx.logger,
+                    _ctx.logger,
                     authentication_property
                 )
             )

@@ -15,20 +15,25 @@
 
 # hack for import namespaced modules
 import cloudify_importer # noqa
+import collections
+import ast
 
 from cloudify import ctx
+from cloudify.state import workflow_ctx as wctx
 from cloudify.exceptions import (
     NonRecoverableError,
     OperationRetry,
     RecoverableError)
 
 from k8s.exceptions import KuberentesApiOperationError
+from .k8s import KubernetesResourceDefinition
 from .decorators import (resource_task,
                          with_kubernetes_client)
 from .utils import (mapping_by_data,
                     mapping_by_kind,
                     resource_definition_from_blueprint,
-                    resource_definition_from_file,)
+                    resource_definition_from_file,
+                    get_ctx_from_kwargs)
 
 
 DEFAULT_NAMESPACE = 'default'
@@ -125,14 +130,25 @@ def _do_resource_read(client, api_mapping, id, **kwargs):
 
 
 def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
+
+    _ctx, node = get_ctx_from_kwargs(kwargs, _attribute='node')
+
+    if hasattr(kwargs, 'ctx'):
+        delattr(kwargs, 'ctx')
+    if hasattr(kwargs, 'node_instance_id'):
+        delattr(kwargs, 'node_instance_id')
+    if hasattr(kwargs, 'resource_definition_changes'):
+        delattr(kwargs, 'resource_definition_changes')
+
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
-    return JsonCleanuper(client.update_resource(
-        api_mapping,
-        resource_definition,
-        ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    )).to_dict()
+    return JsonCleanuper(
+        client.update_resource(
+            api_mapping,
+            resource_definition,
+            node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+        )).to_dict()
 
 
 def _do_resource_status_check(resource_kind, response):
@@ -304,6 +320,59 @@ def resource_update(client, api_mapping, resource_definition, **kwargs):
             api_mapping,
             resource_definition,
             **kwargs)
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_kind
+)
+def update_resource_definition(client,
+                               api_mapping,
+                               resource_definition,
+                               node_instance_id,
+                               resource_definition_changes,
+                               ctx=wctx,
+                               **kwargs):
+
+    # TODO: Make this not absurd by using graph mode.
+
+    def merge_resource_definitions(old, new):
+        if isinstance(old, KubernetesResourceDefinition):
+            for new_key, new_value in new.iteritems():
+                old_value = getattr(old, new_key)
+                old_value = merge_resource_definitions(
+                    old_value, new_value)
+                setattr(old, new_key, old_value)
+            return old
+        elif isinstance(old, dict):
+            for k, v in new.iteritems():
+                if (k in old and isinstance(old[k], dict) and
+                        isinstance(new[k], collections.Mapping)):
+                    old[k] = merge_resource_definitions(
+                        old[k], new[k])
+                else:
+                    old[k] = new[k]
+            return old
+        else:
+            return new
+
+    if isinstance(resource_definition_changes, basestring):
+        resource_definition_changes = \
+            ast.literal_eval(resource_definition_changes)
+
+    # Modify the resource definition.
+    resource_definition = merge_resource_definitions(
+        resource_definition, resource_definition_changes)
+    resource_definition.metadata['resourceVersion'] = '0'
+
+    _do_resource_update(
+        client,
+        api_mapping,
+        resource_definition,
+        ctx=wctx,
+        node_instance_id=node_instance_id,
+        **kwargs)
 
 
 @with_kubernetes_client

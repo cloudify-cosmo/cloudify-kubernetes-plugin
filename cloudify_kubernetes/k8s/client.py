@@ -165,7 +165,6 @@ class CloudifyKubernetesClient(object):
         options['body'] = self._prepare_payload(
             mapping.create.payload, resource_definition
         )
-
         self.logger.debug('Options API Request {0}'.format(options))
         return self._execute(self._prepare_operation(
             KubernetesCreateOperation, **vars(mapping.create)
@@ -182,9 +181,11 @@ class CloudifyKubernetesClient(object):
             mapping.create.payload, resource_definition
         )
         options['name'] = resource_definition.metadata['name']
-        return self._execute(self._prepare_operation(
-            KubernetesUpdateOperation, **vars(mapping.update)
-        ), options)
+        self.logger.debug('Options API Request {0}'.format(options))
+        prepare_result = self._prepare_operation(
+            KubernetesUpdateOperation, **vars(mapping.update))
+        self.logger.debug('Prepare result {0}'.format(prepare_result))
+        return self._execute(prepare_result, options)
 
     def delete_resource(self, mapping, resource_definition,
                         resource_id, options):

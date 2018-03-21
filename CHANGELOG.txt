@@ -30,6 +30,7 @@
   - Support checking statuses for Kubernetes resources.
 2.0.0.1:
   - Fix Conditional service check
-
 2.1.0:
   - Add support for creating resources on Kubernetes using service account token
+2.2.0:
+  - Adding an "update_resource_definition" workflow.
