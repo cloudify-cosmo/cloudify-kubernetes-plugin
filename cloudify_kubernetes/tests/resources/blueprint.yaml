@@ -1,0 +1,50 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
+  - plugin.yaml
+
+node_templates:
+
+  master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content:
+          apiVersion: v1
+          kind: Config
+          preferences: {}
+          current-context: kubernetes-admin@kubernetes
+          clusters:
+          - name: kubernetes
+            cluster:
+              certificate-authority-data:
+              server:
+          contexts:
+          - name: kubernetes-admin@kubernetes
+            context:
+              cluster: kubernetes
+              user: kubernetes-admin
+          users:
+          - name: kubernetes-admin
+            user:
+              client-certificate-data:
+              client-key-data:
+
+  nginx_pod:
+    type: cloudify.kubernetes.resources.Pod
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: nginx
+        spec:
+          ports:
+          - port: 80
+          containers:
+          - name: nginx
+            image: nginx
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: master
