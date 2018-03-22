@@ -3,8 +3,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.1.0'
-    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.1.0.zip
+    package_version: '2.2.0'
+    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/alternative-update-workflow.zip
 
 data_types:
 
@@ -469,3 +469,13 @@ relationships:
 
   cloudify.kubernetes.relationships.managed_by_master:
     derived_from: cloudify.relationships.connected_to
+
+workflows:
+
+  update_resource_definition:
+    mapping: kubernetes.cloudify_kubernetes.workflows.update_resource_definition
+    parameters:
+      node_instance_id:
+        description: The id of the node-instance that you want to modify.
+      resource_definition_changes:
+        description: The changes to the resource definition that you are making.
