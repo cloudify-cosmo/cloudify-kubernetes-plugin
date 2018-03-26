@@ -58,7 +58,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1beta1Api',
-            method='replace_cluster_role_binding',
+            method='patch_cluster_role_binding',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1beta1Api',
@@ -78,7 +78,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',
-            method='replace_namespaced_deployment',
+            method='patch_namespaced_deployment',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',
@@ -98,7 +98,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='replace_namespaced_pod'
+            method='patch_namespaced_pod'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -118,7 +118,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',
-            method='replace_namespaced_replica_set'
+            method='patch_namespaced_replica_set'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',
@@ -138,7 +138,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='replace_namespaced_replication_controller',
+            method='patch_namespaced_replication_controller',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -157,7 +157,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='replace_namespaced_service'
+            method='patch_namespaced_service'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -177,7 +177,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='replace_persistent_volume'
+            method='patch_persistent_volume'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -197,7 +197,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='StorageV1beta1Api',
-            method='replace_storage_class'
+            method='patch_storage_class'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='StorageV1beta1Api',
@@ -217,7 +217,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='replace_namespaced_config_map'
+            method='patch_namespaced_config_map'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
