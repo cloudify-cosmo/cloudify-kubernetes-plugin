@@ -35,3 +35,5 @@
   - Add support for creating resources on Kubernetes using service account token
 2.2.0:
   - Adding an "update_resource_definition" workflow.
+2.2.1:
+  - Use patch_ methods for update instead of replace_ in the mappings module.

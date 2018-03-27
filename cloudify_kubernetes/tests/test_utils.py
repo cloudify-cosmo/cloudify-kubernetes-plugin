@@ -71,7 +71,7 @@ class TestUtils(unittest.TestCase):
         )
 
         self.assertEqual(mapping.update.api, 'CoreV1Api')
-        self.assertEqual(mapping.update.method, 'replace_namespaced_pod')
+        self.assertEqual(mapping.update.method, 'patch_namespaced_pod')
 
         self.assertTrue(
             isinstance(
@@ -142,7 +142,7 @@ class TestUtils(unittest.TestCase):
             },
             'update': {
                 'api': 'CoreV1Api',
-                'method': 'replace_namespaced_pod',
+                'method': 'patch_namespaced_pod',
             },
             'delete': {
                 'api': 'CoreV1Api',
