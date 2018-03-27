@@ -33,3 +33,5 @@
 
 2.1.0:
   - Add support for creating resources on Kubernetes using service account token
+2.2.0:
+  - Adding an "update_resource_definition" workflow.

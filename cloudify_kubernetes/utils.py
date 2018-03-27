@@ -24,6 +24,7 @@ from .k8s import (KubernetesApiMapping,
                   KuberentesMappingNotFoundError,
                   KubernetesResourceDefinition,
                   get_mapping)
+from .workflows import merge_definitions, DEFINITION_ADDITIONS
 
 
 NODE_PROPERTY_API_MAPPING = 'api_mapping'
@@ -75,6 +76,10 @@ def get_definition_object(**kwargs):
         NODE_PROPERTY_DEFINITION,
         ctx.node.properties.get(NODE_PROPERTY_DEFINITION, None)
     )
+    if DEFINITION_ADDITIONS in kwargs:
+        definition = merge_definitions(
+            definition,
+            kwargs.pop(DEFINITION_ADDITIONS))
 
     if not definition:
         raise KuberentesInvalidDefinitionError(
