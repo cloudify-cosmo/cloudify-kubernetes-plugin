@@ -177,7 +177,7 @@ def _do_resource_status_check(resource_kind, response):
                         'reason:{0}, message: {1}'
                         ''.format(condition['reason'], condition['message']))
 
-                elif condition['type'] == 'Progressing':
+                elif condition['type'] == 'Progressing' and condition['reason'] != 'NewReplicaSetAvailable': 
                     raise OperationRetry(
                         'Deployment condition is Progressing')
         else:
