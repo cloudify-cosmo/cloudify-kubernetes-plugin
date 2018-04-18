@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: cfy-manager
+  labels:
+    app: cloudify
+    component: cfy-cluster
+spec:
+  restartPolicy: Never
+  volumes:
+  - name: cgroup
+    hostPath:
+      path: /sys/fs/cgroup
+  containers:
+  - name: cloudify-manager
+    image: cloudifyplatform/premium
+    env:
+    - name: PRIVATE_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    lifecycle:
+      postStart:
+        exec:
+          command:
+          - bash
+          - "-c"
+          - |
+            set -ex
+
+            sleep 15
+
+            PUBLIC_IP=$CFY_SERVICE_PORT_80_TCP_ADDR
+            UPDATE_CERT_MD_SCRIPT=/tmp/update_cert_metadata.py
+
+            curl -o $UPDATE_CERT_MD_SCRIPT https://raw.githubusercontent.com/Cloudify-PS/cloudify-labs-env-blueprints/4068a109545f9dfdf87e42b70583b831abfa3c63/components/CFYManager4x/scripts/update_cert_metadata.py
+
+            sudo chmod +x $UPDATE_CERT_MD_SCRIPT
+            sudo cp /etc/cloudify/ssl/certificate_metadata /etc/cloudify/ssl/certificate_metadata.old
+            sudo sh -c "cat /etc/cloudify/ssl/certificate_metadata.old | $UPDATE_CERT_MD_SCRIPT external $PUBLIC_IP  > /etc/cloudify/ssl/certificate_metadata"
+
+            sudo /opt/manager/env/bin/python /opt/cloudify/manager-ip-setter/update-provider-context.py --networks /etc/cloudify/ssl/certificate_metadata $PRIVATE_IP
+
+            sudo rm /opt/cloudify/manager-ip-setter/touched
+
+            sudo /opt/cloudify/manager-ip-setter/manager-ip-setter.sh
+
+            sudo systemctl restart nginx 2>&1 >/dev/null
+            sudo systemctl restart cloudify-rabbitmq 2>&1 >/dev/null
+    ports:
+    - containerPort: 1025
+      hostPort: 22
+    - containerPort: 80
+      hostPort: 80
+    - containerPort: 999
+      hostPort: 999
+    - containerPort: 8080
+      hostPort: 8080
+    - containerPort: 5432
+      hostPort: 5432
+    - containerPort: 5671
+      hostPort: 5671
+    - containerPort: 5672
+      hostPort: 5672
+    - containerPort: 8086
+      hostPort: 8086
+    - containerPort: 8300
+      hostPort: 8300
+    - containerPort: 8301
+      hostPort: 8301
+    - containerPort: 8500
+      hostPort: 8500
+    - containerPort: 9200
+      hostPort: 9200
+    - containerPort: 15432
+      hostPort: 15432
+    - containerPort: 15672
+      hostPort: 15672
+    - containerPort: 22000
+      hostPort: 22000
+    volumeMounts:
+    - mountPath: /sys/fs/cgroup
+      readOnly: True
+      name: cgroup
+    securityContext:
+      capabilities:
+        add: ["SYS_ADMIN"]
+    volumeMounts:
+    - mountPath: /sys/fs/cgroup
+      readOnly: True
+      name: cgroup
+    securityContext:
+      capabilities:
+        add: ["SYS_ADMIN"]

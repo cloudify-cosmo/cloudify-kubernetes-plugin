@@ -4,8 +4,7 @@ description: >
   Based on this example: https://github.com/kubernetes/examples/blob/master/mysql-wordpress-pd/README.md.
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
-  # - http://www.getcloudify.org/spec/kubernetes-plugin/2.2.1/plugin.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.3/types.yaml
   - plugin.yaml
 
 inputs:

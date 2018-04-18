@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cfy-service
+  labels:
+    app: cloudify
+    component: cfy-cluster
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    component: cfy-cluster
+  type: LoadBalancer
