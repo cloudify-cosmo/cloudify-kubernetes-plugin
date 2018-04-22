@@ -37,3 +37,5 @@
   - Adding an "update_resource_definition" workflow.
 2.2.1:
   - Use patch_ methods for update instead of replace_ in the mappings module.
+2.2.2:
+  - Improve Pod state verification.

@@ -6,10 +6,9 @@ description: >
   Also install the wagon with the command: "cfy plugins upload PATH_TO_WAGON".
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
+  - http://www.getcloudify.org/spec/cloudify/4.3.1/types.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/2.7.4/plugin.yaml
   - plugin.yaml
-  # - http://www.getcloudify.org/spec/kubernetes-plugin/1.4.0/plugin.yaml
-  - https://raw.githubusercontent.com/cloudify-cosmo/cloudify-openstack-plugin/2.2.0/plugin.yaml
 
 inputs:
 

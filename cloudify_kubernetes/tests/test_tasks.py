@@ -299,7 +299,12 @@ class TestTasks(unittest.TestCase):
         self._prepare_master_node()
         with self.assertRaises(OperationRetry) as error:
             tasks._do_resource_status_check("Deployment", {
-                'status': {'conditions': [{'type': 'Progressing'}]}
+                'status': {
+                    'conditions': [{
+                        'type': 'Progressing',
+                        'reason': ''
+                    }]
+                }
             })
         self.assertEqual(
             str(error.exception),
