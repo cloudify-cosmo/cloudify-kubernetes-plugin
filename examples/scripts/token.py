@@ -16,6 +16,7 @@
 #
 
 from cloudify.manager import get_rest_client
+from cloudify_rest_client.exceptions import CloudifyClientError
 from fabric.api import run
 
 command = "kubectl -n default describe secret " \
@@ -26,5 +27,8 @@ command = "kubectl -n default describe secret " \
 
 def get_token(service_account_name):
     token = run(command.format(service_account_name))
-    client = get_rest_client()
-    client.secrets.create(key=service_account_name, value=token)
+    try:
+        client = get_rest_client()
+        client.secrets.create(key=service_account_name, value=token)
+    except CloudifyClientError as e:
+        raise NonRecoverableError(str(e))
