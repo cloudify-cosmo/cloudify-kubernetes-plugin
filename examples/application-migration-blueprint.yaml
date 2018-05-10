@@ -1,0 +1,250 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/4.2/types.yaml
+  - http://www.getcloudify.org/spec/kubernetes-plugin/2.0.0/plugin.yaml
+  - https://raw.githubusercontent.com/cloudify-incubator/cloudify-utilities-plugin/1.3.0/plugin.yaml
+
+inputs:
+  kubernetes_configuration_file_content:
+    description: >
+      File content of kubernetes master YAML configuration
+    default: {}
+  external_ip:
+    description: >
+      External IP for the nodecellar service
+  external_port:
+    description: >
+      External port for the nodecellar service
+    default: 8080
+  parameters_json:
+    default:
+      node_label:
+        demo: node1
+
+node_types:
+  MovableKubernetesResourceTemplate:
+    derived_from: cloudify.nodes.Root
+    properties:
+      params_list:
+        default: []
+      params:
+        default: {}
+      param_name:
+        type: string
+        default: 'node_label'
+      definition:
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: scripts/render_template.py
+          executor: central_deployment_agent
+        configure:
+          implementation: scripts/render_template.py
+          executor: central_deployment_agent
+        start:
+          implementation: scripts/render_template.py
+          executor: central_deployment_agent
+        update:
+          implementation: scripts/render_template.py
+          executor: central_deployment_agent
+        stop:
+          implementation: scripts/render_template.py
+          executor: central_deployment_agent
+        delete:
+          implementation: scripts/render_template.py
+          executor: central_deployment_agent
+
+  MovableDeployment:
+    derived_from: cloudify.kubernetes.resources.Deployment
+    properties:
+      params_list:
+        default: []
+      params:
+        default: {}
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start: {}
+
+node_templates:
+  configuration:
+    type: configuration_loader
+    properties:
+      parameters_json: { get_input: parameters_json }
+
+  kubernetes_master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: kubernetes_configuration_file_content }
+
+  nodecellar_node:
+    type: MovableKubernetesResourceTemplate
+    properties:
+      params_list: [node_label]
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: nodecellar
+          labels:
+            demo: nodecellar
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              demo: nodecellar
+          template:
+            metadata:
+              labels:
+                demo: nodecellar
+            spec:
+              containers:
+              - name: nodecellar
+                image: uric/nodecellar
+                imagePullPolicy: IfNotPresent
+                stdin: true
+                tty: true
+                ports:
+                - containerPort: 8080
+                env:
+                - name: NODECELLAR_PORT
+                  value: "8080"
+                - name: MONGO_PORT
+                  value: "27017"
+                - name: MONGO_HOST
+                  value: "mongod"
+                command:
+                - nodejs
+                args:
+                - server.js
+    relationships:
+      - type: load_from_config
+        target: configuration
+      - type: cloudify.relationships.depends_on
+        target: mongo_node
+
+  nodecellar_pod:
+    type: MovableDeployment
+    properties:
+      params_list: [node_label]
+      options:
+        grace_period_seconds: 5
+        propagation_policy: 'Foreground'
+        namespace: 'default'
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            definition: { get_attribute: [nodecellar_node, result, current] }
+        update:
+          inputs:
+            definition: { get_attribute: [nodecellar_node, result, current] }
+        delete:
+          inputs:
+            definition: { get_attribute: [nodecellar_node, result, current] }
+    relationships:
+      - type: cloudify.relationships.connected_to
+        target: nodecellar_node
+      - type: cloudify.relationships.depends_on
+        target: mongo_pod
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: load_from_config
+        target: configuration
+
+  mongo_node:
+    type: MovableKubernetesResourceTemplate
+    properties:
+      params_list: [node_label]
+      definition:
+        apiVersion: extensions/v1beta1
+        kind: Deployment
+        metadata:
+          name: mongo
+          labels:
+            demo: mongo
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              demo: mongo
+          template:
+            metadata:
+              labels:
+                demo: mongo
+            spec:
+              containers:
+              - name: mongo
+                image: mongo:3.4
+                imagePullPolicy: IfNotPresent
+                stdin: true
+                tty: true
+                ports:
+                - containerPort: 27017
+                - containerPort: 28017
+                command:
+                - mongod
+                args: ["--rest", "--httpinterface", "--smallfiles"]
+    relationships:
+      - type: load_from_config
+        target: configuration
+
+  mongo_pod:
+    type: MovableDeployment
+    properties:
+      params_list: [node_label]
+      options:
+        grace_period_seconds: 5
+        propagation_policy: 'Foreground'
+        namespace: 'default'
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          inputs:
+            definition: { get_attribute: [mongo_node, result, current] }
+        update:
+          inputs:
+            definition: { get_attribute: [mongo_node, result, current] }
+        delete:
+          inputs:
+            definition: { get_attribute: [mongo_node, result, current] }
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: mongo_node
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
+      - type: load_from_config
+        target: configuration
+
+  service:
+    type: cloudify.kubernetes.resources.Service
+    properties:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: service-nodecellar
+          labels:
+            demo: my-service
+        spec:
+          type: NodePort
+          ports:
+          - name: nodecellar
+            port: { get_input: external_port}
+            protocol: TCP
+            targetPort: 8080
+          selector:
+            demo: nodecellar
+          externalIPs:
+          - { get_input: external_ip }
+    # Needed when setting clusterIP: None.
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start: {}
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: nodecellar_node
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: kubernetes_master
