@@ -349,8 +349,9 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
             **kwargs
         )
 
-        raise OperationRetry(
-            'Delete response: {0}'.format(delete_response))
+        if not ctx.node.properties.get('use_external_resource'):
+            raise OperationRetry(
+                'Delete response: {0}'.format(delete_response))
 
 
 @with_kubernetes_client
