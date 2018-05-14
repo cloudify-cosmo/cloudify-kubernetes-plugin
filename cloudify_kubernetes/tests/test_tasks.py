@@ -124,7 +124,7 @@ class TestTasks(unittest.TestCase):
         self.patch_mock_mappings.stop()
         super(TestTasks, self).tearDown()
 
-    def _prepare_master_node(self, api_mapping=None):
+    def _prepare_master_node(self, api_mapping=None, external=False):
         node = MagicMock()
         node.properties = {
             'configuration': {
@@ -137,6 +137,7 @@ class TestTasks(unittest.TestCase):
         managed_master_node.target.node = node
 
         properties = {
+            'use_external_resource': external,
             'definition': {
                 'apiVersion': 'v1',
                 'metadata': 'c',
@@ -495,6 +496,42 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(result, expected_value)
 
+    def test_external_do_resource_create(self):
+        self._prepare_master_node(external=True)
+
+        expected_value = {
+            'kubernetes': {
+                'body': {'payload_param': 'payload_value'},
+                'first': 'second'
+            }
+        }
+        fake_resource_def = MagicMock()
+        setattr(
+            fake_resource_def, 'metadata', {'name': 'name'})
+
+        class _Result(object):
+            def to_dict(self):
+                return expected_value
+
+        class _ReadResource(object):
+            def __call__(self, api_mapping, resource_definition, options):
+                if api_mapping == 'fake_api_mapping':
+                    if resource_definition == \
+                            fake_resource_def.metadata['name']:
+                        if options['first'] == 'second':
+                            return _Result()
+
+        client = MagicMock()
+        client.read_resource = _ReadResource()
+
+        result = tasks._do_resource_create(
+            client=client,
+            api_mapping='fake_api_mapping',
+            resource_definition=fake_resource_def
+        )
+
+        self.assertEqual(result, expected_value)
+
     def test_do_resource_update(self):
         self._prepare_master_node()
 
@@ -556,6 +593,42 @@ class TestTasks(unittest.TestCase):
             client=client,
             api_mapping='fake_api_mapping',
             resource_definition='fake_resource_definition',
+            resource_id='fake_id'
+        )
+
+        self.assertEqual(result, expected_value)
+
+    def test_external_do_resource_delete(self):
+        self._prepare_master_node(external=True)
+
+        expected_value = {
+            'kubernetes': {
+                'body': {'payload_param': 'payload_value'},
+                'first': 'second'
+            }
+        }
+        fake_resource_def = MagicMock()
+        setattr(
+            fake_resource_def, 'metadata', {'name': 'name'})
+
+        class _Result(object):
+            def to_dict(self):
+                return expected_value
+
+        class _ReadResource(object):
+            def __call__(self, api_mapping, resource_definition, options):
+                if api_mapping == 'fake_api_mapping':
+                    if resource_definition == 'fake_id':
+                        if options['first'] == 'second':
+                            return _Result()
+
+        client = MagicMock()
+        client.read_resource = _ReadResource()
+
+        result = tasks._do_resource_delete(
+            client=client,
+            api_mapping='fake_api_mapping',
+            resource_definition=fake_resource_def,
             resource_id='fake_id'
         )
 
