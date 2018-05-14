@@ -46,6 +46,26 @@ class KubernetesApiMapping(object):
 
 
 SUPPORTED_API_MAPPINGS = {
+    'Node': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='create_node',
+            payload='V1Node'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='read_node',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='patch_node',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='delete_node',
+            payload='V1DeleteOptions'
+        ),
+    ),
     'ClusterRoleBinding': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1beta1Api',

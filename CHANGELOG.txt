@@ -39,3 +39,6 @@
   - Use patch_ methods for update instead of replace_ in the mappings module.
 2.2.2:
   - Improve Pod state verification.
+2.3.0:
+  - Add Node type.
+  - Add use_external_resource property. Performs read operations on create and delete instead of performing create and delete.

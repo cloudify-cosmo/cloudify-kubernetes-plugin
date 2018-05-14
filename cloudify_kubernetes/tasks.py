@@ -104,6 +104,12 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
 
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     ctx.logger.debug('Node options {0}'.format(options))
+    if ctx.node.properties.get('use_external_resource'):
+        return JsonCleanuper(client.read_resource(
+            api_mapping,
+            resource_definition.metadata['name'],
+            options
+        )).to_dict()
     return JsonCleanuper(client.create_resource(
         api_mapping,
         resource_definition,
@@ -240,6 +246,12 @@ def _do_resource_delete(client, api_mapping, resource_definition,
     # The resource is not a type of ``ReplicationController`` then we must
     # pass all the required fields
 
+    if ctx.node.properties.get('use_external_resource'):
+        return JsonCleanuper(client.read_resource(
+            api_mapping,
+            resource_id,
+            options
+        )).to_dict()
     return JsonCleanuper(client.delete_resource(
         api_mapping,
         resource_definition,
