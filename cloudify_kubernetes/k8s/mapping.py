@@ -66,6 +66,26 @@ SUPPORTED_API_MAPPINGS = {
             payload='V1DeleteOptions'
         ),
     ),
+    'ClusterRole': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='create_cluster_role',
+            payload='V1beta1ClusterRole'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='read_cluster_role',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='patch_cluster_role'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='RbacAuthorizationV1beta1Api',
+            method='delete_cluster_role',
+            payload='V1DeleteOptions'
+        ),
+    ),
     'Deployment': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
             api='ExtensionsV1beta1Api',
@@ -304,7 +324,27 @@ SUPPORTED_API_MAPPINGS = {
             method='delete_namespaced_role_binding',
             payload='V1DeleteOptions'
         ),
-    )
+    ),
+    'DaemonSet': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='ExtensionsV1beta1Api',
+            method='create_namespaced_daemon_set',
+            payload='V1beta1DaemonSet'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='ExtensionsV1beta1Api',
+            method='read_namespaced_daemon_set',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='ExtensionsV1beta1Api',
+            method='patch_namespaced_daemon_set'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='ExtensionsV1beta1Api',
+            method='delete_namespaced_daemon_set',
+            payload='V1DeleteOptions'
+        ),
+    ),
 }
 
 
