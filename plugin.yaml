@@ -3,7 +3,7 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.2.2'
+    package_version: '2.2.2.Dev0'
     source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.2.2.zip
 
 data_types:
@@ -192,6 +192,12 @@ data_types:
           Rules holds all the PolicyRules for this Role.
         default: []
 
+  cloudify.kubernetes.types.ClusterRoleDefinition:
+    derived_from: cloudify.kubernetes.types.RoleDefinition
+    description: >
+      Type defining single Kubernetes resource e.g. ClusterRole, ...
+      It is some kind of wrapper for native Kubernetes YAML definition
+
   cloudify.kubernetes.types.StorageClassResourceDefinition:
     derived_from: cloudify.kubernetes.types.AbstractResource
     description: >
@@ -344,6 +350,14 @@ node_types:
         start:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
+  cloudify.kubernetes.resources.ClusterRole:
+    derived_from: cloudify.kubernetes.resources.Role
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.ClusterRoleDefinition
+        description: >
+          Definition of cluster role using native Kubernetes YAML spec
+
   cloudify.kubernetes.resources.Secret:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
@@ -390,6 +404,13 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ReplicationController:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        start:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+
+  cloudify.kubernetes.resources.DaemonSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     interfaces:
       cloudify.interfaces.lifecycle:
