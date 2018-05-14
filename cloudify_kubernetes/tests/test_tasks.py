@@ -710,7 +710,7 @@ class TestTasks(unittest.TestCase):
                 with patch(
                         'cloudify_kubernetes.tasks._do_resource_read',
                         MagicMock()):
-                    with self.assertRaises(OperationRetry):
+                    with self.assertRaises(NonRecoverableError):
                         tasks.resource_delete(
                             client=MagicMock(),
                             api_mapping=MagicMock(),
