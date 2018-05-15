@@ -16,6 +16,7 @@
 #
 
 from cloudify.manager import get_rest_client
+from cloudify.exceptions import NonRecoverableError
 from cloudify_rest_client.exceptions import CloudifyClientError
 from fabric.api import run
 
