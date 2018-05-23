@@ -13,11 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import sys
 
 import yaml
-
-
 from cloudify import ctx
+from cloudify.utils import exception_to_error_cause
 
 from .k8s import (KubernetesApiMapping,
                   KuberentesInvalidDefinitionError,
@@ -31,6 +31,12 @@ NODE_PROPERTY_API_MAPPING = 'api_mapping'
 NODE_PROPERTY_DEFINITION = 'definition'
 NODE_PROPERTY_FILE = 'file'
 NODE_PROPERTY_OPTIONS = 'options'
+
+
+def generate_traceback_exception():
+    _, exc_value, exc_traceback = sys.exc_info()
+    response = exception_to_error_cause(exc_value, exc_traceback)
+    return response
 
 
 def _yaml_from_file(

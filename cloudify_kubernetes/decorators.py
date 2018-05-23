@@ -14,14 +14,13 @@
 # limitations under the License.
 #
 
-import sys
 from cloudify import ctx
 from cloudify.exceptions import (
     OperationRetry,
     RecoverableError,
     NonRecoverableError
 )
-from cloudify.utils import exception_to_error_cause
+from utils import generate_traceback_exception
 from .k8s import (CloudifyKubernetesClient,
                   KubernetesApiAuthenticationVariants,
                   KubernetesApiConfigurationVariants,
@@ -69,23 +68,35 @@ def resource_task(retrieve_resource_definition, retrieve_mapping):
                     KuberentesInvalidApiMethodError) as e:
                 raise NonRecoverableError(str(e))
             except OperationRetry as e:
-                _, exc_value, exc_traceback = sys.exc_info()
+                error_traceback = generate_traceback_exception()
+                ctx.logger.error(
+                    'Error traceback {0} with message {1}'.format(
+                        error_traceback['traceback'], error_traceback[
+                            'message']))
                 raise OperationRetry(
                     '{0}'.format(str(e)),
                     retry_after=15,
-                    causes=[exception_to_error_cause(exc_value, exc_traceback)]
+                    causes=[error_traceback]
                 )
             except NonRecoverableError as e:
-                _, exc_value, exc_traceback = sys.exc_info()
+                error_traceback = generate_traceback_exception()
+                ctx.logger.error(
+                    'Error traceback {0} with message {1}'.format(
+                        error_traceback['traceback'], error_traceback[
+                            'message']))
                 raise NonRecoverableError(
                     '{0}'.format(str(e)),
-                    causes=[exception_to_error_cause(exc_value, exc_traceback)]
+                    causes=[error_traceback]
                 )
             except Exception as e:
-                _, exc_value, exc_traceback = sys.exc_info()
+                error_traceback = generate_traceback_exception()
+                ctx.logger.error(
+                    'Error traceback {0} with message {1}'.format(
+                        error_traceback['traceback'], error_traceback[
+                            'message']))
                 raise RecoverableError(
                     '{0}'.format(str(e)),
-                    causes=[exception_to_error_cause(exc_value, exc_traceback)]
+                    causes=[error_traceback]
                 )
         return wrapper
     return decorator
@@ -119,10 +130,25 @@ def with_kubernetes_client(function):
 
             function(**kwargs)
         except KuberentesApiInitializationFailedError as e:
-            _, exc_value, exc_traceback = sys.exc_info()
+            error_traceback = generate_traceback_exception()
+            ctx.logger.error(
+                'Error traceback {0} with message {1}'.format(
+                    error_traceback['traceback'], error_traceback[
+                        'message']))
             raise RecoverableError(
                 '{0}'.format(str(e)),
-                causes=[exception_to_error_cause(exc_value, exc_traceback)]
+                causes=[error_traceback]
+            )
+
+        except Exception as e:
+            error_traceback = generate_traceback_exception()
+            ctx.logger.error(
+                'Error traceback {0} with message {1}'.format(
+                    error_traceback['traceback'], error_traceback[
+                        'message']))
+            raise NonRecoverableError(
+                'Error message: {0}'.format(str(e)),
+                causes=[error_traceback]
             )
 
     return wrapper
