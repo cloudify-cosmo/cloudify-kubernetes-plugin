@@ -212,16 +212,11 @@ def _do_resource_status_check(resource_kind, response):
         ready_replicas = response['status'].get('ready_replicas')
         replicas = response['status'].get('replicas')
 
-        if ready_replicas is None:
+        if ready_replicas is None and not replicas:
             raise OperationRetry(
                 '{0} status not ready yet'.format(resource_kind))
 
-        elif ready_replicas != replicas:
-            raise OperationRetry(
-                'Only {0} of {1} replicas are ready'.format(
-                    ready_replicas, replicas))
-
-        elif ready_replicas == replicas:
+        else:
             ctx.logger.debug('All {0} replicas are ready now'.format(replicas))
 
 

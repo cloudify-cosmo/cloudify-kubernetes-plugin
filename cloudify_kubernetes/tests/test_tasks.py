@@ -405,20 +405,11 @@ class TestTasks(unittest.TestCase):
 
         with self.assertRaises(OperationRetry) as error:
             tasks._do_resource_status_check("ReplicaSet", {
-                'status': {'ready_replicas': None, 'replicas': 2}
+                'status': {'ready_replicas': None, 'replicas': 0}
             })
         self.assertEqual(
             str(error.exception),
             "ReplicaSet status not ready yet"
-        )
-
-        with self.assertRaises(OperationRetry) as error:
-            tasks._do_resource_status_check("ReplicaSet", {
-                'status': {'ready_replicas': 1, 'replicas': 2}
-            })
-        self.assertEqual(
-            str(error.exception),
-            "Only 1 of 2 replicas are ready"
         )
 
     def test_do_resource_status_check_replication_controller(self):
@@ -432,20 +423,11 @@ class TestTasks(unittest.TestCase):
 
         with self.assertRaises(OperationRetry) as error:
             tasks._do_resource_status_check("ReplicationController", {
-                'status': {'ready_replicas': None, 'replicas': 2}
+                'status': {'ready_replicas': None, 'replicas': 0}
             })
         self.assertEqual(
             str(error.exception),
             "ReplicationController status not ready yet"
-        )
-
-        with self.assertRaises(OperationRetry) as error:
-            tasks._do_resource_status_check("ReplicationController", {
-                'status': {'ready_replicas': 1, 'replicas': 2}
-            })
-        self.assertEqual(
-            str(error.exception),
-            "Only 1 of 2 replicas are ready"
         )
 
     def test_retrieve_path(self):
