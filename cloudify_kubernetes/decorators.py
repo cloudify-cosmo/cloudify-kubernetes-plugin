@@ -139,15 +139,35 @@ def with_kubernetes_client(function):
                 '{0}'.format(str(e)),
                 causes=[error_traceback]
             )
-
-        except Exception as e:
+        except OperationRetry as e:
+            error_traceback = generate_traceback_exception()
+            ctx.logger.error(
+                'Error traceback {0} with message {1}'.format(
+                    error_traceback['traceback'], error_traceback[
+                        'message']))
+            raise OperationRetry(
+                '{0}'.format(str(e)),
+                retry_after=15,
+                causes=[error_traceback]
+            )
+        except NonRecoverableError as e:
             error_traceback = generate_traceback_exception()
             ctx.logger.error(
                 'Error traceback {0} with message {1}'.format(
                     error_traceback['traceback'], error_traceback[
                         'message']))
             raise NonRecoverableError(
-                'Error message: {0}'.format(str(e)),
+                '{0}'.format(str(e)),
+                causes=[error_traceback]
+            )
+        except Exception as e:
+            error_traceback = generate_traceback_exception()
+            ctx.logger.error(
+                'Error traceback {0} with message {1}'.format(
+                    error_traceback['traceback'], error_traceback[
+                        'message']))
+            raise RecoverableError(
+                '{0}'.format(str(e)),
                 causes=[error_traceback]
             )
 
