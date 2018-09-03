@@ -80,7 +80,10 @@ class TestDecorators(unittest.TestCase):
             relationships=[managed_master_node],
             operation={'retry_number': 0}
         )
-        _ctx._node.type = 'cloudify.nodes.Root'
+        _ctx.node.type_hierarchy = \
+            ['cloudify.nodes.Root',
+             'cloudify.kubernetes.resources.BlueprintDefinedResource',
+             'cloudify.kubernetes.resources.Pod']
 
         current_ctx.set(_ctx)
         return managed_master_node, _ctx

@@ -104,14 +104,14 @@ workflows:
   tests:
     jobs:
       - unittests
-      - wagon
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+      - wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - cloudify-manager:
           context: ecosystem
           requires:
             - wagon
-          # filters:
-          #   branches:
-          #     only: /([0-9\.]*\-build|master|dev)/
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/

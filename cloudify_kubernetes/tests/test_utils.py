@@ -124,7 +124,10 @@ class TestUtils(unittest.TestCase):
             operation={'retry_number': 0}
         )
 
-        _ctx._node.type = 'cloudify.kubernetes.resources.Pod'
+        _ctx.node.type_hierarchy = \
+            ['cloudify.nodes.Root',
+             'cloudify.kubernetes.resources.BlueprintDefinedResource',
+             'cloudify.kubernetes.resources.Pod']
 
         current_ctx.set(_ctx)
         return _ctx
@@ -229,7 +232,7 @@ class TestUtils(unittest.TestCase):
         self.assertEquals(result.spec, 'dd')
 
     def test_resource_definition_from_blueprint_kwargs_no_kind(self):
-        self._prepare_context(with_definition=False)
+        self._prepare_context(with_definition=True)
 
         definition = {
             'apiVersion': 'v1',
@@ -268,14 +271,12 @@ class TestUtils(unittest.TestCase):
         self.assertEquals(result.spec, 'd')
 
     def test_resource_definition_from_blueprint_no_kind(self):
-        _ctx = self._prepare_context(with_definition=True)
-        _ctx._node.type = None
-        current_ctx.set(_ctx)
+        self._prepare_context(with_definition=True)
 
         result = utils.resource_definition_from_blueprint()
 
         self.assertTrue(isinstance(result, KubernetesResourceDefinition))
-        self.assertEquals(result.kind, '')
+        self.assertEquals(result.kind, 'Pod')
         self.assertEquals(result.api_version, 'v1')
         self.assertEquals(result.metadata, 'c')
         self.assertEquals(result.spec, 'd')
@@ -343,7 +344,10 @@ class TestUtils(unittest.TestCase):
             operation={'retry_number': 0}
         )
 
-        _ctx._node.type = 'cloudify.kubernetes.resources.Pod'
+        _ctx.node.type_hierarchy = \
+            ['cloudify.nodes.Root',
+             'cloudify.kubernetes.resources.BlueprintDefinedResource',
+             'cloudify.kubernetes.resources.Pod']
 
         current_ctx.set(_ctx)
 

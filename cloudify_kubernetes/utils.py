@@ -78,6 +78,13 @@ def mapping_by_kind(resource_definition, **kwargs):
 
 
 def get_definition_object(**kwargs):
+
+    def resolve_kind():
+        if 'cloudify.kubernetes.resources.BlueprintDefinedResource' \
+                in ctx.node.type_hierarchy:
+            return ctx.node.type_hierarchy[-1]
+        return ''
+
     definition = kwargs.get(
         NODE_PROPERTY_DEFINITION,
         ctx.node.properties.get(NODE_PROPERTY_DEFINITION, None)
@@ -93,9 +100,7 @@ def get_definition_object(**kwargs):
         )
 
     if 'kind' not in definition:
-        definition['kind'] = ctx.node.type \
-            if isinstance(ctx.node.type, basestring)\
-            else ''
+        definition['kind'] = resolve_kind()
 
     return definition
 
