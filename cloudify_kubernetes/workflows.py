@@ -35,10 +35,9 @@ def merge_definitions(old, new):
 
     if isinstance(old, dict):
         for k, v in new.iteritems():
-            if (k in old and isinstance(old[k], dict) and
-                    isinstance(new[k], collections.Mapping)):
-                old[k] = merge_definitions(
-                    old[k], new[k])
+            if k in old and isinstance(old[k], dict) \
+                    and isinstance(new[k], collections.Mapping):
+                old[k] = merge_definitions(old[k], new[k])
             else:
                 old[k] = new[k]
         return old

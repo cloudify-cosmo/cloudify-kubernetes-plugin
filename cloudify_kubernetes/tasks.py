@@ -76,9 +76,9 @@ class JsonCleanuper(object):
                 self._cleanuped_list(v)
             elif isinstance(v, dict):
                 self._cleanuped_dict(v)
-            elif (not isinstance(v, int) and  # integer and bool
-                  not isinstance(v, str) and
-                  not isinstance(v, unicode)):
+            elif not isinstance(v, int) and not \
+                    isinstance(v, str) and not \
+                    isinstance(v, unicode):
                 resource[k] = str(v)
 
     def _cleanuped_dict(self, resource):
@@ -89,9 +89,9 @@ class JsonCleanuper(object):
                 self._cleanuped_list(resource[k])
             elif isinstance(resource[k], dict):
                 self._cleanuped_dict(resource[k])
-            elif (not isinstance(resource[k], int) and  # integer and bool
-                  not isinstance(resource[k], str) and
-                  not isinstance(resource[k], unicode)):
+            elif not isinstance(resource[k], int) and not \
+                    isinstance(resource[k], str) and not \
+                    isinstance(resource[k], unicode):
                 resource[k] = str(resource[k])
 
     def to_dict(self):
