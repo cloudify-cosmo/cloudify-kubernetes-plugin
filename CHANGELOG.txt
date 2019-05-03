@@ -1,44 +1,62 @@
 1.0.0:
   - Lifecycle support for pods and services.
+
 1.1.0:
   - Get master configuration from runtime properties
   - Add ReplicaSet support
   - Add PersistentVolume and StorageClass support
   - Support Google Authentication for GKE
+
 1.2.0:
   - Delete Replica Sets by name
   - Deployment resource support
   - Replication Controller support
   - File resource definition support
+
 1.2.1:
   - Multiple-file resource support.
   - Distinguished Main type to cloudify.kubernetes.resources.BlueprintDefinedResource and cloudify.kubernetes.resources.FileDefinedResource.
+
 1.2.2:
   - Support ConfigMaps.
+
 1.3.0:
   - Pod resource type state verification in create and delete.
+
 1.3.1:
   - Alter state verification handling.
+
 1.3.1.1:
   - Set dependencies
+
 1.4.0:
   - Add update workflow
+
 2.0.0:
   - Support propagate resource deletion policy.
   - Update Kubernetes Python Client to version 4.0.0
   - Add RBAC node type.
   - Support checking statuses for Kubernetes resources.
+
 2.0.0.1:
   - Fix Conditional service check
 
 2.1.0:
   - Add support for creating resources on Kubernetes using service account token
+
 2.2.0:
   - Adding an "update_resource_definition" workflow.
+
 2.2.1:
   - Use patch_ methods for update instead of replace_ in the mappings module.
+
 2.2.2:
   - Improve Pod state verification.
+
 2.3.0:
   - Add Node type.
   - Add use_external_resource property. Performs read operations on create and delete instead of performing create and delete.
+
+2.x.x:
+  - Support `---` separator in resource file `cloudify.kubernetes.resources.MultipleFileDefinedResources`.
+  - Bump client library to `kubernetes==9.0.0`

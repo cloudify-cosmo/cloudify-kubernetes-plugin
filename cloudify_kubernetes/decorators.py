@@ -54,14 +54,24 @@ def _retrieve_property(resource_instance, property_name):
     return configuration
 
 
-def resource_task(retrieve_resource_definition, retrieve_mapping):
+def resource_task(retrieve_resource_definition=None,
+                  retrieve_resources_definitions=None, retrieve_mapping=None):
     def decorator(task, **kwargs):
         def wrapper(**kwargs):
             try:
-                kwargs['resource_definition'] = \
-                    retrieve_resource_definition(**kwargs)
-                kwargs['api_mapping'] = retrieve_mapping(**kwargs)
-                task(**kwargs)
+                if retrieve_resource_definition:
+                    kwargs['resource_definition'] = \
+                        retrieve_resource_definition(**kwargs)
+                    if retrieve_mapping:
+                        kwargs['api_mapping'] = retrieve_mapping(**kwargs)
+                    task(**kwargs)
+                elif retrieve_resources_definitions:
+                    definitions = retrieve_resources_definitions(**kwargs)
+                    for definition in definitions:
+                        kwargs['resource_definition'] = definition
+                        if retrieve_mapping:
+                            kwargs['api_mapping'] = retrieve_mapping(**kwargs)
+                        task(**kwargs)
             except (KuberentesMappingNotFoundError,
                     KuberentesInvalidPayloadClassError,
                     KuberentesInvalidApiClassError,
