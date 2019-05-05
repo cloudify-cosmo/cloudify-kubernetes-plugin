@@ -154,7 +154,7 @@ class TestUtils(unittest.TestCase):
             },
         }
 
-    def test_yaml_from_file(self):
+    def test_yaml_from_files(self):
         yaml_data = 'test: \n  a: 1 \n  b: 2'
 
         _ctx = MockCloudifyContext()
@@ -168,9 +168,9 @@ class TestUtils(unittest.TestCase):
                 'cloudify_kubernetes.utils.open',
                 mock_open(read_data=yaml_data)
         ) as file_mock:
-            result = utils._yaml_from_file('path')
+            result = utils._yaml_from_files('path')
 
-            self.assertEquals(result, {'test': {'a': 1, 'b': 2}})
+            self.assertEquals(result, [{'test': {'a': 1, 'b': 2}}])
             file_mock.assert_called_once_with('local_path')
 
     def test_mapping_by_data_kwargs(self):
@@ -287,7 +287,7 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(KuberentesInvalidDefinitionError):
             utils.resource_definition_from_blueprint()
 
-    def test_resource_definition_from_file_kwargs(self):
+    def test_resource_definitions_from_file_kwargs(self):
         self._prepare_context(with_definition=False)
 
         kwargs = {
@@ -296,34 +296,35 @@ class TestUtils(unittest.TestCase):
             }
         }
 
-        def _mocked_yaml_from_file(
+        def _mocked_yaml_from_files(
             resource_path,
             target_path=None,
             template_variables=None
         ):
             if resource_path == 'path':
-                return {
+                return [{
                     'apiVersion': 'v1',
                     'kind': 'PersistentVolume',
                     'metadata': 'a',
                     'spec': 'b'
-                }
+                }]
 
         with patch(
-                'cloudify_kubernetes.utils._yaml_from_file',
-                _mocked_yaml_from_file
+                'cloudify_kubernetes.utils._yaml_from_files',
+                _mocked_yaml_from_files
         ):
-            result = utils.resource_definition_from_file(
+            result = utils.resource_definitions_from_file(
                 **kwargs
             )
 
-            self.assertTrue(isinstance(result, KubernetesResourceDefinition))
-            self.assertEquals(result.kind, 'PersistentVolume')
-            self.assertEquals(result.api_version, 'v1')
-            self.assertEquals(result.metadata, 'a')
-            self.assertEquals(result.spec, 'b')
+            self.assertTrue(isinstance(result[0],
+                                       KubernetesResourceDefinition))
+            self.assertEquals(result[0].kind, 'PersistentVolume')
+            self.assertEquals(result[0].api_version, 'v1')
+            self.assertEquals(result[0].metadata, 'a')
+            self.assertEquals(result[0].spec, 'b')
 
-    def test_resource_definition_from_file_properties(self):
+    def test_resource_definitions_from_file_properties(self):
         _ctx = MockCloudifyContext(
             node_id="test_id",
             node_name="test_name",
@@ -351,36 +352,37 @@ class TestUtils(unittest.TestCase):
 
         current_ctx.set(_ctx)
 
-        def _mocked_yaml_from_file(
+        def _mocked_yaml_from_files(
             resource_path,
             target_path=None,
             template_variables=None
         ):
             if resource_path == 'path2':
-                return {
+                return [{
                     'apiVersion': 'v1',
                     'kind': 'ReplicaSet',
                     'metadata': 'aa',
                     'spec': 'bb'
-                }
+                }]
 
         with patch(
-                'cloudify_kubernetes.utils._yaml_from_file',
-                _mocked_yaml_from_file
+                'cloudify_kubernetes.utils._yaml_from_files',
+                _mocked_yaml_from_files
         ):
-            result = utils.resource_definition_from_file()
+            result = utils.resource_definitions_from_file()
 
-            self.assertTrue(isinstance(result, KubernetesResourceDefinition))
-            self.assertEquals(result.kind, 'ReplicaSet')
-            self.assertEquals(result.api_version, 'v1')
-            self.assertEquals(result.metadata, 'aa')
-            self.assertEquals(result.spec, 'bb')
+            self.assertTrue(isinstance(result[0],
+                                       KubernetesResourceDefinition))
+            self.assertEquals(result[0].kind, 'ReplicaSet')
+            self.assertEquals(result[0].api_version, 'v1')
+            self.assertEquals(result[0].metadata, 'aa')
+            self.assertEquals(result[0].spec, 'bb')
 
-    def test_resource_definition_from_file_error(self):
+    def test_resource_definitions_from_file_error(self):
         self._prepare_context(with_definition=False)
 
         with self.assertRaises(KuberentesInvalidDefinitionError):
-            utils.resource_definition_from_file()
+            utils.resource_definitions_from_file()
 
 
 if __name__ == '__main__':

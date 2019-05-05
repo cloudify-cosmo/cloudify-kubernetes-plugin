@@ -63,7 +63,8 @@ node_templates:
       files:
         - resource_path: resources/podA.yaml
         - resource_path: resources/podB.yaml
-        - resource_path: resources/podC.yaml
+        # create 2 pods
+        - resource_path: resources/podCD.yaml
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: master

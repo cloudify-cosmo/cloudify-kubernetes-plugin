@@ -39,7 +39,7 @@ def generate_traceback_exception():
     return response
 
 
-def _yaml_from_file(
+def _yaml_from_files(
         resource_path,
         target_path=None,
         template_variables=None):
@@ -55,7 +55,8 @@ def _yaml_from_file(
     with open(downloaded_file_path) as outfile:
         file_content = outfile.read()
 
-    return yaml.load(file_content)
+    return [yaml.load(content)
+            for content in file_content.replace("\r\n", "\n").split("\n---\n")]
 
 
 def mapping_by_data(resource_definition, **kwargs):
@@ -110,7 +111,7 @@ def resource_definition_from_blueprint(**kwargs):
     return KubernetesResourceDefinition(**definition)
 
 
-def resource_definition_from_file(**kwargs):
+def resource_definitions_from_file(**kwargs):
     file_resource = kwargs.get(
         NODE_PROPERTY_FILE,
         ctx.node.properties.get(NODE_PROPERTY_FILE, None)
@@ -121,6 +122,5 @@ def resource_definition_from_file(**kwargs):
             'Invalid resource file definition'
         )
 
-    return KubernetesResourceDefinition(
-        **_yaml_from_file(**file_resource)
-    )
+    return [KubernetesResourceDefinition(**definition)
+            for definition in _yaml_from_files(**file_resource)]

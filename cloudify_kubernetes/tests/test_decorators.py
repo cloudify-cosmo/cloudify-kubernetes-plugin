@@ -88,7 +88,7 @@ class TestDecorators(unittest.TestCase):
         current_ctx.set(_ctx)
         return managed_master_node, _ctx
 
-    def test_resource_task(self):
+    def test_resource_task_retrieve_NonRecoverableError(self):
         _, _ctx = self._prepare_master_node()
 
         decorators.resource_task(MagicMock(), MagicMock())(MagicMock())()
@@ -98,7 +98,88 @@ class TestDecorators(unittest.TestCase):
 
         with patch('os.path.isfile', mock_isfile):
             with self.assertRaises(NonRecoverableError) as error:
-                decorators.resource_task(MagicMock(), MagicMock())(
+                decorators.resource_task(
+                    retrieve_resources_definitions=MagicMock(
+                        return_value=[{}]),
+                    retrieve_mapping=MagicMock()
+                )(
+                    MagicMock(
+                        side_effect=NonRecoverableError(
+                            'error_text'
+                        )
+                    )
+                )()
+
+        self.assertEqual(
+            str(error.exception), "error_text"
+        )
+
+    def test_resource_task_retrieve_Exception(self):
+        _, _ctx = self._prepare_master_node()
+
+        decorators.resource_task(MagicMock(), MagicMock())(MagicMock())()
+
+        mock_isfile = MagicMock(return_value=True)
+        _ctx.download_resource = MagicMock(return_value="downloaded_resource")
+
+        with patch('os.path.isfile', mock_isfile):
+            with self.assertRaises(RecoverableError) as error:
+                decorators.resource_task(
+                    retrieve_resources_definitions=MagicMock(
+                        return_value=[{}]),
+                    retrieve_mapping=MagicMock()
+                )(
+                    MagicMock(
+                        side_effect=Exception(
+                            'error_text'
+                        )
+                    )
+                )()
+
+        self.assertEqual(
+            str(error.exception), "error_text"
+        )
+
+    def test_resource_task_retrieve_resources_definitions(self):
+        _, _ctx = self._prepare_master_node()
+
+        decorators.resource_task(MagicMock(), MagicMock())(MagicMock())()
+
+        mock_isfile = MagicMock(return_value=True)
+        _ctx.download_resource = MagicMock(return_value="downloaded_resource")
+
+        with patch('os.path.isfile', mock_isfile):
+            with self.assertRaises(NonRecoverableError) as error:
+                decorators.resource_task(
+                    retrieve_resources_definitions=MagicMock(
+                        return_value=[{}]),
+                    retrieve_mapping=MagicMock()
+                )(
+                    MagicMock(
+                        side_effect=KuberentesInvalidApiMethodError(
+                            'error_text'
+                        )
+                    )
+                )()
+
+        self.assertEqual(
+            str(error.exception), "error_text"
+        )
+
+    def test_resource_task_retrieve_resource_definition(self):
+        _, _ctx = self._prepare_master_node()
+
+        decorators.resource_task(MagicMock(), MagicMock())(MagicMock())()
+
+        mock_isfile = MagicMock(return_value=True)
+        _ctx.download_resource = MagicMock(return_value="downloaded_resource")
+
+        with patch('os.path.isfile', mock_isfile):
+            with self.assertRaises(NonRecoverableError) as error:
+                decorators.resource_task(
+                    retrieve_resource_definition=MagicMock(),
+                    retrieve_mapping=MagicMock()
+                )(
                     MagicMock(
                         side_effect=KuberentesInvalidApiMethodError(
                             'error_text'
@@ -121,6 +202,52 @@ class TestDecorators(unittest.TestCase):
             decorators._retrieve_property(_ctx.instance, 'configuration'),
             {'blueprint_file_name': 'kubernetes.conf'}
         )
+
+    def test_with_kubernetes_client_NonRecoverableError(self):
+        _, _ctx = self._prepare_master_node()
+
+        mock_isfile = MagicMock(return_value=True)
+
+        _ctx.download_resource = MagicMock(return_value="downloaded_resource")
+
+        with patch('os.path.isfile', mock_isfile):
+            with patch(
+                    'cloudify_kubernetes.k8s.config.'
+                    'kubernetes.config.load_kube_config',
+                    MagicMock()
+            ):
+                with self.assertRaises(NonRecoverableError) as error:
+                    decorators.with_kubernetes_client(
+                        MagicMock(side_effect=NonRecoverableError(
+                            'error_text')))()
+
+                self.assertEqual(
+                    str(error.exception),
+                    "error_text"
+                )
+
+    def test_with_kubernetes_client_Exception(self):
+        _, _ctx = self._prepare_master_node()
+
+        mock_isfile = MagicMock(return_value=True)
+
+        _ctx.download_resource = MagicMock(return_value="downloaded_resource")
+
+        with patch('os.path.isfile', mock_isfile):
+            with patch(
+                    'cloudify_kubernetes.k8s.config.'
+                    'kubernetes.config.load_kube_config',
+                    MagicMock()
+            ):
+                with self.assertRaises(RecoverableError) as error:
+                    decorators.with_kubernetes_client(
+                        MagicMock(side_effect=Exception(
+                            'error_text')))()
+
+                self.assertEqual(
+                    str(error.exception),
+                    "error_text"
+                )
 
     def test_with_kubernetes_client_RecoverableError(self):
         _, _ctx = self._prepare_master_node()

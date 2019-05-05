@@ -28,7 +28,7 @@ from .decorators import (resource_task,
 from .utils import (mapping_by_data,
                     mapping_by_kind,
                     resource_definition_from_blueprint,
-                    resource_definition_from_file,)
+                    resource_definitions_from_file,)
 
 
 DEFAULT_NAMESPACE = 'default'
@@ -412,7 +412,7 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
 
 @with_kubernetes_client
 @resource_task(
-    retrieve_resource_definition=resource_definition_from_file,
+    retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind
 )
 def file_resource_create(client, api_mapping, resource_definition, **kwargs):
@@ -447,7 +447,7 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
 
 @with_kubernetes_client
 @resource_task(
-    retrieve_resource_definition=resource_definition_from_file,
+    retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind
 )
 def file_resource_delete(client, api_mapping, resource_definition, **kwargs):

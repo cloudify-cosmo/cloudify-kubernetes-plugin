@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-c
+spec:
+  containers:
+  - name: pod-c-1
+    image: "centos:7"
+    command: ["/bin/bash"]
+    stdin: true
+    tty: true
+    securityContext:
+      privileged: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-d
+spec:
+  containers:
+  - name: pod-d-1
+    image: "centos:7"
+    command: ["/bin/bash"]
+    stdin: true
+    tty: true
+    securityContext:
+      privileged: true
