@@ -1,5 +1,4 @@
-########
-# Copyright (c) 2017 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2017-2019 Cloudify Platform Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -211,6 +210,21 @@ class TestApiOptionsConfiguration(unittest.TestCase):
             self.assertEqual(
                 instance.prepare_api(), mock_client
             )
+
+        # check keys
+        instance = ApiOptionsConfiguration(mock_logger, {
+            'api_options': {'host': 'some_host',
+                            'api_key': 'secret key'}
+        })
+
+        with patch('kubernetes.client', mock_client):
+            config = MagicMock()
+            mock_client.Configuration = MagicMock(return_value=config)
+            self.assertEqual(
+                instance.prepare_api(), mock_client
+            )
+            self.assertEqual(config.api_key,
+                             {'authorization': 'Bearer secret key'})
 
 
 class TestKubernetesApiConfigurationVariants(unittest.TestCase):

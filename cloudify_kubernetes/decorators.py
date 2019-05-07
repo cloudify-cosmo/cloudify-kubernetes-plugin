@@ -1,5 +1,4 @@
-########
-# Copyright (c) 2017 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2017-2019 Cloudify Platform Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,10 +66,28 @@ def resource_task(retrieve_resource_definition=None,
                     task(**kwargs)
                 elif retrieve_resources_definitions:
                     definitions = retrieve_resources_definitions(**kwargs)
+                    curr_num = 0
+                    # we can have several resources in one file, save origin
+                    origin_path = None
+                    if 'file' in kwargs:
+                        origin_path = kwargs['file'].get('resource_path')
+                    elif 'file' in ctx.node.properties:
+                        # copy origin file name to kwargs
+                        kwargs['file'] = ctx.node.properties['file']
+                        # save origin path
+                        origin_path = kwargs['file'].get('resource_path')
                     for definition in definitions:
                         kwargs['resource_definition'] = definition
                         if retrieve_mapping:
                             kwargs['api_mapping'] = retrieve_mapping(**kwargs)
+                        # we can have several resources in one file
+                        if origin_path:
+                            kwargs['file']['resource_path'] = (
+                                "{name}#{curr_num}".format(
+                                    name=origin_path,
+                                    curr_num=str(curr_num)
+                                ))
+                            curr_num += 1
                         task(**kwargs)
             except (KuberentesMappingNotFoundError,
                     KuberentesInvalidPayloadClassError,

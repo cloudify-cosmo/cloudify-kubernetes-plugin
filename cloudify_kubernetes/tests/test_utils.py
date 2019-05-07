@@ -1,5 +1,4 @@
-########
-# Copyright (c) 2017 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2017-2019 Cloudify Platform Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -383,6 +382,39 @@ class TestUtils(unittest.TestCase):
 
         with self.assertRaises(KuberentesInvalidDefinitionError):
             utils.resource_definitions_from_file()
+
+    def test_get_definition_object(self):
+        # with type hierarchy
+        self._prepare_context(with_definition=True)
+        self.assertEqual(
+            utils.get_definition_object(
+                definition={'spec': {'a': 'b'}},
+                definitions_additions={'spec': {'c': 'd'}}
+            ),
+            {
+                'kind': 'cloudify.kubernetes.resources.Pod',
+                'spec': {
+                    'a': 'b',
+                    'c': 'd'
+                }
+            }
+        )
+        # without type hierarchy
+        _ctx = self._prepare_context(with_definition=True)
+        _ctx.node.type_hierarchy = ['cloudify.nodes.Root']
+        self.assertEqual(
+            utils.get_definition_object(
+                definition={'spec': {'a': 'b'}},
+                definitions_additions={'spec': {'c': 'd'}}
+            ),
+            {
+                'kind': '',
+                'spec': {
+                    'a': 'b',
+                    'c': 'd'
+                }
+            }
+        )
 
 
 if __name__ == '__main__':
