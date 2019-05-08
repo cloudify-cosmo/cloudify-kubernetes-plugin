@@ -53,42 +53,52 @@ def _retrieve_property(resource_instance, property_name):
     return configuration
 
 
+def _multidefinition_resource_task(task, definitions, kwargs,
+                                   retrieve_mapping):
+    curr_num = 0
+    # we have several definitions (not one!)
+    multicalls = len(definitions) > 1
+    # we can have several resources in one file, save origin
+    origin_path = None
+    if 'file' in kwargs and multicalls:
+        # save original path only in case multicalls
+        origin_path = kwargs['file'].get('resource_path')
+    elif 'file' in ctx.node.properties and multicalls:
+        # copy origin file name to kwargs
+        kwargs['file'] = ctx.node.properties['file']
+        # save origin path
+        origin_path = kwargs['file'].get('resource_path')
+    # iterate by definitions list
+    for definition in definitions:
+        kwargs['resource_definition'] = definition
+        if retrieve_mapping:
+            kwargs['api_mapping'] = retrieve_mapping(**kwargs)
+        # we can have several resources in one file
+        if origin_path:
+            kwargs['file']['resource_path'] = (
+                "{name}#{curr_num}".format(
+                    name=origin_path,
+                    curr_num=str(curr_num)
+                ))
+            curr_num += 1
+        task(**kwargs)
+
+
 def resource_task(retrieve_resource_definition=None,
                   retrieve_resources_definitions=None, retrieve_mapping=None):
     def decorator(task, **kwargs):
         def wrapper(**kwargs):
             try:
+                definitions = []
+                # use single definition source
                 if retrieve_resource_definition:
-                    kwargs['resource_definition'] = \
-                        retrieve_resource_definition(**kwargs)
-                    if retrieve_mapping:
-                        kwargs['api_mapping'] = retrieve_mapping(**kwargs)
-                    task(**kwargs)
+                    definitions = [retrieve_resource_definition(**kwargs)]
+                # use multi definition source
                 elif retrieve_resources_definitions:
                     definitions = retrieve_resources_definitions(**kwargs)
-                    curr_num = 0
-                    # we can have several resources in one file, save origin
-                    origin_path = None
-                    if 'file' in kwargs:
-                        origin_path = kwargs['file'].get('resource_path')
-                    elif 'file' in ctx.node.properties:
-                        # copy origin file name to kwargs
-                        kwargs['file'] = ctx.node.properties['file']
-                        # save origin path
-                        origin_path = kwargs['file'].get('resource_path')
-                    for definition in definitions:
-                        kwargs['resource_definition'] = definition
-                        if retrieve_mapping:
-                            kwargs['api_mapping'] = retrieve_mapping(**kwargs)
-                        # we can have several resources in one file
-                        if origin_path:
-                            kwargs['file']['resource_path'] = (
-                                "{name}#{curr_num}".format(
-                                    name=origin_path,
-                                    curr_num=str(curr_num)
-                                ))
-                            curr_num += 1
-                        task(**kwargs)
+                # apply definition
+                _multidefinition_resource_task(
+                    task, definitions, kwargs, retrieve_mapping)
             except (KuberentesMappingNotFoundError,
                     KuberentesInvalidPayloadClassError,
                     KuberentesInvalidApiClassError,
