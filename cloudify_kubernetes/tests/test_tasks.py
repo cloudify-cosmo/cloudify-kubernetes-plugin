@@ -1,5 +1,4 @@
-########
-# Copyright (c) 2017 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2017-2019 Cloudify Platform Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import MagicMock, Mock, patch
+from mock import MagicMock, Mock, patch, mock_open
 import unittest
 from datetime import datetime
 
@@ -29,6 +28,36 @@ from cloudify_kubernetes.k8s.mapping import (
     KubernetesSingleOperationApiMapping
 )
 import cloudify_kubernetes.tasks as tasks
+
+FILE_YAML = """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-c
+spec:
+  containers:
+  - name: pod-c-1
+    image: "centos:7"
+    command: ["/bin/bash"]
+    stdin: true
+    tty: true
+    securityContext:
+      privileged: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-d
+spec:
+  containers:
+  - name: pod-d-1
+    image: "centos:7"
+    command: ["/bin/bash"]
+    stdin: true
+    tty: true
+    securityContext:
+      privileged: true
+"""
 
 
 class TestTasks(unittest.TestCase):
@@ -712,20 +741,196 @@ class TestTasks(unittest.TestCase):
         pass
 
     def test_file_resource_create(self):
-        # TODO
-        pass
+        _, _ctx = self._prepare_master_node()
+
+        _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
+        _ctx.download_resource_and_render = MagicMock(return_value="new_path")
+
+        expected_value = {
+            'metadata': {'name': 'check_id'}
+        }
+
+        class _Result(object):
+            def to_dict(self):
+                return expected_value
+
+        client = MagicMock()
+        client.create_resource = Mock(return_value=_Result())
+
+        mock_isfile = MagicMock(return_value=True)
+        with patch('os.path.isfile', mock_isfile):
+            with patch(
+                    'cloudify_kubernetes.decorators.'
+                    'CloudifyKubernetesClient',
+                    MagicMock(return_value=client)
+            ):
+                with patch(
+                        'cloudify_kubernetes.utils.open',
+                        mock_open(read_data=FILE_YAML)
+                ) as file_mock:
+                    tasks.file_resource_create(
+                        client=client,
+                        api_mapping=None,
+                        resource_definition=None
+                    )
+                file_mock.assert_called_with('new_path')
+        self.assertEqual(_ctx.instance.runtime_properties, {
+            'kubernetes': {
+                'abc.yaml#0': {
+                    'metadata': {'name': 'check_id'}
+                },
+                'abc.yaml#1': {
+                    'metadata': {
+                        'name': 'check_id'
+                    }
+                },
+                'metadata': {'name': 'kubernetes_id'}
+            }
+        })
+        self.assertEqual(client.create_resource.call_count, 2)
 
     def test_file_resource_delete(self):
-        # TODO
-        pass
+        _, _ctx = self._prepare_master_node()
+        _ctx.instance.runtime_properties['kubernetes'] = {
+            'abc.yaml#0': {
+                'metadata': {'name': 'check_id'}
+            },
+            'abc.yaml#1': {
+                'metadata': {
+                    'name': 'check_id'
+                }
+            },
+            'metadata': {'name': 'kubernetes_id'}
+        }
+
+        _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
+        _ctx.download_resource_and_render = MagicMock(return_value="new_path")
+
+        expected_value = {
+            'kubernetes': {
+                'body': {'payload_param': 'payload_value'},
+                'first': 'second'
+            }
+        }
+
+        class _Result(object):
+            def to_dict(self):
+                return expected_value
+
+        client = MagicMock()
+        client.delete_resource = Mock(return_value=_Result())
+
+        mock_isfile = MagicMock(return_value=True)
+        with patch('os.path.isfile', mock_isfile):
+            with patch(
+                    'cloudify_kubernetes.decorators.'
+                    'CloudifyKubernetesClient',
+                    MagicMock(return_value=client)
+            ):
+                with patch(
+                        'cloudify_kubernetes.utils.open',
+                        mock_open(read_data=FILE_YAML)
+                ) as file_mock:
+                    tasks.file_resource_delete(
+                        client=client,
+                        api_mapping=None,
+                        resource_definition=None
+                    )
+                file_mock.assert_called_with('new_path')
+        self.assertEqual(client.delete_resource.call_count, 2)
 
     def test_multiple_file_resource_create(self):
-        # TODO
-        pass
+        _, _ctx = self._prepare_master_node()
+
+        _ctx.node.properties['files'] = [{"resource_path": 'abc.yaml'}]
+        _ctx.download_resource_and_render = MagicMock(return_value="new_path")
+
+        expected_value = {
+            'metadata': {'name': 'check_id'}
+        }
+
+        class _Result(object):
+            def to_dict(self):
+                return expected_value
+
+        client = MagicMock()
+        client.create_resource = Mock(return_value=_Result())
+
+        mock_isfile = MagicMock(return_value=True)
+        with patch('os.path.isfile', mock_isfile):
+            with patch(
+                    'cloudify_kubernetes.decorators.'
+                    'CloudifyKubernetesClient',
+                    MagicMock(return_value=client)
+            ):
+                with patch(
+                        'cloudify_kubernetes.utils.open',
+                        mock_open(read_data=FILE_YAML)
+                ) as file_mock:
+                    tasks.multiple_file_resource_create(
+                        client=client,
+                        api_mapping=None,
+                        resource_definition=None
+                    )
+                file_mock.assert_called_with('new_path')
+        self.assertEqual(_ctx.instance.runtime_properties, {
+            'kubernetes': {
+                'abc.yaml#0': {'metadata': {'name': 'check_id'}},
+                'abc.yaml#1': {'metadata': {'name': 'check_id'}}
+            }
+        })
+        self.assertEqual(client.create_resource.call_count, 2)
 
     def test_multiple_file_resource_delete(self):
-        # TODO
-        pass
+        _, _ctx = self._prepare_master_node()
+        _ctx.instance.runtime_properties['kubernetes'] = {
+            'abc.yaml#0': {
+                'metadata': {
+                    'name': 'check_id'
+                }
+            },
+            'abc.yaml#1': {
+                'metadata': {
+                    'name': 'check_id'
+                }
+            }
+        }
+
+        _ctx.node.properties['files'] = [{"resource_path": 'abc.yaml'}]
+        _ctx.download_resource_and_render = MagicMock(return_value="new_path")
+
+        expected_value = {
+            'kubernetes': {
+                'body': {'payload_param': 'payload_value'},
+                'first': 'second'
+            }
+        }
+
+        class _Result(object):
+            def to_dict(self):
+                return expected_value
+
+        client = MagicMock()
+        client.delete_resource = Mock(return_value=_Result())
+
+        mock_isfile = MagicMock(return_value=True)
+        with patch('os.path.isfile', mock_isfile):
+            with patch(
+                    'cloudify_kubernetes.decorators.'
+                    'CloudifyKubernetesClient',
+                    MagicMock(return_value=client)
+            ):
+                with patch(
+                        'cloudify_kubernetes.utils.open',
+                        mock_open(read_data=FILE_YAML)
+                ) as file_mock:
+                    tasks.multiple_file_resource_delete(
+                        client=client,
+                        api_mapping=None,
+                        resource_definition=None
+                    )
+                file_mock.assert_called_with('new_path')
+        self.assertEqual(client.delete_resource.call_count, 2)
 
 
 if __name__ == '__main__':

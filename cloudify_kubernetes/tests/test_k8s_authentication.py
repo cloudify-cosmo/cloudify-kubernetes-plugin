@@ -1,5 +1,4 @@
-########
-# Copyright (c) 2017 GigaSpaces Technologies Ltd. All rights reserved
+# Copyright (c) 2017-2019 Cloudify Platform Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,6 +83,7 @@ class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
             return_value=access_token_mock
         )
 
+        # use dict as account
         instance = GCPServiceAccountAuthentication(
             mock_logger,
             {'gcp_service_account': {'blah': 'blah'}},
@@ -98,6 +98,19 @@ class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
 
         self.assertEquals(token, api_key['authorization'])
         self.assertEquals('Bearer', api_key_prefix['authorization'])
+
+        # use json as account
+        instance = GCPServiceAccountAuthentication(
+            mock_logger,
+            {'gcp_service_account': '{"blah": "blah"}'},
+        )
+
+        with patch(
+            'oauth2client.service_account.'
+            'ServiceAccountCredentials.from_json_keyfile_dict',
+            MagicMock(return_value=mock_credentials)
+        ):
+            instance.authenticate(mock_api)
 
 
 class TestKubernetesAuthenticationVariants(BaseTestK8SAuthentication):
