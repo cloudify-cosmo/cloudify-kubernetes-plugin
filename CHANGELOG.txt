@@ -60,3 +60,6 @@
 2.4.0:
   - Support `---` separator in resource file `cloudify.kubernetes.resources.MultipleFileDefinedResources`.
   - Bump client library to `kubernetes==9.0.0`
+
+2.4.1:
+  - Fix bug in `---` separator.
