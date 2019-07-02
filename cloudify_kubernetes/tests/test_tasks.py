@@ -20,6 +20,7 @@ from cloudify.exceptions import (RecoverableError,
                                  OperationRetry,
                                  NonRecoverableError)
 from cloudify.mocks import MockCloudifyContext
+from cloudify.manager import DirtyTrackingDict
 from cloudify.state import current_ctx
 
 from cloudify_kubernetes.decorators import RELATIONSHIP_TYPE_MANAGED_BY_MASTER
@@ -153,7 +154,8 @@ class TestTasks(unittest.TestCase):
         self.patch_mock_mappings.stop()
         super(TestTasks, self).tearDown()
 
-    def _prepare_master_node(self, api_mapping=None, external=False):
+    def _prepare_master_node(self, api_mapping=None, external=False,
+                             create=False):
         node = MagicMock()
         node.properties = {
             'configuration': {
@@ -185,13 +187,15 @@ class TestTasks(unittest.TestCase):
             node_name="test_name",
             deployment_id="test_name",
             properties=properties,
-            runtime_properties={
-                'kubernetes': {
-                    'metadata': {
-                        'name': "kubernetes_id"
+            runtime_properties=DirtyTrackingDict(
+                {} if create else {
+                    'kubernetes': {
+                        'metadata': {
+                            'name': "kubernetes_id"
+                        }
                     }
                 }
-            },
+            ),
             relationships=[managed_master_node],
             operation={'retry_number': 0}
         )
@@ -463,22 +467,6 @@ class TestTasks(unittest.TestCase):
             "ReplicationController status not ready yet"
         )
 
-    def test_retrieve_path(self):
-        self.assertEquals(
-            tasks._retrieve_path({'file': {'resource_path': 'path'}}),
-            'path'
-        )
-
-        self.assertEquals(
-            tasks._retrieve_path({'file': {}}),
-            ''
-        )
-
-        self.assertEquals(
-            tasks._retrieve_path({}),
-            ''
-        )
-
     def test_do_resource_create(self):
         self._prepare_master_node()
 
@@ -667,7 +655,7 @@ class TestTasks(unittest.TestCase):
         )
 
     def test_resource_create(self):
-        _, _ctx = self._prepare_master_node()
+        _, _ctx = self._prepare_master_node(create=True)
 
         mock_isfile = MagicMock(return_value=True)
 
@@ -840,7 +828,7 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(client.delete_resource.call_count, 2)
 
     def test_multiple_file_resource_create(self):
-        _, _ctx = self._prepare_master_node()
+        _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['files'] = [{"resource_path": 'abc.yaml'}]
         _ctx.download_resource_and_render = MagicMock(return_value="new_path")
