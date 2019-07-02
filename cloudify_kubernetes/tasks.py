@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # hack for import namespaced modules
-import cloudify_importer # noqa
+import cloudify_importer  # noqa
 
 from cloudify import ctx
 from cloudify.exceptions import (

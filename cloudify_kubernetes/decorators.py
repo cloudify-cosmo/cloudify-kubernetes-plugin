@@ -116,6 +116,12 @@ def _multidefinition_resource_task(task, definitions, kwargs,
             else:
                 ctx.instance.runtime_properties[
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {}
+            # remove empty kubernetes property
+            if not ctx.instance.runtime_properties[
+                INSTANCE_RUNTIME_PROPERTY_KUBERNETES
+            ]:
+                del ctx.instance.runtime_properties[
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES]
             # force save
             ctx.instance.runtime_properties.dirty = True
             ctx.instance.update()
