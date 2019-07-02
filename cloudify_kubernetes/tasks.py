@@ -251,7 +251,7 @@ def _do_resource_delete(client, api_mapping, resource_definition,
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
-    use_existed=False,  # ignore already created
+    use_existing=False,  # ignore already created
 )
 def resource_create(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
@@ -266,7 +266,7 @@ def resource_create(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
-    use_existed=True,  # get current object
+    use_existing=True,  # get current object
 )
 def resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
@@ -298,7 +298,7 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
-    use_existed=True,  # get current object
+    use_existing=True,  # get current object
 )
 def resource_update(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
@@ -313,8 +313,8 @@ def resource_update(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
-    use_existed=True,  # get current object
-    cleanup_runtime=True,  # remove on successful run
+    use_existing=True,  # get current object
+    cleanup_runtime_properties=True,  # remove on successful run
 )
 def resource_delete(client, api_mapping, resource_definition, **kwargs):
 
@@ -350,7 +350,7 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_data,
-    use_existed=False,  # ignore already created
+    use_existing=False,  # ignore already created
 )
 def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
@@ -365,7 +365,7 @@ def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_data,
-    use_existed=True,  # get current object
+    use_existing=True,  # get current object
 )
 def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
@@ -380,8 +380,8 @@ def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_data,
-    use_existed=True,  # get current object
-    cleanup_runtime=True,  # remove on successful run
+    use_existing=True,  # get current object
+    cleanup_runtime_properties=True,  # remove on successful run
 )
 def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
     try:
@@ -415,7 +415,7 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
-    use_existed=False,  # ignore already created
+    use_existing=False,  # ignore already created
 )
 def file_resource_create(client, api_mapping, resource_definition, **kwargs):
     result = _do_resource_create(
@@ -448,8 +448,8 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
-    use_existed=True,  # get current object
-    cleanup_runtime=True,  # remove on successful run
+    use_existing=True,  # get current object
+    cleanup_runtime_properties=True,  # remove on successful run
 )
 def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
     path = retrieve_path(kwargs)

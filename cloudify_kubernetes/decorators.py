@@ -60,8 +60,8 @@ def _retrieve_property(resource_instance, property_name):
 
 
 def _multidefinition_resource_task(task, definitions, kwargs,
-                                   retrieve_mapping, use_existed=False,
-                                   cleanup_runtime=False):
+                                   retrieve_mapping, use_existing=False,
+                                   cleanup_runtime_properties=False):
     curr_num = 0
     # we have several definitions (not one!)
     multicalls = len(definitions) > 1
@@ -99,17 +99,17 @@ def _multidefinition_resource_task(task, definitions, kwargs,
             current_state = ctx.instance.runtime_properties.get(
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
         # ignore prexisted state
-        if not use_existed and current_state:
-            ctx.logger.info("Ignore existed object state")
+        if not use_existing and current_state:
+            ctx.logger.info("Ignore existing object state")
             continue
         # ignore if we dont have any object yet
-        if use_existed and not current_state:
+        if use_existing and not current_state:
             ctx.logger.info("Ignore unexisted object state")
             continue
         # finally run
         task(**kwargs)
         # cleanup after successful run
-        if current_state and cleanup_runtime:
+        if current_state and cleanup_runtime_properties:
             if path:
                 del ctx.instance.runtime_properties[
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path]
@@ -123,8 +123,8 @@ def _multidefinition_resource_task(task, definitions, kwargs,
 
 def resource_task(retrieve_resource_definition=None,
                   retrieve_resources_definitions=None,
-                  retrieve_mapping=None, use_existed=False,
-                  cleanup_runtime=False):
+                  retrieve_mapping=None, use_existing=False,
+                  cleanup_runtime_properties=False):
     def decorator(task, **kwargs):
         def wrapper(**kwargs):
             try:
@@ -138,8 +138,8 @@ def resource_task(retrieve_resource_definition=None,
                 # apply definition
                 _multidefinition_resource_task(
                     task, definitions, kwargs, retrieve_mapping,
-                    use_existed=use_existed,
-                    cleanup_runtime=cleanup_runtime)
+                    use_existing=use_existing,
+                    cleanup_runtime_properties=cleanup_runtime_properties)
             except (KuberentesMappingNotFoundError,
                     KuberentesInvalidPayloadClassError,
                     KuberentesInvalidApiClassError,
