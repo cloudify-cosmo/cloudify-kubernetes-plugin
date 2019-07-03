@@ -25,11 +25,17 @@ from .k8s import (KubernetesApiMapping,
                   get_mapping)
 from .workflows import merge_definitions, DEFINITION_ADDITIONS
 
-
+NODE_PROPERTY_FILE_RESOURCE_PATH = 'resource_path'
 NODE_PROPERTY_API_MAPPING = 'api_mapping'
 NODE_PROPERTY_DEFINITION = 'definition'
 NODE_PROPERTY_FILE = 'file'
 NODE_PROPERTY_OPTIONS = 'options'
+
+
+def retrieve_path(kwargs):
+    return kwargs\
+        .get(NODE_PROPERTY_FILE, {})\
+        .get(NODE_PROPERTY_FILE_RESOURCE_PATH, '')
 
 
 def generate_traceback_exception():

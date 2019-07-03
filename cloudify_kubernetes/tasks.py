@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # hack for import namespaced modules
-import cloudify_importer # noqa
+import cloudify_importer  # noqa
 
 from cloudify import ctx
 from cloudify.exceptions import (
@@ -23,17 +23,16 @@ from cloudify.exceptions import (
 
 from k8s.exceptions import KuberentesApiOperationError
 from .decorators import (resource_task,
-                         with_kubernetes_client)
+                         with_kubernetes_client,
+                         INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
 from .utils import (mapping_by_data,
                     mapping_by_kind,
+                    retrieve_path,
                     resource_definition_from_blueprint,
-                    resource_definitions_from_file,)
+                    resource_definitions_from_file)
 
 
 DEFAULT_NAMESPACE = 'default'
-INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
-NODE_PROPERTY_FILE = 'file'
-NODE_PROPERTY_FILE_RESOURCE_PATH = 'resource_path'
 NODE_PROPERTY_FILES = 'files'
 NODE_PROPERTY_OPTIONS = 'options'
 
@@ -47,12 +46,6 @@ def _retrieve_id(resource_instance, file=None):
         data = data[file]
 
     return data['metadata']['name']
-
-
-def _retrieve_path(kwargs):
-    return kwargs\
-        .get(NODE_PROPERTY_FILE, {})\
-        .get(NODE_PROPERTY_FILE_RESOURCE_PATH, '')
 
 
 class JsonCleanuper(object):
@@ -257,7 +250,8 @@ def _do_resource_delete(client, api_mapping, resource_definition,
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
-    retrieve_mapping=mapping_by_kind
+    retrieve_mapping=mapping_by_kind,
+    use_existing=False,  # ignore already created
 )
 def resource_create(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
@@ -271,7 +265,8 @@ def resource_create(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
-    retrieve_mapping=mapping_by_kind
+    retrieve_mapping=mapping_by_kind,
+    use_existing=True,  # get current object
 )
 def resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
@@ -302,7 +297,8 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
-    retrieve_mapping=mapping_by_kind
+    retrieve_mapping=mapping_by_kind,
+    use_existing=True,  # get current object
 )
 def resource_update(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
@@ -317,6 +313,8 @@ def resource_update(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
+    use_existing=True,  # get current object
+    cleanup_runtime_properties=True,  # remove on successful run
 )
 def resource_delete(client, api_mapping, resource_definition, **kwargs):
 
@@ -351,7 +349,8 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
-    retrieve_mapping=mapping_by_data
+    retrieve_mapping=mapping_by_data,
+    use_existing=False,  # ignore already created
 )
 def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
@@ -365,7 +364,8 @@ def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
-    retrieve_mapping=mapping_by_data
+    retrieve_mapping=mapping_by_data,
+    use_existing=True,  # get current object
 )
 def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
@@ -379,7 +379,9 @@ def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
-    retrieve_mapping=mapping_by_data
+    retrieve_mapping=mapping_by_data,
+    use_existing=True,  # get current object
+    cleanup_runtime_properties=True,  # remove on successful run
 )
 def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
     try:
@@ -412,7 +414,8 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resources_definitions=resource_definitions_from_file,
-    retrieve_mapping=mapping_by_kind
+    retrieve_mapping=mapping_by_kind,
+    use_existing=False,  # ignore already created
 )
 def file_resource_create(client, api_mapping, resource_definition, **kwargs):
     result = _do_resource_create(
@@ -422,35 +425,34 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
         **kwargs
     )
 
-    if INSTANCE_RUNTIME_PROPERTY_KUBERNETES in \
-            ctx.instance.runtime_properties:
+    if not isinstance(
+        ctx.instance.runtime_properties.get(
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES), dict
+    ):
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {}
 
-        if isinstance(
-            ctx.instance.runtime_properties[
-                INSTANCE_RUNTIME_PROPERTY_KUBERNETES
-            ],
-            dict
-        ):
-            path = _retrieve_path(kwargs)
-
-            ctx.instance.runtime_properties[
-                INSTANCE_RUNTIME_PROPERTY_KUBERNETES
-            ][path] = result
-
-            return
-
+    path = retrieve_path(kwargs)
+    if path:
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path] = result
     else:
-        ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES]\
-            = result
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = result
+    # force save
+    ctx.instance.runtime_properties.dirty = True
+    ctx.instance.update()
 
 
 @with_kubernetes_client
 @resource_task(
     retrieve_resources_definitions=resource_definitions_from_file,
-    retrieve_mapping=mapping_by_kind
+    retrieve_mapping=mapping_by_kind,
+    use_existing=True,  # get current object
+    cleanup_runtime_properties=True,  # remove on successful run
 )
 def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
-    path = _retrieve_path(kwargs)
+    path = retrieve_path(kwargs)
 
     _do_resource_delete(
         client,
@@ -462,9 +464,6 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
 
 
 def multiple_file_resource_create(**kwargs):
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES]\
-        = {}
-
     file_resources = kwargs.get(
         NODE_PROPERTY_FILES,
         ctx.node.properties.get(NODE_PROPERTY_FILES, [])

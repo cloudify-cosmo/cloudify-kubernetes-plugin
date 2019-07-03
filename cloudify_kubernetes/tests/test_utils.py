@@ -153,6 +153,22 @@ class TestUtils(unittest.TestCase):
             },
         }
 
+    def test_retrieve_path(self):
+        self.assertEquals(
+            utils.retrieve_path({'file': {'resource_path': 'path'}}),
+            'path'
+        )
+
+        self.assertEquals(
+            utils.retrieve_path({'file': {}}),
+            ''
+        )
+
+        self.assertEquals(
+            utils.retrieve_path({}),
+            ''
+        )
+
     def test_yaml_from_files(self):
         yaml_data = 'test: \n  a: 1 \n  b: 2'
 

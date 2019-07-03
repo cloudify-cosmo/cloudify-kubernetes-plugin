@@ -19,7 +19,12 @@ from cloudify.exceptions import (
     RecoverableError,
     NonRecoverableError
 )
-from utils import generate_traceback_exception
+from cloudify.decorators import operation
+
+from utils import (generate_traceback_exception,
+                   retrieve_path,
+                   NODE_PROPERTY_FILE,
+                   NODE_PROPERTY_FILE_RESOURCE_PATH)
 from .k8s import (CloudifyKubernetesClient,
                   KubernetesApiAuthenticationVariants,
                   KubernetesApiConfigurationVariants,
@@ -35,6 +40,7 @@ NODE_PROPERTY_CONFIGURATION = 'configuration'
 RELATIONSHIP_TYPE_MANAGED_BY_MASTER = (
     'cloudify.kubernetes.relationships.managed_by_master'
 )
+INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
 
 
 def _retrieve_master(resource_instance):
@@ -54,20 +60,23 @@ def _retrieve_property(resource_instance, property_name):
 
 
 def _multidefinition_resource_task(task, definitions, kwargs,
-                                   retrieve_mapping):
+                                   retrieve_mapping, use_existing=False,
+                                   cleanup_runtime_properties=False):
     curr_num = 0
     # we have several definitions (not one!)
     multicalls = len(definitions) > 1
     # we can have several resources in one file, save origin
     origin_path = None
-    if 'file' in kwargs and multicalls:
+    if NODE_PROPERTY_FILE in kwargs and multicalls:
         # save original path only in case multicalls
-        origin_path = kwargs['file'].get('resource_path')
-    elif 'file' in ctx.node.properties and multicalls:
+        origin_path = kwargs[
+            NODE_PROPERTY_FILE].get(NODE_PROPERTY_FILE_RESOURCE_PATH)
+    elif NODE_PROPERTY_FILE in ctx.node.properties and multicalls:
         # copy origin file name to kwargs
-        kwargs['file'] = ctx.node.properties['file']
+        kwargs[NODE_PROPERTY_FILE] = ctx.node.properties[NODE_PROPERTY_FILE]
         # save origin path
-        origin_path = kwargs['file'].get('resource_path')
+        origin_path = kwargs[
+            NODE_PROPERTY_FILE].get(NODE_PROPERTY_FILE_RESOURCE_PATH)
     # iterate by definitions list
     for definition in definitions:
         kwargs['resource_definition'] = definition
@@ -75,17 +84,53 @@ def _multidefinition_resource_task(task, definitions, kwargs,
             kwargs['api_mapping'] = retrieve_mapping(**kwargs)
         # we can have several resources in one file
         if origin_path:
-            kwargs['file']['resource_path'] = (
+            kwargs[NODE_PROPERTY_FILE][NODE_PROPERTY_FILE_RESOURCE_PATH] = (
                 "{name}#{curr_num}".format(
                     name=origin_path,
                     curr_num=str(curr_num)
                 ))
             curr_num += 1
+        # check current state
+        path = retrieve_path(kwargs)
+        if path:
+            current_state = ctx.instance.runtime_properties.get(
+                INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {}).get(path)
+        else:
+            current_state = ctx.instance.runtime_properties.get(
+                INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
+        # ignore prexisted state
+        if not use_existing and current_state:
+            ctx.logger.info("Ignore existing object state")
+            continue
+        # ignore if we dont have any object yet
+        if use_existing and not current_state:
+            ctx.logger.info("Ignore unexisted object state")
+            continue
+        # finally run
         task(**kwargs)
+        # cleanup after successful run
+        if current_state and cleanup_runtime_properties:
+            if path:
+                del ctx.instance.runtime_properties[
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path]
+            else:
+                ctx.instance.runtime_properties[
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {}
+            # remove empty kubernetes property
+            if not ctx.instance.runtime_properties[
+                INSTANCE_RUNTIME_PROPERTY_KUBERNETES
+            ]:
+                del ctx.instance.runtime_properties[
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES]
+            # force save
+            ctx.instance.runtime_properties.dirty = True
+            ctx.instance.update()
 
 
 def resource_task(retrieve_resource_definition=None,
-                  retrieve_resources_definitions=None, retrieve_mapping=None):
+                  retrieve_resources_definitions=None,
+                  retrieve_mapping=None, use_existing=False,
+                  cleanup_runtime_properties=False):
     def decorator(task, **kwargs):
         def wrapper(**kwargs):
             try:
@@ -98,7 +143,9 @@ def resource_task(retrieve_resource_definition=None,
                     definitions = retrieve_resources_definitions(**kwargs)
                 # apply definition
                 _multidefinition_resource_task(
-                    task, definitions, kwargs, retrieve_mapping)
+                    task, definitions, kwargs, retrieve_mapping,
+                    use_existing=use_existing,
+                    cleanup_runtime_properties=cleanup_runtime_properties)
             except (KuberentesMappingNotFoundError,
                     KuberentesInvalidPayloadClassError,
                     KuberentesInvalidApiClassError,
@@ -208,4 +255,4 @@ def with_kubernetes_client(function):
                 causes=[error_traceback]
             )
 
-    return wrapper
+    return operation(func=wrapper, resumable=True)
