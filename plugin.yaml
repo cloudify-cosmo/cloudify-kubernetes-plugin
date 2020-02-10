@@ -3,8 +3,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.5.0'
-    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.5.0.zip
+    package_version: '2.6.0'
+    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.6.0.zip
 
 data_types:
 
@@ -459,6 +459,46 @@ node_types:
         type: cloudify.kubernetes.types.ConfigClassResourceDefinition
 
   cloudify.kubernetes.resources.StorageClass:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.StatefulSet:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.PodSecurityPolicy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.NetworkPolicy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.Ingress:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.PersistentVolumeClaim:
     derived_from: cloudify.nodes.Root
     properties:
       definition:

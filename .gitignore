@@ -165,3 +165,5 @@ ENV/
 inputs.yaml
 local-storage/
 .cloudify/
+**/*.wgn
+

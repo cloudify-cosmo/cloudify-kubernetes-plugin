@@ -66,3 +66,7 @@
 
 2.5.0:
   - Add support "resumable" actions.
+
+2.6.0:
+  - Bump client library to `kubernetes==10.0.1`
+  - Update node mappings for 16.1 deprecation notices: https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/.

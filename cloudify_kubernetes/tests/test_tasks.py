@@ -255,7 +255,7 @@ class TestTasks(unittest.TestCase):
 
     def test_do_resource_status_check_unknow(self):
         # never raise exception on unknown types
-        tasks._do_resource_status_check("unknow", {})
+        tasks._do_resource_status_check("unknown", {})
 
     def test_do_resource_status_check_pod(self):
         # never raise exception on 'Running', 'Succeeded'
