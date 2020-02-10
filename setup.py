@@ -25,7 +25,7 @@ setup(
     license='LICENSE',
     install_requires=[
         'cloudify-python-importer==0.1',
-        'cloudify-plugins-common>=4.2',
+        'cloudify-common==4.5.5',
         'kubernetes==9.0.0',
         'pyyaml>=3.12',
         'pyasn1>=0.1.7',
