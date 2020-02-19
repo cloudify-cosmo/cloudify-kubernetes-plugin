@@ -313,6 +313,8 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
+        poststart:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
         update:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_update
         delete:
@@ -325,10 +327,6 @@ node_types:
         type: cloudify.kubernetes.types.RoleBindingDefinition
         description: >
           Definition of role binding using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.RoleBinding:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -337,10 +335,6 @@ node_types:
         type: cloudify.kubernetes.types.RoleBindingDefinition
         description: >
           Definition of role binding using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Role:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -349,10 +343,6 @@ node_types:
         type: cloudify.kubernetes.types.RoleDefinition
         description: >
           Definition of role using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ClusterRole:
     derived_from: cloudify.kubernetes.resources.Role
@@ -369,10 +359,6 @@ node_types:
         type: cloudify.kubernetes.types.SecretDefinition
         description: >
           Definition of secret using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ServiceAccount:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -381,76 +367,36 @@ node_types:
         type: cloudify.kubernetes.types.ServiceAccountDefinition
         description: >
           Definition of service account using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Deployment:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Node:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       use_external_resource:
         default: true
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Pod:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ReplicaSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ReplicationController:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.DaemonSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.CustomResourceDefinition:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Service:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.PersistentVolume:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ConfigMap:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -531,6 +477,8 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_create
+        poststart:
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
 
@@ -544,6 +492,8 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_create
+        poststart:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_delete
 

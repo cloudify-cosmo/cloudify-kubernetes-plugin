@@ -449,6 +449,43 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
     use_existing=True,  # get current object
+)
+def file_resource_read(client, api_mapping, resource_definition, **kwargs):
+    """Attempt to resolve the lifecycle logic.
+    """
+    path = retrieve_path(kwargs)
+
+    # Read All resources.
+    read_response = _do_resource_read(
+        client,
+        api_mapping,
+        _retrieve_id(ctx.instance, path),
+        **kwargs
+    )
+
+    if not isinstance(
+        ctx.instance.runtime_properties.get(
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES), dict
+    ):
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {}
+
+    if path:
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path] = read_response
+    else:
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = read_response
+    # force save
+    ctx.instance.runtime_properties.dirty = True
+    ctx.instance.update()
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resources_definitions=resource_definitions_from_file,
+    retrieve_mapping=mapping_by_kind,
+    use_existing=True,  # get current object
     cleanup_runtime_properties=True,  # remove on successful run
 )
 def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
@@ -471,6 +508,16 @@ def multiple_file_resource_create(**kwargs):
 
     for file_resource in file_resources:
         file_resource_create(file=file_resource, **kwargs)
+
+
+def multiple_file_resource_read(**kwargs):
+    file_resources = kwargs.get(
+        NODE_PROPERTY_FILES,
+        ctx.node.properties.get(NODE_PROPERTY_FILES, [])
+    )
+
+    for file_resource in file_resources:
+        file_resource_read(file=file_resource, **kwargs)
 
 
 def multiple_file_resource_delete(**kwargs):
