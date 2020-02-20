@@ -309,6 +309,10 @@ node_types:
           API options depending on API operations execution
         default:
           namespace: default
+      validate_resource_status:
+        type: boolean
+        description: Set this to "true" if you want Cloudify to wait for a predetermined state.
+        default: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:

@@ -25,8 +25,7 @@ class KubernetesSingleOperationApiMapping(object):
 
 class KubernetesApiMapping(object):
 
-    def __init__(self, create, read, update, delete,
-                 start_status=None, stop_status=None):
+    def __init__(self, create, read, update, delete):
 
         if isinstance(create, dict):
             create = KubernetesSingleOperationApiMapping(**create)
@@ -44,16 +43,6 @@ class KubernetesApiMapping(object):
         self.read = read
         self.update = update
         self.delete = delete
-        self._start_status = start_status or []
-        self._stop_status = stop_status or []
-
-    @property
-    def start_status(self):
-        return self._start_status
-
-    @property
-    def stop_status(self):
-        return self._stop_status
 
 
 SUPPORTED_API_MAPPINGS = {
