@@ -41,6 +41,7 @@ class KubernetesResourceStatus(object):
         pass
 
     def ready(self):
+        ctx.logger.info('Checking if the resource is ready.')
         if not self.validate_status:
             ctx.logger.info('Ignoring status validation. '
                             'You can toggle this with '
@@ -77,30 +78,21 @@ class KubernetesServiceStatus(KubernetesResourceStatus):
         return self._status.get('load_balancer', {}).get('ingress')
 
     def is_resource_ready(self):
-        if self.status['spec']['type'] == 'Ingress' and not self.status:
+        if not self.status:
             raise OperationRetry(self.status_message)
         return True
 
 
+class KubernetesIngressStatus(KubernetesServiceStatus):
+
+    pass
+
+
 class KubernetesDeploymentStatus(KubernetesResourceStatus):
 
-    @property
-    def status(self):
-        return self._status.get('conditions', [])
-
     def is_resource_ready(self):
-        if isinstance(self.status, list):
-            for condition in self.status:
-                if condition['type'] in ['Available']:
-                    ctx.logger.debug(self.status_message)
-                elif condition['type'] in ['ReplicaFailure']:
-                    raise NonRecoverableError(
-                        self.status_message)
-                elif condition['type'] in ['Progressing'] and condition['reason'] in ['NewReplicaSetAvailable']:
-                    raise OperationRetry(self.status_message)
-                else:
-                    ctx.logger.debug(self.status_message)
-                    return False
+        if self.status['unavailable_replicas']:
+            raise OperationRetry(self.status_message)
         return True
 
 
@@ -120,10 +112,6 @@ class KubernetesPersistentVolumeClaimStatus(KubernetesResourceStatus):
 
 class KubernetesPersistentVolumeStatus(KubernetesResourceStatus):
 
-    @property
-    def status(self):
-        return self._status['phase']
-
     def is_resource_ready(self):
         if self.status in ['Bound', 'Available']:
             ctx.logger.debug(self.status_message)
@@ -134,12 +122,8 @@ class KubernetesPersistentVolumeStatus(KubernetesResourceStatus):
 
 class KubernetesReplicaSetStatus(KubernetesResourceStatus):
 
-    @property
-    def status(self):
-        return self._status['phase']
-
     def is_resource_ready(self):
-        if self.status.get('ready_replicas') and self.status.get('replicas'):
+        if self.status.get('ready_replicas') == self.status.get('replicas'):
             ctx.logger.debug(self.status_message)
             return True
         else:
@@ -148,3 +132,23 @@ class KubernetesReplicaSetStatus(KubernetesResourceStatus):
 
 class KubernetesReplicationControllerStatus(KubernetesReplicaSetStatus):
     pass
+
+
+class KubernetesDaemonSetStatus(KubernetesResourceStatus):
+
+    def is_resource_ready(self):
+        if not self.status['number_unavailable']:
+            ctx.logger.debug(self.status_message)
+        else:
+            raise OperationRetry(self.status_message)
+        return True
+
+
+class KubernetesStatefulSetStatus(KubernetesResourceStatus):
+
+    def is_resource_ready(self):
+        if self.status['ready_replicas']:
+            ctx.logger.debug(self.status_message)
+        else:
+            raise OperationRetry(self.status_message)
+        return True

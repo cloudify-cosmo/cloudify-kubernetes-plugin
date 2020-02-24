@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: simpleconfig
+data:
+  foo: bar
+  hello: world

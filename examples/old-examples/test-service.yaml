@@ -1,7 +1,7 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
+  - http://www.getcloudify.org/spec/cloudify/5.0.0/types.yaml
   - plugin:cloudify-kubernetes-plugin
 
 node_templates:
@@ -16,11 +16,24 @@ node_templates:
           debug: false
           verify_ssl: false
 
-  service:
-    type: cloudify.kubernetes.resources.FileDefinedResource
+  nginx:
+    type: cloudify.kubernetes.resources.Pod
     properties:
-      file:
-        resource_path: resources/service-test.yaml
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: wordpress
+          labels:
+            app: wordpress
+        spec:
+          ports:
+            - port: 80
+              nodePort: 30080
+          selector:
+            app: wordpress
+            tier: frontend
+          type: LoadBalancer
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: master

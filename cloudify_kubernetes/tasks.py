@@ -17,7 +17,6 @@ import cloudify_importer  # noqa
 
 from cloudify import ctx
 from cloudify.exceptions import (
-    NonRecoverableError,
     OperationRetry,
     RecoverableError)
 
@@ -135,11 +134,16 @@ def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
 
 
 def _do_resource_status_check(resource_kind, response):
-    status_obj = getattr(status_mapping,
-                         'Kubernetes{0}Status'.format(resource_kind))
-    return status_obj(response['status'],
-                      ctx.node.properties['validate_resource_status']
-                      ).ready()
+    ctx.logger.info('Checking resource status.')
+    status_obj_name = 'Kubernetes{0}Status'.format(resource_kind)
+    if hasattr(status_mapping, status_obj_name):
+        return getattr(status_mapping, status_obj_name)(
+            response['status'],
+            ctx.node.properties['validate_resource_status']).ready()
+    ctx.logger.debug(
+        'Resource status check not supported for {0}'.format(
+            resource_kind))
+    return True
 
 
 def _do_resource_delete(client, api_mapping, resource_definition,
@@ -380,7 +384,7 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_kind,
     use_existing=True,  # get current object
 )
-def file_resource_read(client, api_mapping, **kwargs):
+def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
     path = retrieve_path(kwargs)
@@ -409,6 +413,12 @@ def file_resource_read(client, api_mapping, **kwargs):
     # force save
     ctx.instance.runtime_properties.dirty = True
     ctx.instance.update()
+
+    resource_type = getattr(resource_definition, 'kind')
+    if resource_type:
+        _do_resource_status_check(resource_type, read_response)
+        ctx.logger.info(
+            'Resource definition: {0}'.format(resource_type))
 
 
 @with_kubernetes_client

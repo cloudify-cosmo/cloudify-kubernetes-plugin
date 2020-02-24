@@ -293,8 +293,16 @@ node_types:
           Authentication properties of Kubernetes Cloud providers. Optional.
           Currently supported providers: Google Cloud Platform
 
-  cloudify.kubernetes.resources.BlueprintDefinedResource:
+  cloudify.kubernetes.resources.ResourceBase:
     derived_from: cloudify.nodes.Root
+    properties:
+      validate_resource_status:
+        type: boolean
+        description: Set this to "true" if you want Cloudify to wait for a predetermined state.
+        default: false
+
+  cloudify.kubernetes.resources.BlueprintDefinedResource:
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       use_external_resource:
         type: boolean
@@ -309,10 +317,6 @@ node_types:
           API options depending on API operations execution
         default:
           namespace: default
-      validate_resource_status:
-        type: boolean
-        description: Set this to "true" if you want Cloudify to wait for a predetermined state.
-        default: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -374,6 +378,9 @@ node_types:
 
   cloudify.kubernetes.resources.Deployment:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.Node:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -383,12 +390,21 @@ node_types:
 
   cloudify.kubernetes.resources.Pod:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.ReplicaSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.ReplicationController:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.DaemonSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -398,9 +414,15 @@ node_types:
 
   cloudify.kubernetes.resources.Service:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.PersistentVolume:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.ConfigMap:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -455,6 +477,8 @@ node_types:
         type: cloudify.kubernetes.types.StorageClassResourceDefinition
         description: >
           Definition of resource object using native Kubernetes YAML spec
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.CustomBlueprintDefinedResource:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -471,7 +495,7 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_delete
 
   cloudify.kubernetes.resources.FileDefinedResource:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       file:
         type: cloudify.kubernetes.types.FileResource
@@ -487,7 +511,7 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
 
   cloudify.kubernetes.resources.MultipleFileDefinedResources:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       files:
         description: >

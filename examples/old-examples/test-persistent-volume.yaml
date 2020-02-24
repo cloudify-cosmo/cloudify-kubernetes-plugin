@@ -1,0 +1,58 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/5.0.0/types.yaml
+  - plugin:cloudify-kubernetes-plugin
+
+node_templates:
+
+  master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        api_options:
+          host: { concat: [ 'https://', { get_secret: kubernetes_master_ip }, ':', { get_secret: kubernetes_master_port } ] }
+          api_key: { get_secret: kubernetes_token }
+          debug: false
+          verify_ssl: false
+
+  pv:
+    type: cloudify.kubernetes.resources.Pod
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolume
+        metadata:
+          name: local-pv-2
+          labels:
+            type: local
+        spec:
+          capacity:
+            storage: 20Gi
+          accessModes:
+            - ReadWriteOnce
+          hostPath:
+            path: /tmp/data/pv-2
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: master
+
+  pvc:
+    type: cloudify.kubernetes.resources.Pod
+    properties:
+      definition:
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: wp-pv-claim
+          labels:
+            app: wordpress
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 20Gi
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: master

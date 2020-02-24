@@ -169,6 +169,7 @@ class TestTasks(unittest.TestCase):
 
         properties = {
             'use_external_resource': external,
+            'validate_resource_status': True,
             'definition': {
                 'apiVersion': 'v1',
                 'metadata': 'c',
@@ -202,6 +203,7 @@ class TestTasks(unittest.TestCase):
 
         _ctx.node.type_hierarchy = \
             ['cloudify.nodes.Root',
+             'cloudify.kubernetes.resources.ResourceBase',
              'cloudify.kubernetes.resources.BlueprintDefinedResource',
              'cloudify.kubernetes.resources.Pod']
 
@@ -253,8 +255,9 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(tasks._retrieve_id(_ctx.instance, "other_field"),
                          'id')
 
-    def test_do_resource_status_check_unknow(self):
+    def test_do_resource_status_check_unknown(self):
         # never raise exception on unknown types
+        _, __ = self._prepare_master_node()
         tasks._do_resource_status_check("unknown", {})
 
     def test_do_resource_status_check_pod(self):
@@ -280,7 +283,7 @@ class TestTasks(unittest.TestCase):
             })
         self.assertEqual(
             str(error.exception),
-            "status Pending in phase ['Pending', 'Unknown']"
+            "Status is {'phase': 'Pending'}"
         )
 
         with self.assertRaises(OperationRetry) as error:
@@ -289,7 +292,7 @@ class TestTasks(unittest.TestCase):
             })
         self.assertEqual(
             str(error.exception),
-            "status Unknown in phase ['Pending', 'Unknown']"
+            "Status is {'phase': 'Unknown'}"
         )
 
     def test_do_resource_status_check_pod_failed(self):
@@ -302,15 +305,8 @@ class TestTasks(unittest.TestCase):
             })
         self.assertEqual(
             str(error.exception),
-            "status Failed in phase ['Failed']"
+            "Status is {'phase': 'Failed'}"
         )
-
-    def test_do_resource_status_check_service(self):
-        # never raise exception on empty status
-        self._prepare_master_node()
-        tasks._do_resource_status_check("Service", {
-            'status': {}
-        })
 
     def test_do_resource_status_check_service_fail(self):
         # raise exception on empty balancer
@@ -323,55 +319,15 @@ class TestTasks(unittest.TestCase):
             })
         self.assertEqual(
             str(error.exception),
-            "status {'load_balancer': {'ingress': None}} in phase "
-            "[{'load_balancer': {'ingress': None}}]"
+            "Status is {'load_balancer': {'ingress': None}}"
         )
 
     def test_do_resource_status_check_deployment(self):
         self._prepare_master_node()
         tasks._do_resource_status_check("Deployment", {
-            'status': {'conditions': [{'type': 'Available'}]}
+            'status': {'conditions': [{'type': 'Available'}],
+                       'unavailable_replicas': None}
         })
-
-    def test_do_resource_status_check_deployment_retry(self):
-        self._prepare_master_node()
-        with self.assertRaises(OperationRetry) as error:
-            tasks._do_resource_status_check("Deployment", {
-                'status': {
-                    'conditions': [{
-                        'type': 'Progressing',
-                        'reason': ''
-                    }]
-                }
-            })
-        self.assertEqual(
-            str(error.exception),
-            "Deployment condition is Progressing"
-        )
-
-        with self.assertRaises(OperationRetry) as error:
-            tasks._do_resource_status_check("Deployment", {
-                'status': {'conditions': None}
-            })
-        self.assertEqual(
-            str(error.exception),
-            "Deployment condition is not ready yet"
-        )
-
-    def test_do_resource_status_check_deployment_failed(self):
-        self._prepare_master_node()
-        with self.assertRaises(NonRecoverableError) as error:
-            tasks._do_resource_status_check("Deployment", {
-                'status': {'conditions': [{'type': 'ReplicaFailure',
-                                           'reason': 'ReplicaFailure',
-                                           'message': 'ReplicaFailure'}]}
-            })
-
-        self.assertEqual(
-            str(error.exception),
-            'Deployment condition is ReplicaFailure ,'
-            'reason:ReplicaFailure, message: ReplicaFailure'
-        )
 
     def test_do_resource_status_check_persistent_volume_claim(self):
         self._prepare_master_node()
@@ -396,7 +352,7 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(
             str(error.exception),
-            "Unknown PersistentVolume status Unknown"
+            "Status is {'phase': 'Unknown'}"
         )
 
         with self.assertRaises(OperationRetry) as error:
@@ -406,17 +362,17 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(
             str(error.exception),
-            "Unknown PersistentVolume status None"
+            "Status is {'phase': None}"
         )
 
     def test_do_resource_status_check_persistent_volume(self):
         self._prepare_master_node()
         tasks._do_resource_status_check("PersistentVolume", {
-            'status': {'phase': 'Bound'}
+            'status': 'Bound'
         })
 
         tasks._do_resource_status_check("PersistentVolume", {
-            'status': {'phase': 'Available'}
+            'status': 'Available'
         })
 
     def test_do_resource_status_check_persistent_volume_retry(self):
@@ -428,7 +384,7 @@ class TestTasks(unittest.TestCase):
             })
         self.assertEqual(
             str(error.exception),
-            "Unknown PersistentVolume status Unknown"
+            "Status is {'phase': 'Unknown'}"
         )
 
     def test_do_resource_status_check_replica_set(self):
@@ -446,7 +402,7 @@ class TestTasks(unittest.TestCase):
             })
         self.assertEqual(
             str(error.exception),
-            "ReplicaSet status not ready yet"
+            "Status is {'ready_replicas': None, 'replicas': 0}"
         )
 
     def test_do_resource_status_check_replication_controller(self):
@@ -464,7 +420,7 @@ class TestTasks(unittest.TestCase):
             })
         self.assertEqual(
             str(error.exception),
-            "ReplicationController status not ready yet"
+            "Status is {'ready_replicas': None, 'replicas': 0}"
         )
 
     def test_do_resource_create(self):
