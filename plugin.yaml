@@ -3,8 +3,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.5.0'
-    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.5.0.zip
+    package_version: '2.6.0'
+    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.6.0.zip
 
 data_types:
 
@@ -293,8 +293,16 @@ node_types:
           Authentication properties of Kubernetes Cloud providers. Optional.
           Currently supported providers: Google Cloud Platform
 
-  cloudify.kubernetes.resources.BlueprintDefinedResource:
+  cloudify.kubernetes.resources.ResourceBase:
     derived_from: cloudify.nodes.Root
+    properties:
+      validate_resource_status:
+        type: boolean
+        description: Set this to "true" if you want Cloudify to wait for a predetermined state.
+        default: false
+
+  cloudify.kubernetes.resources.BlueprintDefinedResource:
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       use_external_resource:
         type: boolean
@@ -313,6 +321,8 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
+        poststart:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
         update:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_update
         delete:
@@ -325,10 +335,6 @@ node_types:
         type: cloudify.kubernetes.types.RoleBindingDefinition
         description: >
           Definition of role binding using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.RoleBinding:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -337,10 +343,6 @@ node_types:
         type: cloudify.kubernetes.types.RoleBindingDefinition
         description: >
           Definition of role binding using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Role:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -349,10 +351,6 @@ node_types:
         type: cloudify.kubernetes.types.RoleDefinition
         description: >
           Definition of role using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ClusterRole:
     derived_from: cloudify.kubernetes.resources.Role
@@ -369,10 +367,6 @@ node_types:
         type: cloudify.kubernetes.types.SecretDefinition
         description: >
           Definition of secret using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ServiceAccount:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -381,76 +375,54 @@ node_types:
         type: cloudify.kubernetes.types.ServiceAccountDefinition
         description: >
           Definition of service account using native Kubernetes YAML spec
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Deployment:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.Node:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       use_external_resource:
         default: true
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Pod:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.ReplicaSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.ReplicationController:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.DaemonSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.CustomResourceDefinition:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.Service:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.PersistentVolume:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    interfaces:
-      cloudify.interfaces.lifecycle:
-        start:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.ConfigMap:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -465,6 +437,48 @@ node_types:
         type: cloudify.kubernetes.types.StorageClassResourceDefinition
         description: >
           Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.StatefulSet:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.PodSecurityPolicy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.NetworkPolicy:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.Ingress:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
+  cloudify.kubernetes.resources.PersistentVolumeClaim:
+    derived_from: cloudify.nodes.Root
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.CustomBlueprintDefinedResource:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -481,7 +495,7 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_delete
 
   cloudify.kubernetes.resources.FileDefinedResource:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       file:
         type: cloudify.kubernetes.types.FileResource
@@ -491,11 +505,13 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_create
+        poststart:
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
 
   cloudify.kubernetes.resources.MultipleFileDefinedResources:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       files:
         description: >
@@ -504,6 +520,8 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_create
+        poststart:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_delete
 

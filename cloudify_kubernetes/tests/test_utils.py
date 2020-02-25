@@ -185,7 +185,7 @@ class TestUtils(unittest.TestCase):
         ) as file_mock:
             result = utils._yaml_from_files('path')
 
-            self.assertEquals(result, [{'test': {'a': 1, 'b': 2}}])
+            self.assertEquals(list(result), [{'test': {'a': 1, 'b': 2}}])
             file_mock.assert_called_once_with('local_path')
 
     def test_mapping_by_data_kwargs(self):

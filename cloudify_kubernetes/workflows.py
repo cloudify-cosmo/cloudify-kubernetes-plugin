@@ -19,7 +19,7 @@ from cloudify.decorators import workflow
 from cloudify.exceptions import NonRecoverableError
 from cloudify.workflows import ctx
 
-RESOURCE_START_OPERATION = 'cloudify.interfaces.lifecycle.start'
+RESOURCE_START_OPERATION = 'cloudify.interfaces.lifecycle.poststart'
 RESOURCE_UPDATE_OPERATION = 'cloudify.interfaces.lifecycle.update'
 DEFINITION_ADDITIONS = 'definitions_additions'
 

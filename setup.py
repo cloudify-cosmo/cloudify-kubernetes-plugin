@@ -17,7 +17,7 @@ from setuptools import setup
 
 setup(
     name='cloudify-kubernetes-plugin',
-    version='2.5.0',
+    version='2.6.0',
     author='Cloudify Platform Ltd.',
     author_email='hello@cloudify.co',
     description='Plugin provides Kubernetes management possibility',
@@ -25,8 +25,8 @@ setup(
     license='LICENSE',
     install_requires=[
         'cloudify-python-importer==0.1',
-        'cloudify-plugins-common>=4.2',
-        'kubernetes==9.0.0',
+        'cloudify-common==4.5.5',
+        'kubernetes==10.0.1',
         'pyyaml>=3.12',
         'pyasn1>=0.1.7',
         'pyasn1-modules>=0.0.5,<0.2.1',

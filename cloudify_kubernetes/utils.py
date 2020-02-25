@@ -60,8 +60,7 @@ def _yaml_from_files(
     with open(downloaded_file_path) as outfile:
         file_content = outfile.read()
 
-    return [yaml.load(content)
-            for content in file_content.replace("\r\n", "\n").split("\n---\n")]
+    return yaml.load_all(file_content)
 
 
 def mapping_by_data(resource_definition, **kwargs):

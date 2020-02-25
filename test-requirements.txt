@@ -8,5 +8,5 @@ tox
 pylint
 pytest
 # for integration and platform tests
-cloudify>=3.4.2
+cloudify==4.5.5
 https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.1.1.zip

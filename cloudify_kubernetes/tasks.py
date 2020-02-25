@@ -17,11 +17,11 @@ import cloudify_importer  # noqa
 
 from cloudify import ctx
 from cloudify.exceptions import (
-    NonRecoverableError,
     OperationRetry,
     RecoverableError)
 
 from k8s.exceptions import KuberentesApiOperationError
+from k8s import status_mapping
 from .decorators import (resource_task,
                          with_kubernetes_client,
                          INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
@@ -134,82 +134,16 @@ def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
 
 
 def _do_resource_status_check(resource_kind, response):
-
-    if resource_kind == "Pod":
-        status = response['status']['phase']
-        if status in ['Failed']:
-            raise NonRecoverableError(
-                'status {0} in phase {1}'.format(
-                    status, ['Failed']))
-        elif status in ['Pending', 'Unknown']:
-            raise OperationRetry(
-                'status {0} in phase {1}'.format(
-                    status, ['Pending', 'Unknown']))
-        elif status in ['Running', 'Succeeded']:
-            ctx.logger.debug(
-                'status {0} in phase {1}'.format(
-                    status, ['Running', 'Succeeded']))
-
-    elif resource_kind == "Service":
-        status = response.get('status')
-        load_balancer = status.get('load_balancer')
-        if response.get('spec', {}).get('type', '') == 'Ingress' and \
-                load_balancer and load_balancer.get('ingress') is None:
-            raise OperationRetry(
-                'status {0} in phase {1}'.format(
-                    status,
-                    [{'load_balancer': {'ingress': None}}]))
-        else:
-            ctx.logger.debug('status {0}'.format(status))
-
-    elif resource_kind == 'Deployment':
-        conditions = response['status']['conditions']
-        if isinstance(conditions, list):
-            for condition in conditions:
-                if condition['type'] == 'Available':
-                    ctx.logger.debug('Deployment condition is Available')
-
-                elif condition['type'] == 'ReplicaFailure':
-                    raise NonRecoverableError(
-                        'Deployment condition is ReplicaFailure ,'
-                        'reason:{0}, message: {1}'
-                        ''.format(condition['reason'], condition['message']))
-
-                elif condition['type'] == 'Progressing' and \
-                        condition['reason'] != 'NewReplicaSetAvailable':
-                    raise OperationRetry(
-                        'Deployment condition is Progressing')
-        else:
-            raise OperationRetry('Deployment condition is not ready yet')
-
-    elif resource_kind == 'PersistentVolumeClaim':
-        status = response['status']['phase']
-        if status in ['Pending', 'Available', 'Bound']:
-            ctx.logger.debug('PersistentVolumeClaim status is Bound')
-
-        else:
-            raise OperationRetry(
-                'Unknown PersistentVolume status {0}'.format(status))
-
-    elif resource_kind == 'PersistentVolume':
-        status = response['status']['phase']
-        if status in ['Bound', 'Available']:
-            ctx.logger.debug('PersistentVolume status is {0}'.format(status))
-
-        else:
-            raise OperationRetry(
-                'Unknown PersistentVolume status {0}'.format(status))
-
-    elif resource_kind in ['ReplicaSet', 'ReplicationController']:
-        ready_replicas = response['status'].get('ready_replicas')
-        replicas = response['status'].get('replicas')
-
-        if ready_replicas is None and not replicas:
-            raise OperationRetry(
-                '{0} status not ready yet'.format(resource_kind))
-
-        else:
-            ctx.logger.debug('All {0} replicas are ready now'.format(replicas))
+    ctx.logger.info('Checking resource status.')
+    status_obj_name = 'Kubernetes{0}Status'.format(resource_kind)
+    if hasattr(status_mapping, status_obj_name):
+        return getattr(status_mapping, status_obj_name)(
+            response['status'],
+            ctx.node.properties['validate_resource_status']).ready()
+    ctx.logger.debug(
+        'Resource status check not supported for {0}'.format(
+            resource_kind))
+    return True
 
 
 def _do_resource_delete(client, api_mapping, resource_definition,
@@ -449,6 +383,49 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
     use_existing=True,  # get current object
+)
+def file_resource_read(client, api_mapping, resource_definition, **kwargs):
+    """Attempt to resolve the lifecycle logic.
+    """
+    path = retrieve_path(kwargs)
+
+    # Read All resources.
+    read_response = _do_resource_read(
+        client,
+        api_mapping,
+        _retrieve_id(ctx.instance, path),
+        **kwargs
+    )
+
+    if not isinstance(
+        ctx.instance.runtime_properties.get(
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES), dict
+    ):
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {}
+
+    if path:
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path] = read_response
+    else:
+        ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = read_response
+    # force save
+    ctx.instance.runtime_properties.dirty = True
+    ctx.instance.update()
+
+    resource_type = getattr(resource_definition, 'kind')
+    if resource_type:
+        _do_resource_status_check(resource_type, read_response)
+        ctx.logger.info(
+            'Resource definition: {0}'.format(resource_type))
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resources_definitions=resource_definitions_from_file,
+    retrieve_mapping=mapping_by_kind,
+    use_existing=True,  # get current object
     cleanup_runtime_properties=True,  # remove on successful run
 )
 def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
@@ -471,6 +448,16 @@ def multiple_file_resource_create(**kwargs):
 
     for file_resource in file_resources:
         file_resource_create(file=file_resource, **kwargs)
+
+
+def multiple_file_resource_read(**kwargs):
+    file_resources = kwargs.get(
+        NODE_PROPERTY_FILES,
+        ctx.node.properties.get(NODE_PROPERTY_FILES, [])
+    )
+
+    for file_resource in file_resources:
+        file_resource_read(file=file_resource, **kwargs)
 
 
 def multiple_file_resource_delete(**kwargs):

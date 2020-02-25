@@ -19,6 +19,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Upgrade pip
+          command: pip install --upgrade pip==9.0.1
+      - run:
           name: install tox
           command: pip install tox
       - run: tox -e pep8

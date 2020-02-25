@@ -1,0 +1,47 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
+  - plugin:cloudify-kubernetes-plugin
+
+node_templates:
+
+  master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        api_options:
+          host: { concat: [ 'https://', { get_secret: kubernetes_master_ip }, ':', { get_secret: kubernetes_master_port } ] }
+          api_key: { get_secret: kubernetes_token }
+          debug: false
+          verify_ssl: false
+
+
+  deployment:
+    type: cloudify.kubernetes.resources.Deployment
+    properties:
+      definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: nginx-deployment
+          labels:
+            app: nginx
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: nginx
+          template:
+            metadata:
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: nginx:1.7.9
+                ports:
+                - containerPort: 80
+    relationships:
+      - type: cloudify.kubernetes.relationships.managed_by_master
+        target: master

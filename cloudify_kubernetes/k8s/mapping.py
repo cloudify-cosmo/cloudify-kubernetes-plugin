@@ -26,6 +26,7 @@ class KubernetesSingleOperationApiMapping(object):
 class KubernetesApiMapping(object):
 
     def __init__(self, create, read, update, delete):
+
         if isinstance(create, dict):
             create = KubernetesSingleOperationApiMapping(**create)
 
@@ -45,6 +46,86 @@ class KubernetesApiMapping(object):
 
 
 SUPPORTED_API_MAPPINGS = {
+    'StatefulSet': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='AppsV1Api',
+            method='create_namespaced_stateful_set',
+            payload='V1StatefulSet'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='AppsV1Api',
+            method='read_namespaced_stateful_set',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='AppsV1Api',
+            method='patch_namespaced_stateful_set',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='AppsV1Api',
+            method='delete_namespaced_stateful_set',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'DaemonSet': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='AppsV1Api',
+            method='create_namespaced_daemon_set',
+            payload='V1DaemonSet'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='AppsV1Api',
+            method='read_namespaced_daemon_set',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='AppsV1Api',
+            method='patch_namespaced_daemon_set',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='AppsV1Api',
+            method='delete_namespaced_daemon_set',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'PodSecurityPolicy': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='PolicyV1beta1Api',
+            method='create_pod_security_policy',
+            payload='V1NetworkPolicy'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='PolicyV1beta1Api',
+            method='read_pod_security_policy',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='PolicyV1beta1Api',
+            method='patch_pod_security_policy',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='PolicyV1beta1Api',
+            method='delete_pod_security_policy',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'NetworkPolicy': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='NetworkingV1Api',
+            method='create_namespaced_network_policy',
+            payload='V1NetworkPolicy'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='NetworkingV1Api',
+            method='read_namespaced_network_policy',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='NetworkingV1Api',
+            method='patch_namespaced_network_policy',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='NetworkingV1Api',
+            method='delete_namespaced_network_policy',
+            payload='V1DeleteOptions'
+        ),
+    ),
     'Node': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -107,20 +188,20 @@ SUPPORTED_API_MAPPINGS = {
     ),
     'Deployment': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
+            api='AppsV1Api',
             method='create_namespaced_deployment',
-            payload='AppsV1beta1Deployment'
+            payload='V1Deployment'
         ),
         read=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
+            api='AppsV1Api',
             method='read_namespaced_deployment',
         ),
         update=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
+            api='AppsV1Api',
             method='patch_namespaced_deployment',
         ),
         delete=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
+            api='AppsV1Api',
             method='delete_namespaced_deployment',
             payload='V1DeleteOptions'
         ),
@@ -147,20 +228,20 @@ SUPPORTED_API_MAPPINGS = {
     ),
     'ReplicaSet': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
+            api='AppsV1Api',
             method='create_namespaced_replica_set',
-            payload='V1beta1ReplicaSet'
+            payload='V1ReplicaSet'
         ),
         read=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
+            api='AppsV1Api',
             method='read_namespaced_replica_set',
         ),
         update=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
+            api='AppsV1Api',
             method='patch_namespaced_replica_set'
         ),
         delete=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
+            api='AppsV1Api',
             method='delete_namespaced_replica_set',
             payload='V1DeleteOptions'
         ),
@@ -201,6 +282,46 @@ SUPPORTED_API_MAPPINGS = {
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
             method='delete_namespaced_service',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'Ingress': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='NetworkingV1beta1Api',
+            method='create_namespaced_ingress',
+            payload='NetworkingV1beta1Ingress'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='NetworkingV1beta1Api',
+            method='read_namespaced_ingress',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='NetworkingV1beta1Api',
+            method='patch_namespaced_ingress'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='NetworkingV1beta1Api',
+            method='delete_namespaced_ingress',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'PersistentVolumeClaim': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='create_namespaced_persistent_volume_claim',
+            payload='V1PersistentVolumeClaim'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='read_namespaced_persistent_volume_claim',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='patch_namespaced_persistent_volume_claim'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='delete_namespaced_persistent_volume_claim',
             payload='V1DeleteOptions'
         ),
     ),
@@ -341,26 +462,6 @@ SUPPORTED_API_MAPPINGS = {
         delete=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
             method='delete_namespaced_role_binding',
-            payload='V1DeleteOptions'
-        ),
-    ),
-    'DaemonSet': KubernetesApiMapping(
-        create=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
-            method='create_namespaced_daemon_set',
-            payload='V1beta1DaemonSet'
-        ),
-        read=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
-            method='read_namespaced_daemon_set',
-        ),
-        update=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
-            method='patch_namespaced_daemon_set'
-        ),
-        delete=KubernetesSingleOperationApiMapping(
-            api='ExtensionsV1beta1Api',
-            method='delete_namespaced_daemon_set',
             payload='V1DeleteOptions'
         ),
     ),
