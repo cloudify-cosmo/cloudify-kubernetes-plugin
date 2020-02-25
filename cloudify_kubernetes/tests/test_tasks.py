@@ -435,7 +435,6 @@ class TestTasks(unittest.TestCase):
                 "Status is {'replicas': 0, 'ready_replicas': None}"
             )
 
-
     def test_do_resource_create(self):
         self._prepare_master_node()
 
