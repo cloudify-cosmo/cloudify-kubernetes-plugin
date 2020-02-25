@@ -33,20 +33,17 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install dependencies
-          command: yum -y install python-devel gcc openssl git libxslt-devel libxml2-devel openldap-devel libffi-devel openssl-devel libvirt-devel
+          name: Install epel
+          command: yum install -y epel-release
       - run:
-          name: Download pip
-          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+          name: Install python dependencies
+          command: yum -y install python-pip python-setuptools python-pip python-wheel python-setuptools python-virtualenv
       - run:
-          name: Install pip
-          command: python get-pip.py
+          name: Install devel dependencies
+          command: yum -y install python-devel gcc-c++ gcc zlib-devel libffi-devel openssl-devel
       - run:
           name: Upgrade pip
           command: pip install --upgrade pip==9.0.1
-      - run:
-          name: Install virtualenv
-          command: pip install virtualenv
       - run:
           name: Init virtualenv
           command: virtualenv env
