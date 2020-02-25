@@ -400,10 +400,16 @@ class TestTasks(unittest.TestCase):
             tasks._do_resource_status_check("ReplicaSet", {
                 'status': {'ready_replicas': None, 'replicas': 0}
             })
-        self.assertEqual(
-            str(error.exception),
-            "Status is {'ready_replicas': None, 'replicas': 0}"
-        )
+        try:
+            self.assertEqual(
+                str(error.exception),
+                "Status is {'ready_replicas': None, 'replicas': 0}"
+            )
+        except AssertionError:
+            self.assertEqual(
+                str(error.exception),
+                "Status is {'replicas': 0, 'ready_replicas': None}"
+            )
 
     def test_do_resource_status_check_replication_controller(self):
         self._prepare_master_node()
@@ -418,10 +424,17 @@ class TestTasks(unittest.TestCase):
             tasks._do_resource_status_check("ReplicationController", {
                 'status': {'ready_replicas': None, 'replicas': 0}
             })
-        self.assertEqual(
-            str(error.exception),
-            "Status is {'ready_replicas': None, 'replicas': 0}"
-        )
+        try:
+            self.assertEqual(
+                str(error.exception),
+                "Status is {'ready_replicas': None, 'replicas': 0}"
+            )
+        except AssertionError:
+            self.assertEqual(
+                str(error.exception),
+                "Status is {'replicas': 0, 'ready_replicas': None}"
+            )
+
 
     def test_do_resource_create(self):
         self._prepare_master_node()
