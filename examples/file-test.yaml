@@ -13,6 +13,9 @@ inputs:
     type: boolean
     default: false
 
+  resource_template_variables:
+    default: {}
+
 node_templates:
 
   master:
@@ -31,6 +34,7 @@ node_templates:
       validate_resource_status: { get_input: validate_status }
       file:
         resource_path: { get_input: resource_path }
+        template_variables: { get_input: resource_template_variables }
     relationships:
       - type: cloudify.kubernetes.relationships.managed_by_master
         target: master

@@ -442,7 +442,7 @@ node_types:
     derived_from: cloudify.nodes.Root
     properties:
       definition:
-        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        default: {}
         description: >
           Definition of resource object using native Kubernetes YAML spec
 
@@ -450,7 +450,7 @@ node_types:
     derived_from: cloudify.nodes.Root
     properties:
       definition:
-        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        default: {}
         description: >
           Definition of resource object using native Kubernetes YAML spec
 
@@ -458,7 +458,7 @@ node_types:
     derived_from: cloudify.nodes.Root
     properties:
       definition:
-        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        default: {}
         description: >
           Definition of resource object using native Kubernetes YAML spec
 
@@ -466,7 +466,7 @@ node_types:
     derived_from: cloudify.nodes.Root
     properties:
       definition:
-        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        default: {}
         description: >
           Definition of resource object using native Kubernetes YAML spec
 
@@ -474,7 +474,7 @@ node_types:
     derived_from: cloudify.nodes.Root
     properties:
       definition:
-        type: cloudify.kubernetes.types.StorageClassResourceDefinition
+        default: {}
         description: >
           Definition of resource object using native Kubernetes YAML spec
       validate_resource_status:
