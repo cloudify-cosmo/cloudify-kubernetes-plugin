@@ -368,11 +368,10 @@ class TestTasks(unittest.TestCase):
     def test_do_resource_status_check_persistent_volume(self):
         self._prepare_master_node()
         tasks._do_resource_status_check("PersistentVolume", {
-            'status': 'Bound'
+            'status': {'phase': 'Bound'}
         })
-
         tasks._do_resource_status_check("PersistentVolume", {
-            'status': 'Available'
+            'status': {'phase': 'Available'}
         })
 
     def test_do_resource_status_check_persistent_volume_retry(self):
