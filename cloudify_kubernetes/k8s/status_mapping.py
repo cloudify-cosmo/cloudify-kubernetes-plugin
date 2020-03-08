@@ -113,7 +113,7 @@ class KubernetesPersistentVolumeClaimStatus(KubernetesResourceStatus):
 class KubernetesPersistentVolumeStatus(KubernetesResourceStatus):
 
     def is_resource_ready(self):
-        if self.status in ['Bound', 'Available']:
+        if self.status['phase'] in ['Bound', 'Available']:
             ctx.logger.debug(self.status_message)
         else:
             raise OperationRetry(self.status_message)
