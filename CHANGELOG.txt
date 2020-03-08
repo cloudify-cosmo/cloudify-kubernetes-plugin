@@ -73,3 +73,6 @@
   - Fix bug that prevented using multiple resource configurations in a single file.
   - Add poststart operation mapped to read resource.
 
+
+2.6.1:
+  - Fix bug in status check for persistent volume.
