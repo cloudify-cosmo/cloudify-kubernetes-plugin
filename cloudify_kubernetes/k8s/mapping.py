@@ -126,6 +126,26 @@ SUPPORTED_API_MAPPINGS = {
             payload='V1DeleteOptions'
         ),
     ),
+    'Namespace': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='create_namespace',
+            payload='V1Namespace'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='read_namespace',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='patch_namespace',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='CoreV1Api',
+            method='delete_namespace',
+            payload='V1Namespace'
+        ),
+    ),
     'Node': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
