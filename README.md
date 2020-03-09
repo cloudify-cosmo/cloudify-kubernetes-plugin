@@ -191,3 +191,6 @@ As *authentication* property of Master node you can specify dictionary with key 
 6. You may need to open ***DASHBOARD_PORT*** on your security group on which dashboard is running if it is not already open
 7. Login to the Dashboard by selecting token authentication, use the token value of ***{{bearer_token}}***
 ```
+
+## Examples
+For official blueprint examples using this Cloudify plugin, please see [Cloudify Community Blueprints Examples](https://github.com/cloudify-community/blueprint-examples/).
