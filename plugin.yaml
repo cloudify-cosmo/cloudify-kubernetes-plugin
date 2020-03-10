@@ -3,7 +3,7 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.6.2'
+    package_version: '2.6.3'
     source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.6.3.zip
 
 data_types:
