@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 import sys
 
 import yaml
@@ -57,8 +58,22 @@ def _yaml_from_files(
             target_path,
             template_variables)
 
+    # Validate file size
+    if os.path.isfile(downloaded_file_path) \
+            and os.path.getsize(downloaded_file_path) == 0:
+        raise KuberentesInvalidDefinitionError(
+            'Invalid resource file definition'
+        )
+
     with open(downloaded_file_path) as outfile:
         file_content = outfile.read()
+
+    # Validate file content if it contains at least one dict
+    file_content = file_content.strip()
+    if len(list(yaml.load_all(file_content))) == 0:
+        raise KuberentesInvalidDefinitionError(
+            'Invalid resource file definition'
+        )
 
     return yaml.load_all(file_content)
 
