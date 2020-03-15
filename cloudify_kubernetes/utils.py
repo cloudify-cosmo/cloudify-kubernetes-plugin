@@ -62,7 +62,7 @@ def _yaml_from_files(
     if os.path.isfile(downloaded_file_path) \
             and os.path.getsize(downloaded_file_path) == 0:
         raise KuberentesInvalidDefinitionError(
-            'Invalid resource file definition'
+            'Invalid resource file definition.'
         )
 
     with open(downloaded_file_path) as outfile:
@@ -72,7 +72,7 @@ def _yaml_from_files(
     file_content = file_content.strip()
     if len(list(yaml.load_all(file_content))) == 0:
         raise KuberentesInvalidDefinitionError(
-            'Invalid resource file definition'
+            'Invalid resource file definition.'
         )
 
     return yaml.load_all(file_content)
@@ -138,7 +138,7 @@ def resource_definitions_from_file(**kwargs):
 
     if not file_resource:
         raise KuberentesInvalidDefinitionError(
-            'Invalid resource file definition'
+            'Invalid resource file definition.'
         )
 
     return [KubernetesResourceDefinition(**definition)

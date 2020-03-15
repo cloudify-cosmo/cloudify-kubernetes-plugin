@@ -786,7 +786,7 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(
             str(error.exception),
-            "Invalid resource file definition"
+            "Invalid resource file definition."
         )
 
     def test_file_resource_delete(self):
