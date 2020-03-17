@@ -78,3 +78,9 @@
 
 2.6.2:
   - Add namespace type.
+
+2.6.3:
+  - Fix bug in Custom Resource Delete when use_external_resource is true.
+  
+2.6.4:
+  - Handle empty file resource.
