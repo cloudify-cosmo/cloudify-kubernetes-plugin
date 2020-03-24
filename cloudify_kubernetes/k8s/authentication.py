@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import kubernetes
 
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -70,9 +71,10 @@ class GCPServiceAccountAuthentication(KubernetesApiAuthentication):
                 service_account_file_content,
                 self.SCOPES
             )
-
+            # re-init configuration object
+            api.configuration = kubernetes.client.Configuration()
             token = credentials.get_access_token().access_token
-
+            # added re-init because the bellow was giving no api_key attribute
             api.configuration.api_key[self.K8S_API_AUTHORIZATION] = token
             api.configuration.api_key_prefix[self.K8S_API_AUTHORIZATION]\
                 = self.TOKEN_PREFIX
