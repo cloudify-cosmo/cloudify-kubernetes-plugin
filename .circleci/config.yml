@@ -141,6 +141,9 @@ workflows:
       - unittests
       - release:
           context: ecosystem
+          filters:
+            branches:
+              only: /master/
       - wagon:
           filters:
             branches:
