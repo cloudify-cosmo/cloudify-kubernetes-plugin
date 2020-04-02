@@ -6,6 +6,7 @@ setup_py = path.join(
     path.abspath(path.join(path.dirname(__file__), pardir)),
     'setup.py')
 
+
 if __name__ == '__main__':
     plugin_release_with_latest(
         'cloudify-kubernetes-plugin', find_version(setup_py))
