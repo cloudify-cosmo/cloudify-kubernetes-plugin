@@ -9,4 +9,4 @@ pylint
 pytest
 # for integration and platform tests
 cloudify==4.5.5
-https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.1.1.zip
+https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.2.0.zip
