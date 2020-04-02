@@ -139,6 +139,7 @@ workflows:
   tests:
     jobs:
       - unittests
+      - release
       - wagon:
           filters:
             branches:
