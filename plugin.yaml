@@ -6,6 +6,14 @@ plugins:
     package_version: '2.6.5'
     source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.6.5.zip
 
+dsl_definitions:
+
+  client_config: &client_config
+    client_config:
+      type: cloudify.kubernetes.types.ClientConfig
+      description: Your kubernetes client configuration.
+      required: false
+
 data_types:
 
   cloudify.kubernetes.types.FileResource:
@@ -273,10 +281,7 @@ data_types:
           Contains data to store in ConfigMap, Secret..
         default: {}
 
-node_types:
-
-  cloudify.kubernetes.nodes.Master:
-    derived_from: cloudify.nodes.Root
+  cloudify.kubernetes.types.ClientConfig:
     properties:
       configuration:
         type: cloudify.kubernetes.types.ConfigurationVariant
@@ -293,9 +298,17 @@ node_types:
           Authentication properties of Kubernetes Cloud providers. Optional.
           Currently supported providers: Google Cloud Platform
 
+node_types:
+
+  cloudify.kubernetes.nodes.Master:
+    derived_from: cloudify.nodes.Root
+    properties:
+     <<: *client_config
+
   cloudify.kubernetes.resources.ResourceBase:
     derived_from: cloudify.nodes.Root
     properties:
+      <<: *client_config
       validate_resource_status:
         type: boolean
         description: Set this to "true" if you want Cloudify to wait for a predetermined state.
