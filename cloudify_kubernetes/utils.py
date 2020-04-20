@@ -26,6 +26,12 @@ from .k8s import (KubernetesApiMapping,
                   get_mapping)
 from .workflows import merge_definitions, DEFINITION_ADDITIONS
 
+try:
+    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
+except ImportError:
+    NODE_INSTANCE = 'node-instance'
+    RELATIONSHIP_INSTANCE = 'relationship-instance'
+
 NODE_PROPERTY_FILE_RESOURCE_PATH = 'resource_path'
 NODE_PROPERTY_API_MAPPING = 'api_mapping'
 NODE_PROPERTY_DEFINITION = 'definition'
@@ -143,3 +149,17 @@ def resource_definitions_from_file(**kwargs):
 
     return [KubernetesResourceDefinition(**definition)
             for definition in _yaml_from_files(**file_resource)]
+
+
+def get_instance(_ctx):
+    if _ctx.type == RELATIONSHIP_INSTANCE:
+        return _ctx.source.instance
+    else:  # _ctx.type == NODE_INSTANCE
+        return _ctx.instance
+
+
+def get_node(_ctx):
+    if _ctx.type == RELATIONSHIP_INSTANCE:
+        return _ctx.source.node
+    else:  # _ctx.type == NODE_INSTANCE
+        return _ctx.node

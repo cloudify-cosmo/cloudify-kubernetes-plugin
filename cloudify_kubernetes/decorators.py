@@ -23,6 +23,8 @@ from cloudify.decorators import operation
 
 from utils import (generate_traceback_exception,
                    retrieve_path,
+                   get_node,
+                   get_instance,
                    NODE_PROPERTY_FILE,
                    NODE_PROPERTY_FILE_RESOURCE_PATH)
 from .k8s import (CloudifyKubernetesClient,
@@ -49,22 +51,25 @@ def _retrieve_master(resource_instance):
             return relationship.target
 
 
-def _retrieve_property(resource_ctx, property_name):
-    client_config = resource_ctx.node.properties.get('client_config')
-    target = _retrieve_master(resource_ctx.instance)
-    if client_config and target:
+def _retrieve_property(_ctx, property_name):
+    client_config = get_node(_ctx).properties.get('client_config')
+    target = _retrieve_master(get_instance(_ctx))
+    if (client_config and target) or not (client_config or target):
         raise NonRecoverableError(
-            'node {0} cant have both relationship managed_by_master '
-            'and client_config property'.format(resource_ctx.node.name))
+            'node {0} must have relationship managed_by_master '
+            'or client_config property, but not both of them or '
+            'none of them'.format(_ctx.node.name))
 
     if client_config:
         configuration = client_config.get(property_name, {})
-        #do i need to update here?
-    else:
-        configuration = target.node.properties.get(property_name, {})
         configuration.update(
-            target.instance.runtime_properties.get(property_name, {})
-    )
+            get_instance(_ctx).runtime_properties.get(property_name,
+                                                      {}))
+    else:
+        configuration = get_node(target).properties.get(property_name, {})
+        configuration.update(
+            get_instance(target).runtime_properties.get(property_name, {})
+        )
 
     return configuration
 
