@@ -49,11 +49,21 @@ def _retrieve_master(resource_instance):
             return relationship.target
 
 
-def _retrieve_property(resource_instance, property_name):
-    target = _retrieve_master(resource_instance)
-    configuration = target.node.properties.get(property_name, {})
-    configuration.update(
-        target.instance.runtime_properties.get(property_name, {})
+def _retrieve_property(resource_ctx, property_name):
+    client_config = resource_ctx.node.properties.get('client_config')
+    target = _retrieve_master(resource_ctx.instance)
+    if client_config and target:
+        raise NonRecoverableError(
+            'node {0} cant have both relationship managed_by_master '
+            'and client_config property'.format(resource_ctx.node.name))
+
+    if client_config:
+        configuration = client_config.get(property_name, {})
+        #do i need to update here?
+    else:
+        configuration = target.node.properties.get(property_name, {})
+        configuration.update(
+            target.instance.runtime_properties.get(property_name, {})
     )
 
     return configuration
@@ -189,12 +199,12 @@ def resource_task(retrieve_resource_definition=None,
 def with_kubernetes_client(function):
     def wrapper(**kwargs):
         configuration_property = _retrieve_property(
-            ctx.instance,
+            ctx,
             NODE_PROPERTY_CONFIGURATION
         )
 
         authentication_property = _retrieve_property(
-            ctx.instance,
+            ctx,
             NODE_PROPERTY_AUTHENTICATION
         )
 

@@ -6,14 +6,6 @@ plugins:
     package_version: '2.6.5'
     source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.6.5.zip
 
-dsl_definitions:
-
-  client_config: &client_config
-    client_config:
-      type: cloudify.kubernetes.types.ClientConfig
-      description: Your kubernetes client configuration.
-      required: false
-
 data_types:
 
   cloudify.kubernetes.types.FileResource:
@@ -282,6 +274,9 @@ data_types:
         default: {}
 
   cloudify.kubernetes.types.ClientConfig:
+    description: >
+      Configuration properties of kubernetes API and
+      authentication properties of Kubernetes Cloud providers.
     properties:
       configuration:
         type: cloudify.kubernetes.types.ConfigurationVariant
@@ -296,19 +291,37 @@ data_types:
         required: false
         description: >
           Authentication properties of Kubernetes Cloud providers. Optional.
-          Currently supported providers: Google Cloud Platform
+          Currently supported providers: Google Cloud Platform.
 
 node_types:
 
   cloudify.kubernetes.nodes.Master:
     derived_from: cloudify.nodes.Root
     properties:
-     <<: *client_config
+      configuration:
+        type: cloudify.kubernetes.types.ConfigurationVariant
+        description: >
+          Configuration properties of Kubernetes API. One of four configuration options can be used
+          1. Kubernetes config file contained by blueprint archive
+          2. Kubernetes config file previously uploaded into Cloudify Manager VM
+          3. Content of Kubernetes config file (YAML)
+          4. Kubernetes API set o properties
+      authentication:
+        type: cloudify.kubernetes.types.AuthenticationVariant
+        required: false
+        description: >
+          Authentication properties of Kubernetes Cloud providers. Optional.
+          Currently supported providers: Google Cloud Platform.
 
   cloudify.kubernetes.resources.ResourceBase:
     derived_from: cloudify.nodes.Root
     properties:
-      <<: *client_config
+      client_config:
+        type: cloudify.kubernetes.types.ClientConfig
+        required: false
+        description: >
+          Configuration properties of kubernetes API and
+          authentication properties of Kubernetes Cloud providers.
       validate_resource_status:
         type: boolean
         description: Set this to "true" if you want Cloudify to wait for a predetermined state.
