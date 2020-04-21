@@ -95,7 +95,8 @@ class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
             MagicMock(return_value=mock_credentials)
         ):
             instance.authenticate(mock_api)
-
+        api_key = mock_api.configuration.api_key
+        api_key_prefix = mock_api.configuration.api_key_prefix
         self.assertEquals(token, api_key['authorization'])
         self.assertEquals('Bearer', api_key_prefix['authorization'])
 
