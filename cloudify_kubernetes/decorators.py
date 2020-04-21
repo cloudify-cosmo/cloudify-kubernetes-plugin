@@ -51,16 +51,15 @@ def _retrieve_master(resource_instance):
 
 
 def _retrieve_property(_ctx, property_name):
-    property_from_client_config = get_node(_ctx).properties.get('client_config',
-                                                                {}).get(
-        property_name, {})
+    property_from_client_config = get_node(_ctx).properties \
+        .get('client_config', {}).get(property_name, {})
     target = _retrieve_master(get_instance(_ctx))
 
     if target:
         _ctx.logger.info("using property from managed_by_master"
                          " relationship for node: {0}, it will be deprecated"
-                         " soon please use client_config property!".format(
-            _ctx.node.name))
+                         " soon please use client_config property!"
+                         .format(_ctx.node.name))
         configuration = target.node.properties.get(property_name, {})
         configuration.update(
             target.instance.runtime_properties.get(property_name, {})
