@@ -36,7 +36,6 @@ from .k8s import (CloudifyKubernetesClient,
                   KuberentesInvalidApiMethodError,
                   KuberentesMappingNotFoundError)
 
-
 NODE_PROPERTY_AUTHENTICATION = 'authentication'
 NODE_PROPERTY_CONFIGURATION = 'configuration'
 RELATIONSHIP_TYPE_MANAGED_BY_MASTER = (
@@ -52,24 +51,25 @@ def _retrieve_master(resource_instance):
 
 
 def _retrieve_property(_ctx, property_name):
-    client_config = get_node(_ctx).properties.get('client_config')
+    property_from_client_config = get_node(_ctx).properties.get('client_config',
+                                                                {}).get(
+        property_name, {})
     target = _retrieve_master(get_instance(_ctx))
-    if (client_config and target) or not (client_config or target):
-        raise NonRecoverableError(
-            'node {0} must have relationship managed_by_master '
-            'or client_config property, but not both of them or '
-            'none of them'.format(_ctx.node.name))
 
-    if client_config:
-        configuration = client_config.get(property_name, {})
+    if target:
+        _ctx.logger.info("using property from managed_by_master"
+                         " relationship for node: {0}, it will be deprecated"
+                         " soon please use client_config property!".format(
+            _ctx.node.name))
+        configuration = target.node.properties.get(property_name, {})
         configuration.update(
-            get_instance(_ctx).runtime_properties.get(property_name,
-                                                      {}))
-    else:
-        configuration = get_node(target).properties.get(property_name, {})
-        configuration.update(
-            get_instance(target).runtime_properties.get(property_name, {})
+            target.instance.runtime_properties.get(property_name, {})
         )
+
+    else:
+        configuration = property_from_client_config
+        configuration.update(
+            get_instance(_ctx).runtime_properties.get(property_name, {}))
 
     return configuration
 
@@ -197,7 +197,9 @@ def resource_task(retrieve_resource_definition=None,
                     '{0}'.format(str(e)),
                     causes=[error_traceback]
                 )
+
         return wrapper
+
     return decorator
 
 

@@ -219,12 +219,6 @@ class TestDecorators(unittest.TestCase):
             {'blueprint_file_name': 'kubernetes.conf'}
         )
 
-    def test_retrieve_property_exception(self):
-        _, _ctx = self._prepare_master_node(with_client_config=False,
-                                            with_relationship_to_master=False)
-        self.assertRaises(NonRecoverableError,
-                          decorators._retrieve_property, _ctx, 'configuration')
-
     def test_with_kubernetes_client_NonRecoverableError(self):
         _, _ctx = self._prepare_master_node()
 
