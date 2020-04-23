@@ -27,7 +27,8 @@ from cloudify_kubernetes.k8s import (CloudifyKubernetesClient,
 
 class TestDecorators(unittest.TestCase):
 
-    def _prepare_master_node(self):
+    def _prepare_master_node(self, with_client_config=False,
+                             with_relationship_to_master=True):
         node = MagicMock()
         node.properties = {
             'configuration': {
@@ -39,36 +40,39 @@ class TestDecorators(unittest.TestCase):
         managed_master_node.type = \
             decorators.RELATIONSHIP_TYPE_MANAGED_BY_MASTER
         managed_master_node.target.node = node
-
+        properties_dict = {
+            'definition': {
+                'apiVersion': 'v1',
+                'metadata': 'c',
+                'spec': 'd',
+            },
+            'api_mapping': {
+                'create': {
+                    'payload': 'api_payload_version',
+                    'api': 'api_client_version',
+                    'method': 'create'
+                },
+                'read': {
+                    'api': 'api_client_version',
+                    'method': 'read'
+                },
+                'delete': {
+                    'api': 'api_client_version',
+                    'method': 'delete'
+                }
+            },
+            'options': {
+                'first': 'second'
+            }
+        }
+        if with_client_config:
+            properties_dict.update({
+                'client_config': node.properties})
         _ctx = MockCloudifyContext(
             node_id="test_id",
             node_name="test_name",
             deployment_id="test_name",
-            properties={
-                'definition': {
-                    'apiVersion': 'v1',
-                    'metadata': 'c',
-                    'spec': 'd',
-                },
-                'api_mapping': {
-                    'create': {
-                        'payload': 'api_payload_version',
-                        'api': 'api_client_version',
-                        'method': 'create'
-                    },
-                    'read': {
-                        'api': 'api_client_version',
-                        'method': 'read'
-                    },
-                    'delete': {
-                        'api': 'api_client_version',
-                        'method': 'delete'
-                    }
-                },
-                'options': {
-                    'first': 'second'
-                }
-            },
+            properties=properties_dict,
             runtime_properties={
                 'kubernetes': {
                     'metadata': {
@@ -76,7 +80,8 @@ class TestDecorators(unittest.TestCase):
                     }
                 }
             },
-            relationships=[managed_master_node],
+            relationships=[
+                managed_master_node] if with_relationship_to_master else [],
             operation={'retry_number': 0}
         )
         _ctx.node.type_hierarchy = \
@@ -199,10 +204,18 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(decorators._retrieve_master(_ctx.instance),
                          managed_master_node.target)
 
-    def test_retrieve_property(self):
+    def test_retrieve_property_with_relationship_to_master(self):
         _, _ctx = self._prepare_master_node()
         self.assertEqual(
-            decorators._retrieve_property(_ctx.instance, 'configuration'),
+            decorators._retrieve_property(_ctx, 'configuration'),
+            {'blueprint_file_name': 'kubernetes.conf'}
+        )
+
+    def test_retrieve_property_with_client_config(self):
+        _, _ctx = self._prepare_master_node(with_client_config=True,
+                                            with_relationship_to_master=False)
+        self.assertEqual(
+            decorators._retrieve_property(_ctx, 'configuration'),
             {'blueprint_file_name': 'kubernetes.conf'}
         )
 
