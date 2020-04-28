@@ -155,12 +155,11 @@ workflows:
       - wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
-# Uncomment when manager tests are fixed.
-#       - cloudify-manager:
-#           context: ecosystem
-#           requires:
-#             - wagon
-#           filters:
-#             branches:
-#               only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|blueprint-test)/
+      - cloudify-manager:
+          context: ecosystem
+          requires:
+            - wagon
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev|blueprint-test)/
