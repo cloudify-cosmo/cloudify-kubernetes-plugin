@@ -157,7 +157,7 @@ workflows:
       - wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|blueprint-test)/
+              only: /([0-9\.]*\-build|master|dev)/
       - cloudify-manager:
           context: ecosystem
           requires:
@@ -165,7 +165,7 @@ workflows:
             - unittests
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|blueprint-test)/
+              only: /([0-9\.]*\-build|master|dev)/
   nightly:
     triggers:
     - schedule:
