@@ -147,7 +147,7 @@ jobs:
 workflows:
   version: 2
   tests:
-    jobs:
+    jobs: &all_jobs
       - unittests
       - release:
           context: ecosystem
@@ -162,6 +162,16 @@ workflows:
           context: ecosystem
           requires:
             - wagon
+            - unittests
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev|blueprint-test)/
+  nightly:
+    triggers:
+    - schedule:
+        cron: "0 1 * * *"
+        filters:
+          branches:
+            only:
+              - master
+    jobs: *all_jobs
