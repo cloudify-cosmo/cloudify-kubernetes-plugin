@@ -64,42 +64,52 @@ jobs:
           paths:
             - build/*
 
+
+
   cloudify-manager:
-    docker:
-      - image: amd64/centos:centos7.3.1611
+    machine:
+      enabled: true
+      python:
+        version: pypy-2.2.1
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: gcp
     steps:
       - checkout
+      - run:
+          name: "Pull Submodules"
+          command: |
+            git submodule update --init --recursive
       - attach_workspace:
           at: workspace
       - run:
-          name: Install dependencies
-          command: yum -y install python-devel gcc openssl git libxslt-devel libxml2-devel openldap-devel libffi-devel openssl-devel libvirt-devel
-      - run:
-          name: Download pip
-          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-      - run:
-          name: Install pip
-          command: python get-pip.py
-      - run:
-          name: Upgrade pip
-          command: pip install --upgrade pip==9.0.1
-      - run:
-          name: Install virtualenv
-          command: pip install virtualenv
-      - run:
-          name: Init virtualenv
-          command: virtualenv env
+          name: update pip
+          command: pip install -U pip
       - run:
           name: install cloudify
-          command: pip install cloudify==4.3.2
+          command: pip install -U cloudify==5.0.0 pytest==4.6.3 pyyaml==3.10
       - run:
-          name: install test requirements
-          command: pip install nose https://github.com/cloudify-cosmo/cloudify-gcp-plugin/archive/1.4.3.zip https://github.com/cloudify-cosmo/cloudify-fabric-plugin/archive/1.5.1.zip https://github.com/cloudify-incubator/cloudify-utilities-plugin/archive/1.7.1.zip https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.1.1.zip
+          name: download manager docker image
+          command: wget http://repository.cloudifysource.org/cloudify/5.0.0/ga-release/cloudify-docker-manager-5.0.0.tar
       - run:
-          name: test 4.3.2
-          command: nosetests -s tests/test_kubernetes.py
-
-
+          name: load docker image
+          command: docker load -i cloudify-docker-manager-5.0.0.tar
+      - run:
+          name: retain space by dumping the tar
+          command: rm cloudify-docker-manager-5.0.0.tar
+      - run:
+          name: show images
+          command: docker images
+      - run:
+          name: start docker container
+          command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
+      - run:
+          name: Install Git
+          command: docker exec cfy_manager yum install -y git python-netaddr
+      - run:
+          name: install local project
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+      - run: pytest -s .circleci/test_examples.py
 
   release:
     docker:
@@ -110,7 +120,7 @@ jobs:
           name: "Pull Submodules"
           command: |
             git submodule init
-            git submodule update --remote
+            git submodule update --remote --recursive
       - run:
           name: Download pip
           command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
@@ -131,13 +141,13 @@ jobs:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.2.11.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - run: python .circleci/package_release.py
 
 workflows:
   version: 2
   tests:
-    jobs:
+    jobs: &all_jobs
       - unittests
       - release:
           context: ecosystem
@@ -148,11 +158,20 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-# Uncomment when manager tests are fixed.
-#       - cloudify-manager:
-#           context: ecosystem
-#           requires:
-#             - wagon
-#           filters:
-#             branches:
-#               only: /([0-9\.]*\-build|master|dev)/
+      - cloudify-manager:
+          context: ecosystem
+          requires:
+            - wagon
+            - unittests
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
+  nightly:
+    triggers:
+    - schedule:
+        cron: "0 1 * * *"
+        filters:
+          branches:
+            only:
+              - master
+    jobs: *all_jobs
