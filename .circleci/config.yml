@@ -65,6 +65,7 @@ jobs:
             - build/*
 
 
+
   cloudify-manager:
     machine:
       enabled: true
@@ -103,11 +104,12 @@ jobs:
           name: start docker container
           command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
       - run:
+          name: Install Git
+          command: docker exec cfy_manager yum install -y git python-netaddr
+      - run:
           name: install local project
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - run: pytest -s .circleci/test_examples.py
-
-
 
   release:
     docker:
@@ -118,7 +120,7 @@ jobs:
           name: "Pull Submodules"
           command: |
             git submodule init
-            git submodule update --remote
+            git submodule update --remote --recursive
       - run:
           name: Download pip
           command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
@@ -139,7 +141,7 @@ jobs:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/2.2.11.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
       - run: python .circleci/package_release.py
 
 workflows:
