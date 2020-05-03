@@ -9,6 +9,9 @@ inputs:
   resource_path:
     type: string
 
+  kubernetes_master:
+    type: string
+
   validate_status:
     type: boolean
     default: false
@@ -18,23 +21,17 @@ inputs:
 
 node_templates:
 
-  master:
-    type: cloudify.kubernetes.nodes.Master
-    properties:
-      configuration:
-        api_options:
-          host: { concat: [ 'https://', { get_secret: kubernetes_master_ip }, ':', { get_secret: kubernetes_master_port } ] }
-          api_key: { get_secret: kubernetes_token }
-          debug: false
-          verify_ssl: false
-
   resource:
     type: cloudify.kubernetes.resources.FileDefinedResource
     properties:
+      client_config:
+        configuration:
+          api_options:
+            host: { get_input: kubernetes_master }
+            api_key: { get_secret: kubernetes_token }
+            debug: false
+            verify_ssl: false
       validate_resource_status: { get_input: validate_status }
       file:
         resource_path: { get_input: resource_path }
         template_variables: { get_input: resource_template_variables }
-    relationships:
-      - type: cloudify.kubernetes.relationships.managed_by_master
-        target: master
