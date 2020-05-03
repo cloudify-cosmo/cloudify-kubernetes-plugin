@@ -204,6 +204,7 @@ class TestTasks(unittest.TestCase):
         _ctx.node.type_hierarchy = \
             ['cloudify.nodes.Root',
              'cloudify.kubernetes.resources.ResourceBase',
+             'cloudify.kubernetes.resources.ResourceWithValidateStatus',
              'cloudify.kubernetes.resources.BlueprintDefinedResource',
              'cloudify.kubernetes.resources.Pod']
 

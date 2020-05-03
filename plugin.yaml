@@ -322,13 +322,17 @@ node_types:
         description: >
           Configuration properties of kubernetes API and
           authentication properties of Kubernetes Cloud providers.
+
+  cloudify.kubernetes.resources.ResourceWithValidateStatus:
+    derived_from: cloudify.kubernetes.resources.ResourceBase
+    properties:
       validate_resource_status:
         type: boolean
         description: Set this to "true" if you want Cloudify to wait for a predetermined state.
         default: false
 
   cloudify.kubernetes.resources.BlueprintDefinedResource:
-    derived_from: cloudify.kubernetes.resources.ResourceBase
+    derived_from: cloudify.kubernetes.resources.ResourceWithValidateStatus
     properties:
       use_external_resource:
         type: boolean
@@ -463,7 +467,7 @@ node_types:
         type: cloudify.kubernetes.types.ConfigClassResourceDefinition
 
   cloudify.kubernetes.resources.StorageClass:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       definition:
         type: cloudify.kubernetes.types.StorageClassResourceDefinition
@@ -471,7 +475,7 @@ node_types:
           Definition of resource object using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.StatefulSet:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       definition:
         default: {}
@@ -479,7 +483,7 @@ node_types:
           Definition of resource object using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.PodSecurityPolicy:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       definition:
         default: {}
@@ -487,7 +491,7 @@ node_types:
           Definition of resource object using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.NetworkPolicy:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       definition:
         default: {}
@@ -495,7 +499,7 @@ node_types:
           Definition of resource object using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.Ingress:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       definition:
         default: {}
@@ -503,7 +507,7 @@ node_types:
           Definition of resource object using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.PersistentVolumeClaim:
-    derived_from: cloudify.nodes.Root
+    derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       definition:
         default: {}
@@ -527,7 +531,7 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_delete
 
   cloudify.kubernetes.resources.FileDefinedResource:
-    derived_from: cloudify.kubernetes.resources.ResourceBase
+    derived_from: cloudify.kubernetes.resources.ResourceWithValidateStatus
     properties:
       file:
         type: cloudify.kubernetes.types.FileResource
@@ -543,7 +547,7 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
 
   cloudify.kubernetes.resources.MultipleFileDefinedResources:
-    derived_from: cloudify.kubernetes.resources.ResourceBase
+    derived_from: cloudify.kubernetes.resources.ResourceWithValidateStatus
     properties:
       files:
         description: >
