@@ -87,3 +87,10 @@
 
 2.6.5:
   - Fix issue with `GCPServiceAccountAuthentication`.
+
+2.7.0:
+  - added client_config property to all resources
+
+2.7.1
+  - added cloudify.kubernetes.resources.ResourceWithValidateStatus to handle all the resources that
+  didnt derived from ResourceBase type.
