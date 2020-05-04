@@ -6,10 +6,9 @@ description: >
   Also install the wagon with the command: "cfy plugins upload PATH_TO_WAGON".
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
-  - plugin:cloudify-kubernetes-plugin?version= >=2.7.1
-  - plugin:cloudify-openstack-plugin
-
+  - http://www.getcloudify.org/spec/cloudify/4.3.1/types.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/2.7.4/plugin.yaml
+  - plugin.yaml
 
 inputs:
 
@@ -30,23 +29,15 @@ dsl_definitions:
   openstack_config: &openstack_config
     username: { get_secret: keystone_username }
     password: { get_secret: keystone_password }
-    project_name: { get_secret: keystone_tenant_name }
+    tenant_name: { get_secret: keystone_tenant_name }
     auth_url: { get_secret: keystone_url }
-    region_name: { get_secret: region }
+    region: { get_secret: region }
 
 node_templates:
-
-  kubernetes_master:
-    type: cloudify.kubernetes.nodes.Master
-    properties:
-      configuration: &master_configuration
-        file_content: { get_input: configuration_file_content }
 
   persistent_volume:
     type: cloudify.kubernetes.resources.PersistentVolume
     properties:
-      client_config:
-        configuration: *master_configuration
       definition:
         apiVersion: v1
         metadata:
@@ -59,19 +50,19 @@ node_templates:
           persistentVolumeReclaimPolicy: Recycle
           storageClassName: gold
           cinder:
-            volumeID: { get_attribute: [openstack_volume, id] }
+            volumeID: { get_attribute: [openstack_volume, external_id] }
     relationships:
       - type: cloudify.relationships.depends_on
         target: example_storage
       - type: cloudify.relationships.depends_on
         target: openstack_volume
-      - type: cloudify.relationships.depends_on
+      - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
 
   openstack_volume:
-    type: cloudify.nodes.openstack.Volume
+    type: cloudify.openstack.nodes.Volume
     properties:
-      client_config: *openstack_config
+      openstack_config: *openstack_config
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -82,8 +73,6 @@ node_templates:
   example_storage:
     type: cloudify.kubernetes.resources.StorageClass
     properties:
-      client_config:
-        configuration: *master_configuration
       definition:
         apiVersion: storage.k8s.io/v1beta1
         metadata:
@@ -93,5 +82,11 @@ node_templates:
           type: fast
           availability: nova
     relationships:
-      - type: cloudify.relationships.depends_on
+      - type: cloudify.kubernetes.relationships.managed_by_master
         target: kubernetes_master
+
+  kubernetes_master:
+    type: cloudify.kubernetes.nodes.Master
+    properties:
+      configuration:
+        file_content: { get_input: configuration_file_content }
