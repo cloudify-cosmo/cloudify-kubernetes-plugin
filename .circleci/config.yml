@@ -80,8 +80,6 @@ jobs:
           name: "Pull Submodules"
           command: |
             git submodule update --init --recursive
-      - attach_workspace:
-          at: workspace
       - run:
           name: update pip
           command: pip install -U pip
@@ -109,6 +107,8 @@ jobs:
       - run:
           name: install local project
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+      - attach_workspace:
+          at: workspace
       - run: pytest -s .circleci/test_examples.py
 
   release:
@@ -142,6 +142,8 @@ jobs:
       - run:
           name: install local project
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+      - attach_workspace:
+          at: workspace
       - run: python .circleci/package_release.py
 
 workflows:
