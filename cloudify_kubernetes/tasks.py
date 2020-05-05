@@ -20,8 +20,8 @@ from cloudify.exceptions import (
     OperationRetry,
     RecoverableError)
 
-from k8s.exceptions import KuberentesApiOperationError
-from k8s import status_mapping
+from .k8s.exceptions import KuberentesApiOperationError
+from .k8s import status_mapping
 from .decorators import (resource_task,
                          with_kubernetes_client,
                          INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
