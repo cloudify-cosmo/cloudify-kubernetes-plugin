@@ -185,3 +185,4 @@ class KubernetesApiConfigurationVariants(KubernetesApiConfiguration):
             'variant found for {0} properties'
             .format(self.configuration_data)
         )
+        return None

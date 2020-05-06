@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import unittest
 from mock import (MagicMock, mock_open, patch)
 
@@ -404,8 +405,10 @@ class TestUtils(unittest.TestCase):
         self._prepare_context(with_definition=True)
         self.assertEqual(
             utils.get_definition_object(
-                definition={'spec': {'a': 'b'}},
-                definitions_additions={'spec': {'c': 'd'}}
+                definition=json.loads(
+                    json.dumps({'spec': {'a': 'b'}})),
+                definitions_additions=json.loads(
+                    json.dumps({'spec': {'c': 'd'}}))
             ),
             {
                 'kind': 'cloudify.kubernetes.resources.Pod',

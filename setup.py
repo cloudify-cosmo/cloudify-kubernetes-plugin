@@ -24,8 +24,8 @@ setup(
     packages=['cloudify_kubernetes', 'cloudify_kubernetes.k8s'],
     license='LICENSE',
     install_requires=[
-        'cloudify-python-importer==0.1',
-        'cloudify-common==4.5.5',
+        'cloudify-python-importer==0.2',
+        'cloudify-common>=4.5',
         'kubernetes==10.0.1',
         'pyyaml>=3.12',
         'pyasn1>=0.1.7',

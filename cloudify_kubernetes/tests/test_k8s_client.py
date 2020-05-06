@@ -60,7 +60,7 @@ class TestClient(unittest.TestCase):
             instance._prepare_payload('unknown_attribute', MagicMock())
 
         self.assertEqual(
-            str(error.exception),
+            error.exception.message,
             "Cannot create instance of Kubernetes API payload class: "
             "unknown_attribute. Class not supported by client FakeApi"
         )
@@ -82,7 +82,7 @@ class TestClient(unittest.TestCase):
                                          'other_attribute')
 
         self.assertEqual(
-            str(error.exception),
+            error.exception.message,
             "Cannot create instance of Kubernetes API class: "
             "unknown_attribute. Class not supported by client FakeApi"
         )
@@ -106,7 +106,7 @@ class TestClient(unittest.TestCase):
             instance._prepare_api_method('attribute', 'other_attribute')
 
         self.assertEqual(
-            str(error.exception),
+            error.exception.message,
             "Method other_attribute not supported by Kubernetes API class "
             "attribute"
         )
@@ -126,7 +126,7 @@ class TestClient(unittest.TestCase):
 
         operation_mock.execute.assert_called_with({'a': 'b'})
         self.assertEqual(
-            str(error.exception),
+            error.exception.message,
             "Exception during Kubernetes API call: (None)\nReason: None\n"
         )
 

@@ -20,6 +20,7 @@ from cloudify.exceptions import (
     OperationRetry,
     RecoverableError)
 
+from ._compat import text_type
 from .k8s.exceptions import KuberentesApiOperationError
 from .k8s import status_mapping
 from .decorators import (resource_task,
@@ -69,9 +70,8 @@ class JsonCleanuper(object):
             elif isinstance(v, dict):
                 self._cleanuped_dict(v)
             elif not isinstance(v, int) and not \
-                    isinstance(v, str) and not \
-                    isinstance(v, unicode):
-                resource[k] = str(v)
+                    isinstance(v, text_type):
+                resource[k] = text_type(v)
 
     def _cleanuped_dict(self, resource):
         for k in resource:
@@ -82,9 +82,8 @@ class JsonCleanuper(object):
             elif isinstance(resource[k], dict):
                 self._cleanuped_dict(resource[k])
             elif not isinstance(resource[k], int) and not \
-                    isinstance(resource[k], str) and not \
-                    isinstance(resource[k], unicode):
-                resource[k] = str(resource[k])
+                    isinstance(resource[k], text_type):
+                resource[k] = text_type(resource[k])
 
     def to_dict(self):
         return self.value
