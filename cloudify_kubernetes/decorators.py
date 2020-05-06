@@ -21,12 +21,12 @@ from cloudify.exceptions import (
 )
 from cloudify.decorators import operation
 
-from utils import (generate_traceback_exception,
-                   retrieve_path,
-                   get_node,
-                   get_instance,
-                   NODE_PROPERTY_FILE,
-                   NODE_PROPERTY_FILE_RESOURCE_PATH)
+from .utils import (generate_traceback_exception,
+                    retrieve_path,
+                    get_node,
+                    get_instance,
+                    NODE_PROPERTY_FILE,
+                    NODE_PROPERTY_FILE_RESOURCE_PATH)
 from .k8s import (CloudifyKubernetesClient,
                   KubernetesApiAuthenticationVariants,
                   KubernetesApiConfigurationVariants,
