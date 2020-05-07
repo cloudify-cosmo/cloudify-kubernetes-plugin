@@ -23,12 +23,13 @@ from cloudify.mocks import MockCloudifyContext
 from cloudify.manager import DirtyTrackingDict
 from cloudify.state import current_ctx
 
+import cloudify_kubernetes.tasks as tasks
+from cloudify_kubernetes._compat import text_type
 from cloudify_kubernetes.decorators import RELATIONSHIP_TYPE_MANAGED_BY_MASTER
 from cloudify_kubernetes.k8s.mapping import (
     KubernetesApiMapping,
     KubernetesSingleOperationApiMapping
 )
-import cloudify_kubernetes.tasks as tasks
 
 FILE_YAML = """
 apiVersion: v1
@@ -283,7 +284,7 @@ class TestTasks(unittest.TestCase):
                 'status': {'phase': 'Pending'}
             })
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Status is {'phase': 'Pending'}"
         )
 
@@ -292,7 +293,7 @@ class TestTasks(unittest.TestCase):
                 'status': {'phase': 'Unknown'}
             })
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Status is {'phase': 'Unknown'}"
         )
 
@@ -305,7 +306,7 @@ class TestTasks(unittest.TestCase):
                 'status': {'phase': 'Failed'}
             })
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Status is {'phase': 'Failed'}"
         )
 
@@ -319,7 +320,7 @@ class TestTasks(unittest.TestCase):
                 'status': {'load_balancer': {'ingress': None}}
             })
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Status is {'load_balancer': {'ingress': None}}"
         )
 
@@ -352,7 +353,7 @@ class TestTasks(unittest.TestCase):
             })
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Status is {'phase': 'Unknown'}"
         )
 
@@ -362,7 +363,7 @@ class TestTasks(unittest.TestCase):
             })
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Status is {'phase': None}"
         )
 
@@ -383,7 +384,7 @@ class TestTasks(unittest.TestCase):
                 'status': {'phase': 'Unknown'}
             })
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Status is {'phase': 'Unknown'}"
         )
 
@@ -402,12 +403,12 @@ class TestTasks(unittest.TestCase):
             })
         try:
             self.assertEqual(
-                str(error.exception),
+                text_type(error.exception),
                 "Status is {'ready_replicas': None, 'replicas': 0}"
             )
         except AssertionError:
             self.assertEqual(
-                str(error.exception),
+                text_type(error.exception),
                 "Status is {'replicas': 0, 'ready_replicas': None}"
             )
 
@@ -426,12 +427,12 @@ class TestTasks(unittest.TestCase):
             })
         try:
             self.assertEqual(
-                str(error.exception),
+                text_type(error.exception),
                 "Status is {'ready_replicas': None, 'replicas': 0}"
             )
         except AssertionError:
             self.assertEqual(
-                str(error.exception),
+                text_type(error.exception),
                 "Status is {'replicas': 0, 'ready_replicas': None}"
             )
 
@@ -616,7 +617,7 @@ class TestTasks(unittest.TestCase):
             )
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Cannot initialize Kubernetes API - no suitable configuration "
             "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
             "properties"
@@ -659,7 +660,7 @@ class TestTasks(unittest.TestCase):
             )
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Cannot initialize Kubernetes API - no suitable configuration "
             "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
             "properties"
@@ -731,7 +732,7 @@ class TestTasks(unittest.TestCase):
                             api_mapping=None,
                             resource_definition=None
                         )
-                    file_mock.assert_called_with('new_path')
+                    file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(_ctx.instance.runtime_properties, {
             'kubernetes': {
                 'abc.yaml#0': {
@@ -786,7 +787,7 @@ class TestTasks(unittest.TestCase):
                         file_mock.assert_called_with('new_path')
 
         self.assertEqual(
-            str(error.exception),
+            text_type(error.exception),
             "Invalid resource file definition."
         )
 
@@ -839,7 +840,7 @@ class TestTasks(unittest.TestCase):
                             api_mapping=None,
                             resource_definition=None
                         )
-                    file_mock.assert_called_with('new_path')
+                    file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(client.delete_resource.call_count, 2)
 
     def test_multiple_file_resource_create(self):
@@ -877,7 +878,7 @@ class TestTasks(unittest.TestCase):
                             api_mapping=None,
                             resource_definition=None
                         )
-                    file_mock.assert_called_with('new_path')
+                    file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(_ctx.instance.runtime_properties, {
             'kubernetes': {
                 'abc.yaml#0': {'metadata': {'name': 'check_id'}},
@@ -936,7 +937,7 @@ class TestTasks(unittest.TestCase):
                             api_mapping=None,
                             resource_definition=None
                         )
-                    file_mock.assert_called_with('new_path')
+                    file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(client.delete_resource.call_count, 2)
 
 

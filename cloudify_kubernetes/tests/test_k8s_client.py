@@ -16,6 +16,8 @@ import unittest
 from mock import MagicMock
 
 from kubernetes.client.rest import ApiException
+
+from cloudify_kubernetes._compat import text_type
 from cloudify_kubernetes.k8s import (CloudifyKubernetesClient,
                                      KuberentesInvalidPayloadClassError,
                                      KuberentesInvalidApiClassError,
@@ -60,7 +62,7 @@ class TestClient(unittest.TestCase):
             instance._prepare_payload('unknown_attribute', MagicMock())
 
         self.assertEqual(
-            error.exception.message,
+            text_type(error.exception),
             "Cannot create instance of Kubernetes API payload class: "
             "unknown_attribute. Class not supported by client FakeApi"
         )
@@ -82,7 +84,7 @@ class TestClient(unittest.TestCase):
                                          'other_attribute')
 
         self.assertEqual(
-            error.exception.message,
+            text_type(error.exception),
             "Cannot create instance of Kubernetes API class: "
             "unknown_attribute. Class not supported by client FakeApi"
         )
@@ -106,7 +108,7 @@ class TestClient(unittest.TestCase):
             instance._prepare_api_method('attribute', 'other_attribute')
 
         self.assertEqual(
-            error.exception.message,
+            text_type(error.exception),
             "Method other_attribute not supported by Kubernetes API class "
             "attribute"
         )
@@ -126,7 +128,7 @@ class TestClient(unittest.TestCase):
 
         operation_mock.execute.assert_called_with({'a': 'b'})
         self.assertEqual(
-            error.exception.message,
+            text_type(error.exception),
             "Exception during Kubernetes API call: (None)\nReason: None\n"
         )
 
