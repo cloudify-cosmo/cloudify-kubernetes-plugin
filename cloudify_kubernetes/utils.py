@@ -71,7 +71,7 @@ def _yaml_from_files(
             'Invalid resource file definition.'
         )
 
-    with open(downloaded_file_path) as outfile:
+    with open(downloaded_file_path, 'rb') as outfile:
         file_content = outfile.read()
 
     # Validate file content if it contains at least one dict

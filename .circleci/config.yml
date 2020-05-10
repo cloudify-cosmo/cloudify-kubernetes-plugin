@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 
 checkout:
   post:
@@ -9,16 +9,49 @@ checkout:
         git checkout -qf FETCH_HEAD
       fi
 
-jobs:
 
-  py3_compat:
+executors:
+  py27:
     docker:
       - image: circleci/python:2.7
+
+  py36:
+    docker:
+      - image: circleci/python:3.6
+
+  centos7:
+    docker:
+      - image: amd64/centos:centos7.3.1611
+
+  cloudify-machine:
+
+    machine:
+      image: ubuntu-1604:201903-01
+
+
+commands:
+  run_unittest:
     steps:
       - checkout
       - run:
+          name: install tox
+          command: pip install --user tox
+      - run:
+          name: Run Flake8
+          command: /home/circleci/.local/bin/tox -e pep8
+      - run:
+         name: Run nosetest
+         command: /home/circleci/.local/bin/tox -e nosetest
+
+  check_py3_compat:
+    steps:
+      - run:
           name: install futurize
           command: pip install future --user
+      - run:
+          name: remove python3 incompatible modules
+          command: |
+            rm cloudify_kubernetes/_compat.py
       - run:
           name: find python3-incompatible code
           command: |
@@ -38,39 +71,23 @@ jobs:
               exit 1
             fi
 
-  unittests:
-    machine:
-      enabled: true
-      python:
-        version: pypy-2.2.1
+  generate_wagon:
     steps:
-      - checkout
+      - run:
+          name: Install dependencies
+          command: yum -y install python-devel gcc openssl git libxslt-devel libxml2-devel openldap-devel libffi-devel openssl-devel libvirt-devel
+      - run:
+          name: Download pip
+          command: curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
+      - run:
+          name: Install pip
+          command: python get-pip.py
       - run:
           name: Upgrade pip
           command: pip install --upgrade pip==9.0.1
       - run:
-          name: install tox
-          command: pip install tox
-      - run: tox -e pep8
-      - run: tox -e py27
-
-  wagon:
-    docker:
-      - image: amd64/centos:centos7.3.1611
-    steps:
-      - checkout
-      - run:
-          name: Install epel
-          command: yum install -y epel-release
-      - run:
-          name: Install python dependencies
-          command: yum -y install python-pip python-setuptools python-pip python-wheel python-setuptools python-virtualenv
-      - run:
-          name: Install devel dependencies
-          command: yum -y install python-devel gcc-c++ gcc zlib-devel libffi-devel openssl-devel
-      - run:
-          name: Upgrade pip
-          command: pip install --upgrade pip==9.0.1
+          name: Install virtualenv
+          command: pip install virtualenv==15.1.0
       - run:
           name: Init virtualenv
           command: virtualenv env
@@ -91,22 +108,14 @@ jobs:
           paths:
             - build/*
 
-
-
-  cloudify-manager:
-    machine:
-      enabled: true
-      python:
-        version: pypy-2.2.1
-    environment:
-      CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: gcp
+  run_integration_tests:
     steps:
-      - checkout
       - run:
           name: "Pull Submodules"
           command: |
             git submodule update --init --recursive
+      - attach_workspace:
+          at: workspace
       - run:
           name: update pip
           command: pip install -U pip
@@ -129,20 +138,12 @@ jobs:
           name: start docker container
           command: docker run --name cfy_manager -d --restart unless-stopped -v /sys/fs/cgroup:/sys/fs/cgroup:ro --tmpfs /run --tmpfs /run/lock --security-opt seccomp:unconfined --cap-add SYS_ADMIN --network host cloudifyplatform/premium-cloudify-manager-aio
       - run:
-          name: Install Git
-          command: docker exec cfy_manager yum install -y git python-netaddr
-      - run:
           name: install local project
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - attach_workspace:
-          at: workspace
       - run: pytest -s .circleci/test_examples.py
 
-  release:
-    docker:
-      - image: circleci/python:2.7.15-stretch
+  release_plugin:
     steps:
-      - checkout
       - run:
           name: "Pull Submodules"
           command: |
@@ -173,33 +174,71 @@ jobs:
           at: workspace
       - run: python .circleci/package_release.py
 
+jobs:
+
+  unittests_py27:
+    executor: py27
+    steps:
+      - run_unittest
+
+  unittests_py36:
+    executor: py36
+    steps:
+      - run_unittest
+
+  py3_compat:
+    executor: py27
+    steps:
+      - checkout
+      - check_py3_compat
+
+  wagon:
+    executor: centos7
+    steps:
+      - checkout
+      - generate_wagon
+
+  integration_tests:
+    executor: cloudify-machine
+    environment:
+      CLOUDIFY_SSL_TRUST_ALL: true
+      IAAS: gcp
+    steps:
+      - checkout
+      - run_integration_tests
+
+  release:
+    executor: py27
+    steps:
+      - checkout
+      - release_plugin
+
 workflows:
   version: 2
   tests:
     jobs: &all_jobs
       - py3_compat
-      - unittests
-      - release:
-          context: ecosystem
-          requires:
-            - wagon
-            - cloudify-manager
-          filters:
-            branches:
-              only: /master/
+      - unittests_py27
+      - unittests_py36
       - wagon:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
-      - cloudify-manager:
-          context: ecosystem
+      - integration_tests:
           requires:
-            - wagon
-            - unittests
             - py3_compat
+            - unittests_py27
+            - unittests_py36
+            - wagon
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - release:
+          filters:
+            branches:
+              only: /master/
+          requires:
+            - integration_tests
   nightly:
     triggers:
     - schedule:

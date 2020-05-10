@@ -17,6 +17,7 @@ import kubernetes
 
 from oauth2client.service_account import ServiceAccountCredentials
 
+from .._compat import text_type
 from .exceptions import KuberentesAuthenticationError
 
 
@@ -31,7 +32,7 @@ class KubernetesApiAuthentication(object):
 
     def authenticate(self, api):
         if self._do_authenticate(api):
-            return
+            return None
 
         raise KuberentesAuthenticationError(
             'Cannot use {0} authenticate option for data: {1} and API: {2}'
@@ -62,8 +63,7 @@ class GCPServiceAccountAuthentication(KubernetesApiAuthentication):
 
         if service_account_file_content:
 
-            if isinstance(service_account_file_content, str) or \
-                    isinstance(service_account_file_content, unicode):
+            if isinstance(service_account_file_content, text_type):
                 service_account_file_content = \
                     json.loads(service_account_file_content)
 
@@ -112,3 +112,4 @@ class KubernetesApiAuthenticationVariants(KubernetesApiAuthentication):
             'variant found for {0} properties'
             .format(self.authentication_data)
         )
+        return None

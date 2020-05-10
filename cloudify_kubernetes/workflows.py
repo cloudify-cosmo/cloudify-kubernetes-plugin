@@ -19,6 +19,8 @@ from cloudify.decorators import workflow
 from cloudify.exceptions import NonRecoverableError
 from cloudify.workflows import ctx
 
+from ._compat import text_type
+
 RESOURCE_START_OPERATION = 'cloudify.interfaces.lifecycle.poststart'
 RESOURCE_UPDATE_OPERATION = 'cloudify.interfaces.lifecycle.update'
 DEFINITION_ADDITIONS = 'definitions_additions'
@@ -33,7 +35,7 @@ def merge_definitions(old, new):
     """
 
     if isinstance(old, dict):
-        for k, v in new.iteritems():
+        for k, v in new.items():
             if k in old and isinstance(old[k], dict) \
                     and isinstance(new[k], collections.Mapping):
                 old[k] = merge_definitions(old[k], new[k])
@@ -106,7 +108,7 @@ def update_resource_definition(node_instance_id,
         string representing the changes to the resoruce definition.
     """
 
-    if isinstance(resource_definition_changes, basestring):
+    if isinstance(resource_definition_changes, text_type):
         resource_definition_changes = \
             ast.literal_eval(resource_definition_changes)
 
