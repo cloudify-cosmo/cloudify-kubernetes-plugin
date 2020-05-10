@@ -24,6 +24,7 @@ executors:
       - image: amd64/centos:centos7.3.1611
 
   cloudify-machine:
+
     machine:
       image: ubuntu-1604:201903-01
 
@@ -225,6 +226,9 @@ workflows:
               only: /([0-9\.]*\-build|master|dev)/
       - integration_tests:
           requires:
+            - py3_compat
+            - unittests_py27
+            - unittests_py36
             - wagon
           filters:
             branches:
@@ -234,7 +238,6 @@ workflows:
             branches:
               only: /master/
           requires:
-            - wagon
             - integration_tests
   nightly:
     triggers:
