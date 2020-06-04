@@ -73,6 +73,21 @@ class KubernetesResourceDefinition(object):
         if rules:
             self.rules = rules
 
+    @staticmethod
+    def underscore_to_camelcase(value):
+        def camelcase():
+            yield str.lower
+            while True:
+                yield str.capitalize
+
+        c = camelcase()
+        return "".join(c.next()(x) if x else '_' for x in value.split("_"))
+
+    def to_dict(self):
+        return dict(
+            (self.underscore_to_camelcase(key), value) for (key, value)
+            in self.__dict__.items() if key != 'underscore_to_camelcase')
+
 
 class CloudifyKubernetesClient(object):
 

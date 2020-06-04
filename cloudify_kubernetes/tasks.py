@@ -13,7 +13,6 @@
 # limitations under the License.
 
 # hack for import namespaced modules
-import cloudify_importer  # noqa
 
 from cloudify import ctx
 from cloudify.exceptions import (
@@ -22,7 +21,7 @@ from cloudify.exceptions import (
 
 from ._compat import text_type
 from .k8s.exceptions import KuberentesApiOperationError
-from .k8s import status_mapping
+from .k8s import status_mapping, KubernetesResourceDefinition
 from .decorators import (resource_task,
                          with_kubernetes_client,
                          INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
@@ -47,6 +46,45 @@ def _retrieve_id(resource_instance, file=None):
         data = data[file]
 
     return data['metadata']['name']
+
+
+def store_resource_definition(resource_definition):
+
+    node_resource_definitions = ctx.instance.runtime_properties.get(
+        '__resource_definitions', {})
+    node_resource_definitions.update(
+        JsonCleanuper(resource_definition).to_dict())
+    ctx.instance.runtime_properties['__resource_definitions'] = \
+        node_resource_definitions
+
+
+def retrieve_stored_resource(resource_definition):
+    pass
+    # TODO: Write this section.
+    # for resource_def in ctx.instance
+    # .runtime_properties['__resource_definitions']
+    # json_resource_definition = JsonCleanuper(
+    #     resource_definition).to_dict()
+    #
+    # if json_resource_definition != stored_resource_definition:
+    #     ctx.logger.error(
+    #         'The resource definiton that was provided is different '
+    #         'from that stored from the previous modification. '
+    #         'Using the previous resource.'
+    #     )
+    #     ctx.logger.debug(
+    #         'Provided resource definition: {0}'.format(
+    #             json_resource_definition)
+    #     )
+    #     ctx.logger.debug(
+    #         'Stored resource definition: {0}'.format(
+    #             stored_resource_definition)
+    #     )
+    #     resource_definition = KubernetesResourceDefinition(
+    #         **stored_resource_definition)
+    #
+    # api_mapping = mapping_by_kind(resource_definition)
+    # return resource_definition, api_mapping
 
 
 class JsonCleanuper(object):
@@ -94,6 +132,8 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
+    store_resource_definition(resource_definition)
+
     ctx.logger.debug('Node options {0}'.format(options))
     if ctx.node.properties.get('use_external_resource'):
         return JsonCleanuper(client.read_resource(
@@ -187,6 +227,7 @@ def _do_resource_delete(client, api_mapping, resource_definition,
     use_existing=False,  # ignore already created
 )
 def resource_create(client, api_mapping, resource_definition, **kwargs):
+
     ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
         _do_resource_create(
             client,
