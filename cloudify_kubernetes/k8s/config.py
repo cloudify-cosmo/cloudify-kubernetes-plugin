@@ -127,6 +127,9 @@ class ApiOptionsConfiguration(KubernetesApiConfiguration):
 
             if self.API_OPTIONS_HOST_KEY not in api_options:
                 return None
+            else:
+                api_options[self.API_OPTIONS_HOST_KEY] = \
+                    api_options[self.API_OPTIONS_HOST_KEY].rstrip('/')
 
             api = kubernetes.client
             configuration = kubernetes.client.Configuration()

@@ -97,3 +97,6 @@
 
 2.7.2:
   - Support Python 3
+
+2.7.3:
+  - Remove trailing slash in URL.
