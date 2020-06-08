@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test15
+  name: nginx-test-pod
 spec:
   containers:
-  - name: test15
+  - name: nginx-test-pod
     image: nginx:stable

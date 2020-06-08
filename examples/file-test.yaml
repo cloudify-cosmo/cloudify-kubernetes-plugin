@@ -19,6 +19,10 @@ inputs:
   resource_template_variables:
     default: {}
 
+  allow_node_redefinition:
+    type: boolean
+    default: true
+
 node_templates:
 
   resource:
@@ -33,6 +37,7 @@ node_templates:
             verify_ssl: false
             debug: false
       validate_resource_status: { get_input: validate_status }
+      allow_node_redefinition: { get_input: allow_node_redefinition }
       file:
         resource_path: { get_input: resource_path }
         template_variables: { get_input: resource_template_variables }

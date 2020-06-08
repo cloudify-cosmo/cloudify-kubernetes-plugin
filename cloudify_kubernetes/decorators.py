@@ -112,19 +112,27 @@ def _multidefinition_resource_task(task, definitions, kwargs,
         else:
             current_state = ctx.instance.runtime_properties.get(
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
-        # ignore prexisted state
+        # ignore pre-existing state
         if not use_existing and current_state:
-            ctx.logger.info("Ignore existing object state")
-            continue
+            ctx.logger.info(
+                "The resource {0} unexpectedly exists. "
+                "Not executing operation.".format(definition.to_dict()))
+            ctx.instance.runtime_properties['__perform_task'] = False
         # ignore if we dont have any object yet
-        if use_existing and not current_state:
-            ctx.logger.info("Ignore unexisted object state")
-            continue
+        elif use_existing and not current_state:
+            ctx.logger.info(
+                "Expected resource {0} to exist, but it does not. "
+                "Not executing operation.".format(definition.to_dict()))
+            ctx.instance.runtime_properties['__perform_task'] = False
+        else:
+            ctx.instance.runtime_properties['__perform_task'] = True
         # finally run
         task(**kwargs)
+        del ctx.instance.runtime_properties['__perform_task']
         # cleanup after successful run
         if current_state and cleanup_runtime_properties:
-            if path:
+            if path and path in ctx.instance.runtime_properties[
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES]:
                 del ctx.instance.runtime_properties[
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path]
             else:

@@ -81,7 +81,7 @@ class KubernetesResourceDefinition(object):
                 yield str.capitalize
 
         c = camelcase()
-        return "".join(c.next()(x) if x else '_' for x in value.split("_"))
+        return "".join(next(c)(x) if x else '_' for x in value.split("_"))
 
     def to_dict(self):
         return dict(

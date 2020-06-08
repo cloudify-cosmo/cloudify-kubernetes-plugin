@@ -100,3 +100,4 @@
 
 2.7.3:
   - Remove trailing slash in URL.
+  - Support modifying a resource type and number during update workflow.

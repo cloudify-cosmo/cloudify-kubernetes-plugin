@@ -19,6 +19,7 @@ import yaml
 from cloudify import ctx
 from cloudify.utils import exception_to_error_cause
 
+from ._compat import text_type
 from .k8s import (KubernetesApiMapping,
                   KuberentesInvalidDefinitionError,
                   KuberentesMappingNotFoundError,
@@ -37,12 +38,14 @@ NODE_PROPERTY_API_MAPPING = 'api_mapping'
 NODE_PROPERTY_DEFINITION = 'definition'
 NODE_PROPERTY_FILE = 'file'
 NODE_PROPERTY_OPTIONS = 'options'
+DEFS = '__resource_definitions'
+PERMIT_REDEFINE = 'allow_node_redefinition'
 
 
 def retrieve_path(kwargs):
     return kwargs\
         .get(NODE_PROPERTY_FILE, {})\
-        .get(NODE_PROPERTY_FILE_RESOURCE_PATH, '')
+        .get(NODE_PROPERTY_FILE_RESOURCE_PATH, u'')
 
 
 def generate_traceback_exception():
@@ -163,3 +166,84 @@ def get_node(_ctx):
         return _ctx.source.node
     else:  # _ctx.type == NODE_INSTANCE
         return _ctx.node
+
+
+class JsonCleanuper(object):
+
+    def __init__(self, ob):
+        resource = ob.to_dict()
+
+        if isinstance(resource, list):
+            self._cleanuped_list(resource)
+        elif isinstance(resource, dict):
+            self._cleanuped_dict(resource)
+
+        self.value = resource
+
+    def _cleanuped_list(self, resource):
+        for k, v in enumerate(resource):
+            if not v:
+                continue
+            if isinstance(v, list):
+                self._cleanuped_list(v)
+            elif isinstance(v, dict):
+                self._cleanuped_dict(v)
+            elif not isinstance(v, int) and not \
+                    isinstance(v, text_type):
+                resource[k] = text_type(v)
+
+    def _cleanuped_dict(self, resource):
+        for k in resource:
+            if not resource[k]:
+                continue
+            if isinstance(resource[k], list):
+                self._cleanuped_list(resource[k])
+            elif isinstance(resource[k], dict):
+                self._cleanuped_dict(resource[k])
+            elif not isinstance(resource[k], int) and not \
+                    isinstance(resource[k], text_type):
+                resource[k] = text_type(resource[k])
+
+    def to_dict(self):
+        return self.value
+
+
+def store_resource_definition(resource_definition):
+
+    node_resource_definitions = ctx.instance.runtime_properties.get(DEFS, [])
+    node_resource_definition = JsonCleanuper(resource_definition).to_dict()
+    if node_resource_definition not in node_resource_definitions:
+        node_resource_definitions.append(
+            JsonCleanuper(resource_definition).to_dict())
+    ctx.instance.runtime_properties[DEFS] = node_resource_definitions
+
+
+def retrieve_stored_resource(resource_definition, api_mapping):
+    node_resource_definitions = ctx.instance.runtime_properties[DEFS]
+    json_resource_definition = JsonCleanuper(resource_definition).to_dict()
+    try:
+        stored_resource_definition = node_resource_definitions.pop()
+    except IndexError:
+        ctx.logger.error('No stored resource definitions found.')
+        stored_resource_definition = json_resource_definition
+    allow_node_definition = ctx.node.properties[PERMIT_REDEFINE]
+    if (json_resource_definition != stored_resource_definition) and \
+            allow_node_definition:
+        ctx.logger.error(
+            'The resource definiton that was provided is different '
+            'from that stored from the previous modification. '
+            'Using the previous resource.'
+        )
+        ctx.logger.debug(
+            'Provided resource definition: {0}'.format(
+                json_resource_definition)
+        )
+        ctx.logger.debug(
+            'Stored resource definition: {0}'.format(
+                stored_resource_definition)
+        )
+        resource_definition = KubernetesResourceDefinition(
+            **stored_resource_definition)
+        ctx.instance.runtime_properties[DEFS] = node_resource_definitions
+        api_mapping = mapping_by_kind(resource_definition)
+    return resource_definition, api_mapping

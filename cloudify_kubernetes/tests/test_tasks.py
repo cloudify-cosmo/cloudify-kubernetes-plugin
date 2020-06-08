@@ -12,24 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import MagicMock, Mock, patch, mock_open
+import json
 import unittest
 from datetime import datetime
+from mock import MagicMock, Mock, patch, mock_open
 
+from cloudify.state import current_ctx
+from cloudify.mocks import MockCloudifyContext
+from cloudify.manager import DirtyTrackingDict
 from cloudify.exceptions import (RecoverableError,
                                  OperationRetry,
                                  NonRecoverableError)
-from cloudify.mocks import MockCloudifyContext
-from cloudify.manager import DirtyTrackingDict
-from cloudify.state import current_ctx
 
 import cloudify_kubernetes.tasks as tasks
-from cloudify_kubernetes._compat import text_type
-from cloudify_kubernetes.decorators import RELATIONSHIP_TYPE_MANAGED_BY_MASTER
 from cloudify_kubernetes.k8s.mapping import (
     KubernetesApiMapping,
     KubernetesSingleOperationApiMapping
 )
+from cloudify_kubernetes._compat import text_type
+from cloudify_kubernetes.k8s import KubernetesResourceDefinition
+from cloudify_kubernetes.decorators import RELATIONSHIP_TYPE_MANAGED_BY_MASTER
 
 FILE_YAML = """
 apiVersion: v1
@@ -171,6 +173,7 @@ class TestTasks(unittest.TestCase):
         properties = {
             'use_external_resource': external,
             'validate_resource_status': True,
+            'allow_node_redefinition': True,
             'definition': {
                 'apiVersion': 'v1',
                 'metadata': 'c',
@@ -191,6 +194,18 @@ class TestTasks(unittest.TestCase):
             properties=properties,
             runtime_properties=DirtyTrackingDict(
                 {} if create else {
+                    '__resource_definitions': [
+                        {
+                            'kind': 'Pod',
+                            'apiVersion': 'v1',
+                            'metadata': {'name': 'kubernetes_id'}
+                        },
+                        {
+                            'kind': 'Pod',
+                            'apiVersion': 'v1',
+                            'metadata': {'name': 'kubernetes_id'}
+                        }
+                    ],
                     'kubernetes': {
                         'metadata': {
                             'name': "kubernetes_id"
@@ -446,14 +461,23 @@ class TestTasks(unittest.TestCase):
             }
         }
 
+        fake_resource_def = KubernetesResourceDefinition(
+            kind='test', apiVersion='test', metadata={'name': 'test'})
+        fake_mapping_dict = {
+            'api': 'test', 'method': 'test', 'payload': 'test'
+        }
+        fake_mapping_def = KubernetesApiMapping(
+            create=fake_mapping_dict, read=fake_mapping_dict,
+            update=fake_mapping_dict, delete=fake_mapping_dict)
+
         class _Result(object):
             def to_dict(self):
                 return expected_value
 
         class _CreateResource(object):
             def __call__(self, api_mapping, resource_definition, options):
-                if api_mapping == 'fake_api_mapping':
-                    if resource_definition == 'fake_resource_definition':
+                if api_mapping == fake_mapping_def:
+                    if resource_definition == fake_resource_def:
                         if options['first'] == 'second':
                             return _Result()
 
@@ -462,8 +486,8 @@ class TestTasks(unittest.TestCase):
 
         result = tasks._do_resource_create(
             client=client,
-            api_mapping='fake_api_mapping',
-            resource_definition='fake_resource_definition'
+            api_mapping=fake_mapping_def,
+            resource_definition=fake_resource_def
         )
 
         self.assertEqual(result, expected_value)
@@ -546,32 +570,44 @@ class TestTasks(unittest.TestCase):
             }
         }
 
+        fake_resource_def = KubernetesResourceDefinition(
+            kind='Pod', apiVersion='test', metadata={'name': 'test'})
+        fake_mapping_dict = {
+            'api': 'test', 'method': 'test', 'payload': 'test'
+        }
+        fake_mapping_def = KubernetesApiMapping(
+            create=fake_mapping_dict, read=fake_mapping_dict,
+            update=fake_mapping_dict, delete=fake_mapping_dict)
+
         class _Result(object):
             def to_dict(self):
                 return expected_value
 
         class _DeleteResource(object):
-            def __call__(self, api_mapping, resource_definition, id, options):
-                if api_mapping == 'fake_api_mapping':
-                    if resource_definition == 'fake_resource_definition':
-                        if id == 'fake_id':
-                            if options['first'] == 'second':
-                                return _Result()
+            def __call__(self,
+                         api_mapping,
+                         resource_definition,
+                         resource_id,
+                         options):
+                if resource_id == 'fake_id':
+                    if options['first'] == 'second':
+                        return _Result()
 
         client = MagicMock()
         client.delete_resource = _DeleteResource()
 
         result = tasks._do_resource_delete(
             client=client,
-            api_mapping='fake_api_mapping',
-            resource_definition='fake_resource_definition',
+            api_mapping=fake_mapping_def,
+            resource_definition=fake_resource_def,
             resource_id='fake_id'
         )
 
-        self.assertEqual(result, expected_value)
+        self.assertDictEqual(result, expected_value)
 
     def test_external_do_resource_delete(self):
-        self._prepare_master_node(external=True)
+        _, _ctx = self._prepare_master_node(external=True)
+        _ctx.instance.runtime_properties['__perform_task'] = False
 
         expected_value = {
             'kubernetes': {
@@ -579,27 +615,32 @@ class TestTasks(unittest.TestCase):
                 'first': 'second'
             }
         }
-        fake_resource_def = MagicMock()
-        setattr(
-            fake_resource_def, 'metadata', {'name': 'name'})
+
+        fake_resource_def = KubernetesResourceDefinition(
+            kind='test', apiVersion='test', metadata={'name': 'test'})
+        fake_mapping_dict = {
+            'api': 'test', 'method': 'test', 'payload': 'test'
+        }
+        fake_mapping_def = KubernetesApiMapping(
+            create=fake_mapping_dict, read=fake_mapping_dict,
+            update=fake_mapping_dict, delete=fake_mapping_dict)
 
         class _Result(object):
             def to_dict(self):
                 return expected_value
 
         class _ReadResource(object):
-            def __call__(self, api_mapping, resource_definition, options):
-                if api_mapping == 'fake_api_mapping':
-                    if resource_definition == 'fake_id':
-                        if options['first'] == 'second':
-                            return _Result()
+            def __call__(self, api_mapping, resource_id, options):
+                if resource_id == 'fake_id':
+                    if options['first'] == 'second':
+                        return _Result()
 
         client = MagicMock()
         client.read_resource = _ReadResource()
 
         result = tasks._do_resource_delete(
             client=client,
-            api_mapping='fake_api_mapping',
+            api_mapping=fake_mapping_def,
             resource_definition=fake_resource_def,
             resource_id='fake_id'
         )
@@ -643,6 +684,14 @@ class TestTasks(unittest.TestCase):
                 )
 
         self.assertEqual(_ctx.instance.runtime_properties, {
+            '__resource_definitions': [
+                {
+                    'kind': 'Pod',
+                    'spec': 'd',
+                    'apiVersion': 'v1',
+                    'metadata': 'c'
+                }
+            ],
             'kubernetes': {
                 'body': {'payload_param': 'payload_value'},
                 'first': 'second'
@@ -698,7 +747,7 @@ class TestTasks(unittest.TestCase):
         pass
 
     def test_file_resource_create(self):
-        _, _ctx = self._prepare_master_node()
+        _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
         _ctx.download_resource_and_render = MagicMock(return_value="new_path")
@@ -733,23 +782,52 @@ class TestTasks(unittest.TestCase):
                             resource_definition=None
                         )
                     file_mock.assert_called_with('new_path', 'rb')
-        self.assertEqual(_ctx.instance.runtime_properties, {
-            'kubernetes': {
-                'abc.yaml#0': {
-                    'metadata': {'name': 'check_id'}
-                },
-                'abc.yaml#1': {
-                    'metadata': {
-                        'name': 'check_id'
+        self.assertDictEqual(
+            _ctx.instance.runtime_properties,
+            json.loads(json.dumps({
+                '__resource_definitions': [
+                    {
+                        'kind': 'Pod',
+                        'spec': {
+                            'containers': [
+                                {
+                                    'tty': True,
+                                    'securityContext': {'privileged': True},
+                                    'name': 'pod-c-1',
+                                    'command': ['/bin/bash'],
+                                    'image': 'centos:7',
+                                    'stdin': True
+                                }
+                            ]
+                        },
+                        'apiVersion': 'v1',
+                        'metadata': {'name': 'pod-c'}
+                    },
+                    {
+                        'kind': 'Pod',
+                        'spec': {
+                            'containers': [
+                                {
+                                    'tty': True,
+                                    'securityContext': {'privileged': True},
+                                    'name': 'pod-d-1',
+                                    'command': ['/bin/bash'],
+                                    'image': 'centos:7',
+                                    'stdin': True
+                                }
+                            ]
+                        },
+                        'apiVersion': 'v1',
+                        'metadata': {'name': 'pod-d'}
                     }
-                },
-                'metadata': {'name': 'kubernetes_id'}
-            }
-        })
+                ],
+                'kubernetes': {
+                    'abc.yaml#0': {'metadata': {'name': 'check_id'}},
+                    'abc.yaml#1': {'metadata': {'name': 'check_id'}}}})))
         self.assertEqual(client.create_resource.call_count, 2)
 
     def test_file_resource_create_empty_file(self):
-        _, _ctx = self._prepare_master_node()
+        _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
         _ctx.download_resource_and_render = MagicMock(return_value="new_path")
@@ -804,6 +882,7 @@ class TestTasks(unittest.TestCase):
             },
             'metadata': {'name': 'kubernetes_id'}
         }
+        _ctx.instance.runtime_properties['__perform_task'] = True
 
         _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
         _ctx.download_resource_and_render = MagicMock(return_value="new_path")
@@ -880,6 +959,41 @@ class TestTasks(unittest.TestCase):
                         )
                     file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(_ctx.instance.runtime_properties, {
+            '__resource_definitions': [
+                {
+                    'kind': 'Pod',
+                    'spec': {
+                        'containers': [
+                            {
+                                'tty': True,
+                                'securityContext': {'privileged': True},
+                                'name': 'pod-c-1',
+                                'command': ['/bin/bash'],
+                                'image': 'centos:7',
+                                'stdin': True
+                            }
+                        ]
+                    },
+                    'apiVersion': 'v1',
+                    'metadata': {'name': 'pod-c'}
+                },
+                {
+                    'kind': 'Pod',
+                    'spec': {
+                        'containers': [
+                            {
+                                'tty': True,
+                                'securityContext': {'privileged': True},
+                                'name': 'pod-d-1',
+                                'command': ['/bin/bash'],
+                                'image': 'centos:7',
+                                'stdin': True
+                            }
+                        ]
+                    },
+                    'apiVersion': 'v1',
+                    'metadata': {'name': 'pod-d'}
+                }],
             'kubernetes': {
                 'abc.yaml#0': {'metadata': {'name': 'check_id'}},
                 'abc.yaml#1': {'metadata': {'name': 'check_id'}}
@@ -901,6 +1015,7 @@ class TestTasks(unittest.TestCase):
                 }
             }
         }
+        _ctx.instance.runtime_properties['__perform_task'] = True
 
         _ctx.node.properties['files'] = [{"resource_path": 'abc.yaml'}]
         _ctx.download_resource_and_render = MagicMock(return_value="new_path")

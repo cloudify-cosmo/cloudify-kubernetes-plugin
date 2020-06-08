@@ -4,7 +4,7 @@ plugins:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
     package_version: '2.7.3'
-    source: https://github.com/cloudify-incubator/cloudify-kubernetes-plugin/archive/2.7.3.zip
+    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.7.3.zip
 
 data_types:
 
@@ -322,6 +322,11 @@ node_types:
         description: >
           Configuration properties of kubernetes API and
           authentication properties of Kubernetes Cloud providers.
+      allow_node_redefinition:
+        type: boolean
+        description: >
+          Permit changing the name and kind and number of resources defined in file.
+        default: true
 
   cloudify.kubernetes.resources.ResourceWithValidateStatus:
     derived_from: cloudify.kubernetes.resources.ResourceBase
@@ -537,6 +542,11 @@ node_types:
         type: cloudify.kubernetes.types.FileResource
         description: >
           A path to YAML file containing the resource definition.
+      allow_node_redefinition:
+        type: boolean
+        description: >
+          Permit changing the name and kind and number of resources defined in file.
+        default: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
@@ -552,6 +562,11 @@ node_types:
       files:
         description: >
           A list of paths to YAML files containing the resources definition.
+      allow_node_redefinition:
+        type: boolean
+        description: >
+          Permit changing the name and kind and number of resources defined in file.
+        default: false
     interfaces:
       cloudify.interfaces.lifecycle:
         create:

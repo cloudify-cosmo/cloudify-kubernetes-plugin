@@ -12,119 +12,73 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# hack for import namespaced modules
+# hack for import namespaced modules (google.auth)
+import cloudify_importer # noqa
+
+import re
 
 from cloudify import ctx
 from cloudify.exceptions import (
     OperationRetry,
-    RecoverableError)
+    RecoverableError,
+    NonRecoverableError)
 
-from ._compat import text_type
-from .k8s.exceptions import KuberentesApiOperationError
-from .k8s import status_mapping, KubernetesResourceDefinition
-from .decorators import (resource_task,
-                         with_kubernetes_client,
-                         INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
-from .utils import (mapping_by_data,
+from .k8s import status_mapping
+from .utils import (PERMIT_REDEFINE,
+                    DEFS,
+                    mapping_by_data,
                     mapping_by_kind,
                     retrieve_path,
                     resource_definition_from_blueprint,
-                    resource_definitions_from_file)
+                    resource_definitions_from_file,
+                    JsonCleanuper,
+                    store_resource_definition,
+                    retrieve_stored_resource)
+from .k8s.exceptions import KuberentesApiOperationError
+from .decorators import (resource_task,
+                         with_kubernetes_client,
+                         INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
 
 
 DEFAULT_NAMESPACE = 'default'
 NODE_PROPERTY_FILES = 'files'
 NODE_PROPERTY_OPTIONS = 'options'
+FILENAMES = r'[A-Za-z0-9\.\_\-\/]*yaml\#[0-9]*'
 
 
-def _retrieve_id(resource_instance, file=None):
-    data = resource_instance.runtime_properties[
-        INSTANCE_RUNTIME_PROPERTY_KUBERNETES
-    ]
+def _retrieve_id(resource_instance, filename=None, delete=False):
 
-    if isinstance(data, dict) and file:
-        data = data[file]
+    data = resource_instance.runtime_properties.get(
+        INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {})
+    matches = [re.match(FILENAMES, key) for key in data]
 
-    return data['metadata']['name']
-
-
-def store_resource_definition(resource_definition):
-
-    node_resource_definitions = ctx.instance.runtime_properties.get(
-        '__resource_definitions', {})
-    node_resource_definitions.update(
-        JsonCleanuper(resource_definition).to_dict())
-    ctx.instance.runtime_properties['__resource_definitions'] = \
-        node_resource_definitions
-
-
-def retrieve_stored_resource(resource_definition):
-    pass
-    # TODO: Write this section.
-    # for resource_def in ctx.instance
-    # .runtime_properties['__resource_definitions']
-    # json_resource_definition = JsonCleanuper(
-    #     resource_definition).to_dict()
-    #
-    # if json_resource_definition != stored_resource_definition:
-    #     ctx.logger.error(
-    #         'The resource definiton that was provided is different '
-    #         'from that stored from the previous modification. '
-    #         'Using the previous resource.'
-    #     )
-    #     ctx.logger.debug(
-    #         'Provided resource definition: {0}'.format(
-    #             json_resource_definition)
-    #     )
-    #     ctx.logger.debug(
-    #         'Stored resource definition: {0}'.format(
-    #             stored_resource_definition)
-    #     )
-    #     resource_definition = KubernetesResourceDefinition(
-    #         **stored_resource_definition)
-    #
-    # api_mapping = mapping_by_kind(resource_definition)
-    # return resource_definition, api_mapping
-
-
-class JsonCleanuper(object):
-
-    def __init__(self, ob):
-        resource = ob.to_dict()
-
-        if isinstance(resource, list):
-            self._cleanuped_list(resource)
-        elif isinstance(resource, dict):
-            self._cleanuped_dict(resource)
-
-        self.value = resource
-
-    def _cleanuped_list(self, resource):
-        for k, v in enumerate(resource):
-            if not v:
-                continue
-            if isinstance(v, list):
-                self._cleanuped_list(v)
-            elif isinstance(v, dict):
-                self._cleanuped_dict(v)
-            elif not isinstance(v, int) and not \
-                    isinstance(v, text_type):
-                resource[k] = text_type(v)
-
-    def _cleanuped_dict(self, resource):
-        for k in resource:
-            if not resource[k]:
-                continue
-            if isinstance(resource[k], list):
-                self._cleanuped_list(resource[k])
-            elif isinstance(resource[k], dict):
-                self._cleanuped_dict(resource[k])
-            elif not isinstance(resource[k], int) and not \
-                    isinstance(resource[k], text_type):
-                resource[k] = text_type(resource[k])
-
-    def to_dict(self):
-        return self.value
+    if filename and filename in data:
+        if delete:
+            resource = data.pop(filename)
+            return resource['metadata']['name']
+        return data[filename]['metadata']['name']
+    elif 'metadata' in data and not any(matches):
+        if delete:
+            resource = data.pop('metadata')
+            return resource['name']
+        return data['metadata']['name']
+    elif not ctx.node.properties[PERMIT_REDEFINE]:
+        if filename:
+            message = 'Filename {0} not found in ' \
+                      'kubernetes runtime property. '.format(filename)
+        else:
+            message = 'Node property {0} is not True. '.format(PERMIT_REDEFINE)
+    else:
+        resources = resource_instance.runtime_properties[DEFS]
+        if len(resources) > 0:
+            return resources[-1]['metadata']['name']
+        message = 'No suitable resource IDs found. '
+    ctx.logger.error(
+        'Cannot resolve which '
+        'resource to retrieve: ' + message + 'Available data: {0}'.format(data)
+    )
+    # Failure will come at a later time.
+    return
 
 
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
@@ -135,7 +89,8 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
     store_resource_definition(resource_definition)
 
     ctx.logger.debug('Node options {0}'.format(options))
-    if ctx.node.properties.get('use_external_resource'):
+    perform_task = ctx.instance.runtime_properties.get('__perform_task', False)
+    if ctx.node.properties.get('use_external_resource') and not perform_task:
         return JsonCleanuper(client.read_resource(
             api_mapping,
             resource_definition.metadata['name'],
@@ -148,15 +103,21 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
     )).to_dict()
 
 
-def _do_resource_read(client, api_mapping, id, **kwargs):
+def _do_resource_read(client, api_mapping, resource_id, **kwargs):
+    if not resource_id:
+        raise NonRecoverableError(
+            'No resource was found in runtime properties for reading. '
+            'This can occur when the node property {0} is True, and '
+            'resources were created and deleted out of order.'.format(
+                PERMIT_REDEFINE)
+        )
     if 'namespace' not in kwargs:
         kwargs['namespace'] = DEFAULT_NAMESPACE
-
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     ctx.logger.debug('Node options {0}'.format(options))
     return JsonCleanuper(client.read_resource(
         api_mapping,
-        id,
+        resource_id,
         options
     )).to_dict()
 
@@ -206,7 +167,12 @@ def _do_resource_delete(client, api_mapping, resource_definition,
     # The resource is not a type of ``ReplicationController`` then we must
     # pass all the required fields
 
-    if ctx.node.properties.get('use_external_resource'):
+    resource_definition, api_mapping = \
+        retrieve_stored_resource(resource_definition, api_mapping)
+    if not resource_id:
+        resource_id = resource_definition.metadata['name']
+    perform_task = ctx.instance.runtime_properties.get('__perform_task', False)
+    if ctx.node.properties.get('use_external_resource') and not perform_task:
         return JsonCleanuper(client.read_resource(
             api_mapping,
             resource_id,
@@ -315,7 +281,10 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
             **kwargs
         )
 
-        if not ctx.node.properties.get('use_external_resource'):
+        perform_task = ctx.instance.runtime_properties.get('__perform_task',
+                                                           False)
+        if not ctx.node.properties.get(
+                'use_external_resource') and perform_task:
             raise OperationRetry(
                 'Delete response: {0}'.format(delete_response))
 
@@ -380,7 +349,10 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
             _retrieve_id(ctx.instance),
             **kwargs
         )
-        if not ctx.node.properties.get('use_external_resource'):
+        perform_task = ctx.instance.runtime_properties.get('__perform_task',
+                                                           False)
+        if not ctx.node.properties.get(
+                'use_external_resource') and perform_task:
             raise OperationRetry(
                 'Delete response: {0}'.format(delete_response))
 
@@ -475,7 +447,7 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
         client,
         api_mapping,
         resource_definition,
-        _retrieve_id(ctx.instance, path),
+        _retrieve_id(ctx.instance, path, delete=True),
         **kwargs
     )
 
