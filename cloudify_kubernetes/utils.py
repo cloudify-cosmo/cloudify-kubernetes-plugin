@@ -13,7 +13,6 @@
 # limitations under the License.
 #
 import os
-import re
 import sys
 
 import yaml
@@ -103,13 +102,18 @@ def retrieve_last_create_path(file_name=None, delete=True):
     resource_id = file_resource.get('metadata', {}).get('name')
     resource_kind = file_resource.get('kind')
 
-    ctx.logger.info('Except fr name {0}'.format(file_resource.get('metadata', {}).get('name')))
-    ctx.logger.info('Except fr kind {0}'.format(file_resource.get('kind')))
+    ctx.logger.info('Except fr name {0}'.format(resource_id))
+    ctx.logger.info('Except fr kind {0}'.format(resource_kind))
+
+    adjacent_file_name, _ = file_name.split('.yaml')
+
+    ctx.logger.info('File Resources before adjacent deal : {0}'.format(file_resources))
 
     for _f, _r in (file_resources.items()):
-        if _f == file_name and \
-                (_r['metadata']['name'] != resource_id and
-                 _r['kind'] != resource_kind):
+        if adjacent_file_name in _f and \
+                (_r['metadata']['name'] != resource_id or
+                 _r['kind'] != resource_kind    ):
+            ctx.logger.info('updated ad res with {0}'.format({_f: _r}))
             adjacent_resources.update({_f: _r})
             del file_resources[_f]
 

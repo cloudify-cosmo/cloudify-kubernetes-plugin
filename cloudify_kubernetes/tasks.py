@@ -403,20 +403,45 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
     ctx.logger.info(
         'Start properties: \n\n'
         '{0}\n\n'
-        '{1}'.format(
+        '{1}\n\n'
+        '{2}'.format(
             kubernetes,
-            __resource_definitions))
+            __resource_definitions,
+            resource_definition.to_dict()))
 
     # The file from runtime properties. Not necessarily the file whose
     # resources we want to delete.
-    path, resource, adjacent_resources = \
-        retrieve_last_create_path(retrieve_path(kwargs))
+
+    try:
+        path, resource, adjacent_resources = \
+            retrieve_last_create_path(retrieve_path(kwargs))
+        resource_id = resource['metadata']['name']
+        resource_kind = resource['kind']
+        metadata = resource['metadata']
+    except (NonRecoverableError, KeyError):
+        adjacent_resources = {}
+        resource_definition, api_mapping = retrieve_stored_resource(
+            resource_definition, api_mapping, delete=True)
+        resource_id = resource_definition.metadata['name']
+    else:
+        api_version = resource.get('apiVersion') or \
+                      resource.get('api_version')
+        if not api_version:
+            raise NonRecoverableError(
+                'Received invalid resource '
+                'with no API version: {0}'.format(resource))
+        # The minimum requirements for building this object.
+        resource_definition = KubernetesResourceDefinition(
+            kind=resource_kind,
+            apiVersion=api_version,
+            metadata=metadata
+        )
+        api_mapping = mapping_by_kind(resource_definition)
 
     # We now want to see if the resource exists.
     try:
-        read_result = _do_resource_read(
-            client, api_mapping, resource['metadata']['name'], **kwargs)
-        ctx.logger.debug('Result: {0}'.format(read_result))
+        _do_resource_read(
+            client, api_mapping, resource_id, **kwargs)
     except (NonRecoverableError, KuberentesApiOperationError) as e:
         # The resource has been deleted, or something.
         if adjacent_resources and '(404)' in text_type(e):
@@ -441,34 +466,13 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
                 'Raising error: {0}'.format(text_type(e)))
     else:
         # We now know that the resource has not been deleted.
-        try:
-            resource_kind = resource['kind']
-            metadata = resource['metadata']
-        except KeyError:
-            resource_definition, api_mapping = retrieve_stored_resource(
-                resource_definition, api_mapping, delete=True)
-        else:
-            api_version = resource.get('apiVersion') or \
-                          resource.get('api_version')
-            if not api_version:
-                raise NonRecoverableError(
-                    'Received invalid resource '
-                    'with no API version: {0}'.format(resource))
-            # The minimum requirements for building this object.
-            resource_definition = KubernetesResourceDefinition(
-                kind=resource_kind,
-                apiVersion=api_version,
-                metadata=metadata
-            )
-            api_mapping = mapping_by_kind(resource_definition)
-        finally:
-            delete_response = _do_resource_delete(
-                client,
-                api_mapping,
-                resource_definition,
-                resource_definition.metadata['name'],
-                **kwargs
-            )
+        delete_response = _do_resource_delete(
+            client,
+            api_mapping,
+            resource_definition,
+            resource_definition.metadata['name'],
+            **kwargs
+        )
         # Since the resource has only been asyncronously deleted, we
         # need to put it back in all our runtime properties in order to
         # let it be deleted again only not to be restored.
@@ -483,9 +487,12 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
         raise OperationRetry('Delete response: {0}'.format(delete_response))
     # If I have not thought of another scenario, we need to go back and
     # read the logs.
-    ctx.logger.info('Indeed, we arrived here.')
-    for k, v in adjacent_resources.items():
-        store_result_for_retrieve_id(v, k)
+    if adjacent_resources:
+
+        ctx.logger.info('Indeed, we arrived here.')
+        for k, v in adjacent_resources.items():
+            store_result_for_retrieve_id(v, k)
+        raise OperationRetry('Retrying for adjacent resources.')
 
 
 def multiple_file_resource_create(**kwargs):
