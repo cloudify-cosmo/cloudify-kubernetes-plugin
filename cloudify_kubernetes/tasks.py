@@ -15,70 +15,36 @@
 # hack for import namespaced modules (google.auth)
 import cloudify_importer # noqa
 
-import re
-
 from cloudify import ctx
 from cloudify.exceptions import (
     OperationRetry,
     RecoverableError,
     NonRecoverableError)
 
-from .k8s import status_mapping
+from ._compat import text_type
+from .k8s import (status_mapping,
+                  KubernetesResourceDefinition)
+from .decorators import (resource_task,
+                         with_kubernetes_client)
+from .k8s.exceptions import KuberentesApiOperationError
 from .utils import (PERMIT_REDEFINE,
-                    DEFS,
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES,
+                    retrieve_id,
+                    retrieve_path,
+                    JsonCleanuper,
                     mapping_by_data,
                     mapping_by_kind,
-                    retrieve_path,
-                    resource_definition_from_blueprint,
-                    resource_definitions_from_file,
-                    JsonCleanuper,
+                    retrieve_stored_resource,
                     store_resource_definition,
-                    retrieve_stored_resource)
-from .k8s.exceptions import KuberentesApiOperationError
-from .decorators import (resource_task,
-                         with_kubernetes_client,
-                         INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
+                    retrieve_last_create_path,
+                    store_result_for_retrieve_id,
+                    resource_definitions_from_file,
+                    resource_definition_from_blueprint)
 
 
 DEFAULT_NAMESPACE = 'default'
 NODE_PROPERTY_FILES = 'files'
 NODE_PROPERTY_OPTIONS = 'options'
-FILENAMES = r'[A-Za-z0-9\.\_\-\/]*yaml\#[0-9]*'
-
-
-def _retrieve_id(resource_instance, filename=None, delete=False):
-
-    data = resource_instance.runtime_properties.get(
-        INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {})
-    matches = [re.match(FILENAMES, key) for key in data]
-
-    if filename and filename in data:
-        if delete:
-            resource = data.pop(filename)
-            return resource['metadata']['name']
-        return data[filename]['metadata']['name']
-    elif 'metadata' in data and not any(matches):
-        if delete:
-            resource = data.pop('metadata')
-            return resource['name']
-        return data['metadata']['name']
-    elif not ctx.node.properties[PERMIT_REDEFINE]:
-        if filename:
-            message = 'Filename {0} not found in ' \
-                      'kubernetes runtime property. '.format(filename)
-        else:
-            message = 'Node property {0} is not True. '.format(PERMIT_REDEFINE)
-    else:
-        resources = resource_instance.runtime_properties[DEFS]
-        if len(resources) > 0:
-            return resources[-1]['metadata']['name']
-        message = 'No suitable resource IDs found. '
-    ctx.logger.error(
-        'Cannot resolve which '
-        'resource to retrieve: ' + message + 'Available data: {0}'.format(data)
-    )
-    # Failure will come at a later time.
-    return
 
 
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
@@ -86,7 +52,6 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
         kwargs['namespace'] = DEFAULT_NAMESPACE
 
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    store_resource_definition(resource_definition)
 
     ctx.logger.debug('Node options {0}'.format(options))
     perform_task = ctx.instance.runtime_properties.get('__perform_task', False)
@@ -146,6 +111,14 @@ def _do_resource_status_check(resource_kind, response):
     return True
 
 
+def _check_if_resource_exists(client, api_mapping, resource_id, **kwargs):
+    try:
+        return _do_resource_read(client, api_mapping, resource_id, **kwargs)
+    except KuberentesApiOperationError:
+        ctx.logger.error('The resource {0} was not found.'.format(resource_id))
+        return
+
+
 def _do_resource_delete(client, api_mapping, resource_definition,
                         resource_id, **kwargs):
 
@@ -167,10 +140,6 @@ def _do_resource_delete(client, api_mapping, resource_definition,
     # The resource is not a type of ``ReplicationController`` then we must
     # pass all the required fields
 
-    resource_definition, api_mapping = \
-        retrieve_stored_resource(resource_definition, api_mapping)
-    if not resource_id:
-        resource_id = resource_definition.metadata['name']
     perform_task = ctx.instance.runtime_properties.get('__perform_task', False)
     if ctx.node.properties.get('use_external_resource') and not perform_task:
         return JsonCleanuper(client.read_resource(
@@ -193,13 +162,23 @@ def _do_resource_delete(client, api_mapping, resource_definition,
     use_existing=False,  # ignore already created
 )
 def resource_create(client, api_mapping, resource_definition, **kwargs):
-
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        _do_resource_create(
+    try:
+        result = _do_resource_create(
             client,
             api_mapping,
             resource_definition,
             **kwargs)
+    except KuberentesApiOperationError as e:
+        if '(409)' in text_type(e):
+            raise NonRecoverableError(
+                'The resource {0} already exists. '
+                'If you wish to use the existing resource, please toggle the '
+                'runtime property use_external_resource to true.'.format(
+                    resource_definition.to_dict()
+                )
+            )
+        raise e
+    store_result_for_retrieve_id(result)
 
 
 @with_kubernetes_client
@@ -207,6 +186,7 @@ def resource_create(client, api_mapping, resource_definition, **kwargs):
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
     use_existing=True,  # get current object
+    resource_state_function=_check_if_resource_exists
 )
 def resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
@@ -216,13 +196,12 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     read_response = _do_resource_read(
         client,
         api_mapping,
-        _retrieve_id(ctx.instance),
+        retrieve_id(),
         **kwargs
     )
 
     # Store read response.
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        read_response
+    store_result_for_retrieve_id(read_response)
 
     ctx.logger.info(
         'Resource definition: {0}'.format(read_response))
@@ -239,14 +218,15 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
     use_existing=True,  # get current object
+    resource_state_function=_check_if_resource_exists
 )
 def resource_update(client, api_mapping, resource_definition, **kwargs):
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        _do_resource_update(
-            client,
-            api_mapping,
-            resource_definition,
-            **kwargs)
+    result = _do_resource_update(
+        client,
+        api_mapping,
+        resource_definition,
+        **kwargs)
+    store_result_for_retrieve_id(result)
 
 
 @with_kubernetes_client
@@ -255,29 +235,28 @@ def resource_update(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_kind,
     use_existing=True,  # get current object
     cleanup_runtime_properties=True,  # remove on successful run
+    resource_state_function=_check_if_resource_exists
 )
 def resource_delete(client, api_mapping, resource_definition, **kwargs):
-
+    resource_id = retrieve_id(ctx.instance)
     try:
-        read_response = _do_resource_read(client,
-                                          api_mapping,
-                                          _retrieve_id(ctx.instance),
-                                          **kwargs)
-        ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] \
-            = read_response
+        read_result = _do_resource_read(
+            client, api_mapping, resource_id, **kwargs)
     except KuberentesApiOperationError as e:
-        if '"code":404' in str(e):
+        if '"code":404' in text_type(e):
             ctx.logger.debug(
-                'Ignoring error: {0}'.format(str(e)))
+                'Ignoring error: {0}'.format(text_type(e)))
         else:
             raise RecoverableError(
-                'Raising error: {0}'.format(str(e)))
+                'Raising error: {0}'.format(text_type(e)))
     else:
+        resource_definition, api_mapping = retrieve_stored_resource(
+            resource_definition, api_mapping, delete=True)
         delete_response = _do_resource_delete(
             client,
             api_mapping,
             resource_definition,
-            _retrieve_id(ctx.instance),
+            resource_definition.metadata['name'],
             **kwargs
         )
 
@@ -285,6 +264,7 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
                                                            False)
         if not ctx.node.properties.get(
                 'use_external_resource') and perform_task:
+            store_result_for_retrieve_id(read_result)
             raise OperationRetry(
                 'Delete response: {0}'.format(delete_response))
 
@@ -296,12 +276,12 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
     use_existing=False,  # ignore already created
 )
 def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
-        _do_resource_create(
-            client,
-            api_mapping,
-            resource_definition,
-            **kwargs)
+    result = _do_resource_create(
+        client,
+        api_mapping,
+        resource_definition,
+        **kwargs)
+    store_result_for_retrieve_id(result)
 
 
 @with_kubernetes_client
@@ -311,12 +291,13 @@ def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     use_existing=True,  # get current object
 )
 def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
-    ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = \
+    read_response = \
         _do_resource_update(
             client,
             api_mapping,
             resource_definition,
             **kwargs)
+    store_result_for_retrieve_id(read_response)
 
 
 @with_kubernetes_client
@@ -327,32 +308,32 @@ def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
     cleanup_runtime_properties=True,  # remove on successful run
 )
 def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
+    resource_id = retrieve_id()
     try:
-        read_response = _do_resource_read(client,
-                                          api_mapping,
-                                          _retrieve_id(ctx.instance),
-                                          **kwargs)
-        ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES] \
-            = read_response
+        read_result = _do_resource_read(
+            client, api_mapping, resource_id, **kwargs)
     except KuberentesApiOperationError as e:
-        if '"code":404' in str(e):
+        if '(404)' in text_type(e):
             ctx.logger.debug(
-                'Ignoring error: {0}'.format(str(e)))
+                'Ignoring error: {0}'.format(text_type(e)))
         else:
             raise RecoverableError(
-                'Raising error: {0}'.format(str(e)))
+                'Raising error: {0}'.format(text_type(e)))
     else:
+        resource_definition, api_mapping = retrieve_stored_resource(
+            resource_definition, api_mapping, delete=True)
         delete_response = _do_resource_delete(
             client,
             api_mapping,
             resource_definition,
-            _retrieve_id(ctx.instance),
+            resource_definition.metadata['name'],
             **kwargs
         )
         perform_task = ctx.instance.runtime_properties.get('__perform_task',
                                                            False)
         if not ctx.node.properties.get(
                 'use_external_resource') and perform_task:
+            store_result_for_retrieve_id(read_result)
             raise OperationRetry(
                 'Delete response: {0}'.format(delete_response))
 
@@ -364,30 +345,15 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
     use_existing=False,  # ignore already created
 )
 def file_resource_create(client, api_mapping, resource_definition, **kwargs):
+
     result = _do_resource_create(
         client,
         api_mapping,
         resource_definition,
         **kwargs
     )
-
-    if not isinstance(
-        ctx.instance.runtime_properties.get(
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES), dict
-    ):
-        ctx.instance.runtime_properties[
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {}
-
     path = retrieve_path(kwargs)
-    if path:
-        ctx.instance.runtime_properties[
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path] = result
-    else:
-        ctx.instance.runtime_properties[
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = result
-    # force save
-    ctx.instance.runtime_properties.dirty = True
-    ctx.instance.update()
+    store_result_for_retrieve_id(result, path)
 
 
 @with_kubernetes_client
@@ -400,31 +366,16 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
     path = retrieve_path(kwargs)
+    _, resource, _ = retrieve_last_create_path(retrieve_path(kwargs), delete=False)
 
     # Read All resources.
     read_response = _do_resource_read(
         client,
         api_mapping,
-        _retrieve_id(ctx.instance, path),
+        resource['metadata']['name'],
         **kwargs
     )
-
-    if not isinstance(
-        ctx.instance.runtime_properties.get(
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES), dict
-    ):
-        ctx.instance.runtime_properties[
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {}
-
-    if path:
-        ctx.instance.runtime_properties[
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path] = read_response
-    else:
-        ctx.instance.runtime_properties[
-            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = read_response
-    # force save
-    ctx.instance.runtime_properties.dirty = True
-    ctx.instance.update()
+    store_result_for_retrieve_id(read_response, path)
 
     resource_type = getattr(resource_definition, 'kind')
     if resource_type:
@@ -439,17 +390,102 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_kind,
     use_existing=True,  # get current object
     cleanup_runtime_properties=True,  # remove on successful run
+    resource_state_function=_check_if_resource_exists
 )
 def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
-    path = retrieve_path(kwargs)
+    """We want to delete the resources from the file that was created last
+    with this node template."""
 
-    _do_resource_delete(
-        client,
-        api_mapping,
-        resource_definition,
-        _retrieve_id(ctx.instance, path, delete=True),
-        **kwargs
-    )
+    kubernetes = ctx.instance.runtime_properties.get('kubernetes', {}).keys()
+    __resource_definitions = ctx.instance.runtime_properties.get(
+        '__resource_definitions', [])
+
+    ctx.logger.info(
+        'Start properties: \n\n'
+        '{0}\n\n'
+        '{1}'.format(
+            kubernetes,
+            __resource_definitions))
+
+    # The file from runtime properties. Not necessarily the file whose
+    # resources we want to delete.
+    path, resource, adjacent_resources = \
+        retrieve_last_create_path(retrieve_path(kwargs))
+
+    # We now want to see if the resource exists.
+    try:
+        read_result = _do_resource_read(
+            client, api_mapping, resource['metadata']['name'], **kwargs)
+        ctx.logger.debug('Result: {0}'.format(read_result))
+    except (NonRecoverableError, KuberentesApiOperationError) as e:
+        # The resource has been deleted, or something.
+        if adjacent_resources and '(404)' in text_type(e):
+            # We have resources from the same file, so we want to
+            # put them back into the "queue" of stuff to delete.
+            for k, v in adjacent_resources.items():
+                store_result_for_retrieve_id(v, k)
+            raise OperationRetry(
+                'Continue to deletion of adjacent resources: {0}'.format(
+                    text_type(e)))
+        elif '(404)' in text_type(e):
+            # The resource has been deleted and there are no adjacent
+            # resources (that we know of).
+            ctx.logger.debug(
+                'Ignoring error: {0}'.format(text_type(e)))
+        # elif PERMIT_REDEFINE in text_type(e):
+        #     ctx.logger.debug(
+        #         'Ignoring error: {0}'.format(text_type(e)))
+        else:
+            # Not sure what happened.
+            raise RecoverableError(
+                'Raising error: {0}'.format(text_type(e)))
+    else:
+        # We now know that the resource has not been deleted.
+        try:
+            resource_kind = resource['kind']
+            metadata = resource['metadata']
+        except KeyError:
+            resource_definition, api_mapping = retrieve_stored_resource(
+                resource_definition, api_mapping, delete=True)
+        else:
+            api_version = resource.get('apiVersion') or \
+                          resource.get('api_version')
+            if not api_version:
+                raise NonRecoverableError(
+                    'Received invalid resource '
+                    'with no API version: {0}'.format(resource))
+            # The minimum requirements for building this object.
+            resource_definition = KubernetesResourceDefinition(
+                kind=resource_kind,
+                apiVersion=api_version,
+                metadata=metadata
+            )
+            api_mapping = mapping_by_kind(resource_definition)
+        finally:
+            delete_response = _do_resource_delete(
+                client,
+                api_mapping,
+                resource_definition,
+                resource_definition.metadata['name'],
+                **kwargs
+            )
+        # Since the resource has only been asyncronously deleted, we
+        # need to put it back in all our runtime properties in order to
+        # let it be deleted again only not to be restored.
+        store_result_for_retrieve_id(
+            JsonCleanuper(resource_definition).to_dict(),
+            path
+        )
+        # Also the adjacent resources:
+        for k, v in adjacent_resources.items():
+            store_result_for_retrieve_id(v, k)
+        # And now, we rerun to hopefully fail.
+        raise OperationRetry('Delete response: {0}'.format(delete_response))
+    # If I have not thought of another scenario, we need to go back and
+    # read the logs.
+    ctx.logger.info('Indeed, we arrived here.')
+    for k, v in adjacent_resources.items():
+        store_result_for_retrieve_id(v, k)
 
 
 def multiple_file_resource_create(**kwargs):

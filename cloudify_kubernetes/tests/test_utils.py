@@ -194,20 +194,20 @@ class TestUtils(unittest.TestCase):
         self._prepare_context(with_api_mapping=False)
         mapping = self._prepare_mapping()
         self._assert_mapping(
-            utils.mapping_by_data(None, api_mapping=mapping)
+            utils.mapping_by_data(api_mapping=mapping)
         )
 
     def test_mapping_by_data_properties(self):
         self._prepare_context(with_api_mapping=True)
         self._assert_mapping(
-            utils.mapping_by_data(None)
+            utils.mapping_by_data()
         )
 
     def test_mapping_by_data_error(self):
         self._prepare_context(with_api_mapping=False)
 
         with self.assertRaises(KuberentesMappingNotFoundError):
-            utils.mapping_by_data(None)
+            utils.mapping_by_data()
 
     def test_mapping_by_kind(self):
         self._prepare_context(with_api_mapping=False)

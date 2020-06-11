@@ -14,25 +14,39 @@
 
 import inspect
 
-from kubernetes.client.rest import ApiException
 from kubernetes.client import V1DeleteOptions
+from kubernetes.client.rest import ApiException
 
+from .._compat import text_type
+from .operations import (KubernetesReadOperation,
+                         KubernetesDeleteOperation,
+                         KubernetesUpdateOperation,
+                         KubernetesCreateOperation)
 from .exceptions import (KuberentesApiOperationError,
                          KuberentesInvalidApiClassError,
                          KuberentesInvalidApiMethodError,
                          KuberentesInvalidPayloadClassError)
-from .operations import (KubernetesDeleteOperation,
-                         KubernetesReadOperation,
-                         KubernetesUpdateOperation,
-                         KubernetesCreateOperation)
 
 
 class KubernetesResourceDefinition(object):
 
-    def __init__(self, kind, apiVersion, metadata, spec=None, parameters=None,
-                 provisioner=None, data=None, roleRef=None, subjects=None,
-                 automountServiceAccountToken=False, imagePullSecrets=None,
-                 secrets=None, type=None, stringData=None, rules=None):
+    def __init__(self,
+                 kind,
+                 apiVersion,
+                 metadata,
+                 spec=None,
+                 parameters=None,
+                 provisioner=None,
+                 data=None,
+                 roleRef=None,
+                 subjects=None,
+                 automountServiceAccountToken=False,
+                 imagePullSecrets=None,
+                 secrets=None,
+                 type=None,
+                 stringData=None,
+                 rules=None):
+
         self.kind = kind.split('.')[-1]
         self.api_version = apiVersion
         self.metadata = metadata
@@ -172,7 +186,8 @@ class CloudifyKubernetesClient(object):
             return result
         except ApiException as e:
             raise KuberentesApiOperationError(
-                'Exception during Kubernetes API call: {0}'.format(str(e))
+                'Exception during Kubernetes API call: {0}'.format(
+                    text_type(e))
             )
 
     def create_resource(self, mapping, resource_definition, options):

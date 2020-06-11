@@ -6,7 +6,7 @@ imports:
 
 inputs:
 
-  configuration_file_content:
+  kubernetes_master:
     type: string
 
 node_templates:
@@ -14,18 +14,17 @@ node_templates:
   storage_class:
     type: cloudify.kubernetes.resources.StorageClass
     properties:
+      client_config:
+        authentication:
+          gcp_service_account: { get_secret: gcp_credentials }
+        configuration:
+          api_options:
+            host: { get_input: kubernetes_master }
+            verify_ssl: false
+            debug: false
       definition:
         apiVersion: storage.k8s.io/v1beta1
         kind: StorageClass
         metadata:
           name: standard
         provisioner: kubernetes.io/local
-    relationships:
-      - type: cloudify.kubernetes.relationships.managed_by_master
-        target: kubernetes
-
-  kubernetes:
-    type: cloudify.kubernetes.nodes.Master
-    properties:
-      configuration:
-        file_content: { get_input: configuration_file_content }
