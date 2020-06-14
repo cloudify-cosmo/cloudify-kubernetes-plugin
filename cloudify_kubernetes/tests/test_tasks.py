@@ -272,28 +272,28 @@ class TestTasks(unittest.TestCase):
 
     def test_retrieve_id_with_file(self):
         _, _ctx = self._prepare_master_node()
-        file_resource_name = 'test_file.yaml#0'
+        file_resource_name = 'test_file.yaml#1'
         file_resource_definition = json.loads(json.dumps({
-            'kind': 'Pod',
+            'kind': 'Service',
             'apiVersion': 'v1',
             'metadata': {'name': "id"}
         }))
-        adjacent_file_resource = 'test_file.yaml#1'
+        adjacent_file_resource = 'test_file.yaml#0'
         adjacent_file_resource_definition = json.loads(json.dumps({
-            'kind': 'Service',
+            'kind': 'Pod',
             'apiVersion': 'v1',
             'metadata': {'name': "id"}
         }))
         _ctx.instance.runtime_properties[
             INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {
-                file_resource_name: file_resource_definition,
-                adjacent_file_resource: adjacent_file_resource_definition
+                adjacent_file_resource: adjacent_file_resource_definition,
+            file_resource_name: file_resource_definition
         }
         expected = (file_resource_name,
                     file_resource_definition,
                     {adjacent_file_resource:
                      adjacent_file_resource_definition})
-        self.assertEqual(retrieve_last_create_path(),
+        self.assertEqual(retrieve_last_create_path(delete=True),
                          expected)
 
     def test_do_resource_status_check_unknown(self):

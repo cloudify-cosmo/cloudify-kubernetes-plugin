@@ -14,6 +14,7 @@
 #
 import os
 import sys
+from collections import OrderedDict
 
 import yaml
 from cloudify import ctx
@@ -54,15 +55,13 @@ def retrieve_path(kwargs):
 def retrieve_last_create_path(file_name=None, delete=True):
     """We want to find out the last path that was used to create resources."""
 
-    ctx.logger.info('Looking for file_name: {0}'.format(file_name))
-
     # The filename comes from the blueprint.
     # If this is a deployment update, the name of the file might have changed.
 
     # There are two places where data is stored about resources.
     # The first is by filename, plus the data from the file in the blueprint.
-    file_resources = ctx.instance.runtime_properties.get(
-        INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {})
+    file_resources = OrderedDict(ctx.instance.runtime_properties.get(
+        INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {}))
     # The second stores the defintion object.
     resource_definitions = ctx.instance.runtime_properties.get(DEFS, [])
 
@@ -84,17 +83,22 @@ def retrieve_last_create_path(file_name=None, delete=True):
         # If that's the case, then we get the most recently added resource
         # definition as the resource that we want to delete.
         try:
-            resource_definition = resource_definitions.pop()
+            if delete:
+                resource_definition = resource_definitions.pop()
+            else:
+                resource_definition = resource_definitions[-1]
         except IndexError:
             raise NonRecoverableError('No resource could be resolved.')
 
         # We now want to get the file that was in that resource.
-        for file_name, file_resource in list(file_resources.items()):
+        for file_name, file_resource in file_resources.items():
             if resource_definition['metadata']['name'] == \
                     file_resource['metadata']['name'] and \
                     resource_definition['kind'] == file_resource['kind']:
-                del file_resources[file_name]
                 break
+
+    if delete and file_name in file_resources:
+        del file_resources[file_name]
 
     resource_id = file_resource.get('metadata', {}).get('name')
     resource_kind = file_resource.get('kind')
@@ -105,9 +109,9 @@ def retrieve_last_create_path(file_name=None, delete=True):
         _r_name = _r['metadata']['name']
         if adjacent_file_name in _f and \
                 (_r_name != resource_id or _r['kind'] != resource_kind):
-            ctx.logger.info('updated ad res with {0}'.format({_f: _r}))
             adjacent_resources.update({_f: _r})
-            del file_resources[_f]
+            if delete:
+                del file_resources[_f]
 
     ctx.instance.runtime_properties[
         INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = file_resources
