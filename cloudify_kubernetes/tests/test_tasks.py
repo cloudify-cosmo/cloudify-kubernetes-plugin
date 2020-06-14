@@ -286,8 +286,8 @@ class TestTasks(unittest.TestCase):
         }))
         _ctx.instance.runtime_properties[
             INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {
-                adjacent_file_resource: adjacent_file_resource_definition,
                 file_resource_name: file_resource_definition,
+                adjacent_file_resource: adjacent_file_resource_definition
         }
         expected = (file_resource_name,
                     file_resource_definition,

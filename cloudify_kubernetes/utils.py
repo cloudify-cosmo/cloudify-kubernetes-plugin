@@ -101,7 +101,7 @@ def retrieve_last_create_path(file_name=None, delete=True):
 
     adjacent_file_name, _ = file_name.split('.yaml')
 
-    for _f, _r in (file_resources.items()):
+    for _f, _r in list(file_resources.items()):
         _r_name = _r['metadata']['name']
         if adjacent_file_name in _f and \
                 (_r_name != resource_id or _r['kind'] != resource_kind):
