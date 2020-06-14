@@ -20,15 +20,16 @@ from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
 
 from cloudify_kubernetes import utils
-from cloudify_kubernetes.k8s.client import KubernetesResourceDefinition
-from cloudify_kubernetes.k8s.exceptions import (
-    KuberentesInvalidDefinitionError,
-    KuberentesMappingNotFoundError
-)
+from cloudify.manager import DirtyTrackingDict
 from cloudify_kubernetes.k8s.mapping import (
     KubernetesSingleOperationApiMapping,
     KubernetesApiMapping
 )
+from cloudify_kubernetes.k8s.exceptions import (
+    KuberentesInvalidDefinitionError,
+    KuberentesMappingNotFoundError
+)
+from cloudify_kubernetes.k8s.client import KubernetesResourceDefinition
 
 
 class TestUtils(unittest.TestCase):
@@ -114,13 +115,13 @@ class TestUtils(unittest.TestCase):
             node_name="test_name",
             deployment_id="test_name",
             properties=properties,
-            runtime_properties={
+            runtime_properties=DirtyTrackingDict({
                 'kubernetes': {
                     'metadata': {
                         'name': "kubernetes_id"
                     }
                 }
-            },
+            }),
             relationships=[],
             operation={'retry_number': 0}
         )

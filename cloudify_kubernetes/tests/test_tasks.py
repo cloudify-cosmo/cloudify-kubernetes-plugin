@@ -25,8 +25,13 @@ from cloudify.exceptions import (RecoverableError,
                                  NonRecoverableError)
 
 import cloudify_kubernetes.tasks as tasks
+from cloudify_kubernetes.utils import (
+    INSTANCE_RUNTIME_PROPERTY_KUBERNETES,
+    retrieve_last_create_path,
+    retrieve_id)
 from cloudify_kubernetes.k8s.mapping import (
     KubernetesApiMapping,
+    SUPPORTED_API_MAPPINGS,
     KubernetesSingleOperationApiMapping
 )
 from cloudify_kubernetes._compat import text_type
@@ -62,6 +67,12 @@ spec:
     securityContext:
       privileged: true
 """
+
+RESPONSE = json.loads(json.dumps({
+    'kind': 'Pod',
+    'apiVersion': 'v1',
+    'metadata': {'name': 'a'},
+}))
 
 
 class TestTasks(unittest.TestCase):
@@ -112,20 +123,16 @@ class TestTasks(unittest.TestCase):
                 def to_dict(self):
                     return self.body, self.name, self.first
 
-            return _DelResult(body, name, first)
+            return MagicMock(return_value=RESPONSE)
 
-        def create_func(body, first):
+        def create_func(*args, **kwargs):
             mock = MagicMock()
-            mock.to_dict = MagicMock(return_value={
-                'body': body, 'first': first
-            })
+            mock.to_dict = MagicMock(return_value=RESPONSE)
             return mock
 
-        def update_func(body, first):
+        def update_func(*args, **kwargs):
             mock = MagicMock()
-            mock.to_dict = MagicMock(return_value={
-                'body': body, 'first': first
-            })
+            mock.to_dict = MagicMock(return_value=RESPONSE)
             return mock
 
         self.client_api.delete = del_func
@@ -137,7 +144,7 @@ class TestTasks(unittest.TestCase):
         )
 
         self.mock_client.api_payload_version = MagicMock(
-            return_value={'payload_param': 'payload_value'}
+            return_value=RESPONSE
         )
 
         self.patch_mock_loader = patch(
@@ -174,11 +181,12 @@ class TestTasks(unittest.TestCase):
             'use_external_resource': external,
             'validate_resource_status': True,
             'allow_node_redefinition': True,
-            'definition': {
+            'definition': json.loads(json.dumps({
+                'kind': 'Pod',
                 'apiVersion': 'v1',
-                'metadata': 'c',
+                'metadata': {'name': 'a'},
                 'spec': 'd'
-            },
+            })),
             'options': {
                 'first': 'second'
             }
@@ -193,7 +201,7 @@ class TestTasks(unittest.TestCase):
             deployment_id="test_name",
             properties=properties,
             runtime_properties=DirtyTrackingDict(
-                {} if create else {
+                {} if create else json.loads(json.dumps({
                     '__resource_definitions': [
                         {
                             'kind': 'Pod',
@@ -207,11 +215,13 @@ class TestTasks(unittest.TestCase):
                         }
                     ],
                     'kubernetes': {
+                        'kind': 'Pod',
+                        'apiVersion': 'v1',
                         'metadata': {
                             'name': "kubernetes_id"
                         }
                     }
-                }
+                }))
             ),
             relationships=[managed_master_node],
             operation={'retry_number': 0}
@@ -257,20 +267,34 @@ class TestTasks(unittest.TestCase):
 
     def test_retrieve_id(self):
         _, _ctx = self._prepare_master_node()
-        self.assertEqual(tasks._retrieve_id(_ctx.instance),
+        self.assertEqual(retrieve_id(),
                          'kubernetes_id')
 
     def test_retrieve_id_with_file(self):
         _, _ctx = self._prepare_master_node()
+        file_resource_name = 'test_file.yaml#0'
+        file_resource_definition = json.loads(json.dumps({
+            'kind': 'Pod',
+            'apiVersion': 'v1',
+            'metadata': {'name': "id"}
+        }))
+        adjacent_file_resource = 'test_file.yaml#1'
+        adjacent_file_resource_definition = json.loads(json.dumps({
+            'kind': 'Service',
+            'apiVersion': 'v1',
+            'metadata': {'name': "id"}
+        }))
         _ctx.instance.runtime_properties[
-            tasks.INSTANCE_RUNTIME_PROPERTY_KUBERNETES
-        ] = {"other_field": {
-            'metadata': {
-                'name': "id"
-            }
-        }}
-        self.assertEqual(tasks._retrieve_id(_ctx.instance, "other_field"),
-                         'id')
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES] = {
+                adjacent_file_resource: adjacent_file_resource_definition,
+                file_resource_name: file_resource_definition,
+        }
+        expected = (file_resource_name,
+                    file_resource_definition,
+                    {adjacent_file_resource:
+                     adjacent_file_resource_definition})
+        self.assertEqual(retrieve_last_create_path(),
+                         expected)
 
     def test_do_resource_status_check_unknown(self):
         # never raise exception on unknown types
@@ -680,23 +704,22 @@ class TestTasks(unittest.TestCase):
                 tasks.resource_create(
                     client=MagicMock(),
                     api_mapping=MagicMock(),
-                    resource_definition=MagicMock()
+                    resource_definition=None
                 )
 
-        self.assertEqual(_ctx.instance.runtime_properties, {
-            '__resource_definitions': [
-                {
-                    'kind': 'Pod',
-                    'spec': 'd',
-                    'apiVersion': 'v1',
-                    'metadata': 'c'
-                }
-            ],
-            'kubernetes': {
-                'body': {'payload_param': 'payload_value'},
-                'first': 'second'
-            }
-        })
+        self.assertDictEqual(
+            _ctx.instance.runtime_properties,
+            json.loads(json.dumps({
+                '__resource_definitions': [
+                    {
+                        'kind': 'Pod',
+                        'apiVersion': 'v1',
+                        'metadata': {'name': 'a'}
+                    }
+                ],
+                'kubernetes': RESPONSE
+            }))
+        )
 
     def test_resource_delete_RecoverableError(self):
         _, _ctx = self._prepare_master_node()
@@ -735,7 +758,7 @@ class TestTasks(unittest.TestCase):
                         tasks.resource_delete(
                             client=MagicMock(),
                             api_mapping=MagicMock(),
-                            resource_definition=MagicMock()
+                            resource_definition=None
                         )
 
     def test_custom_resource_create(self):
@@ -751,10 +774,14 @@ class TestTasks(unittest.TestCase):
 
         _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
         _ctx.download_resource_and_render = MagicMock(return_value="new_path")
+        defintion = KubernetesResourceDefinition(
+            **_ctx.node.properties['definition'])
 
-        expected_value = {
+        expected_value = json.loads(json.dumps({
+            'kind': 'Pod',
+            'apiVersion': 'v1',
             'metadata': {'name': 'check_id'}
-        }
+        }))
 
         class _Result(object):
             def to_dict(self):
@@ -778,52 +805,18 @@ class TestTasks(unittest.TestCase):
                     ) as file_mock:
                         tasks.file_resource_create(
                             client=client,
-                            api_mapping=None,
-                            resource_definition=None
+                            api_mapping=SUPPORTED_API_MAPPINGS['Pod'],
+                            resource_definition=defintion
                         )
                     file_mock.assert_called_with('new_path', 'rb')
+        expected_props = json.loads(json.dumps({
+            '__resource_definitions': [expected_value],
+            'kubernetes': {
+                'abc.yaml#0': expected_value,
+                'abc.yaml#1': expected_value}}))
         self.assertDictEqual(
             _ctx.instance.runtime_properties,
-            json.loads(json.dumps({
-                '__resource_definitions': [
-                    {
-                        'kind': 'Pod',
-                        'spec': {
-                            'containers': [
-                                {
-                                    'tty': True,
-                                    'securityContext': {'privileged': True},
-                                    'name': 'pod-c-1',
-                                    'command': ['/bin/bash'],
-                                    'image': 'centos:7',
-                                    'stdin': True
-                                }
-                            ]
-                        },
-                        'apiVersion': 'v1',
-                        'metadata': {'name': 'pod-c'}
-                    },
-                    {
-                        'kind': 'Pod',
-                        'spec': {
-                            'containers': [
-                                {
-                                    'tty': True,
-                                    'securityContext': {'privileged': True},
-                                    'name': 'pod-d-1',
-                                    'command': ['/bin/bash'],
-                                    'image': 'centos:7',
-                                    'stdin': True
-                                }
-                            ]
-                        },
-                        'apiVersion': 'v1',
-                        'metadata': {'name': 'pod-d'}
-                    }
-                ],
-                'kubernetes': {
-                    'abc.yaml#0': {'metadata': {'name': 'check_id'}},
-                    'abc.yaml#1': {'metadata': {'name': 'check_id'}}}})))
+            expected_props)
         self.assertEqual(client.create_resource.call_count, 2)
 
     def test_file_resource_create_empty_file(self):
@@ -914,13 +907,15 @@ class TestTasks(unittest.TestCase):
                             'cloudify_kubernetes.utils.open',
                             mock_open(read_data=FILE_YAML)
                     ) as file_mock:
-                        tasks.file_resource_delete(
-                            client=client,
-                            api_mapping=None,
-                            resource_definition=None
-                        )
+                        with self.assertRaises(OperationRetry):
+                            tasks.file_resource_delete(
+                                client=client,
+                                api_mapping=None,
+                                resource_definition=None
+                            )
+
                     file_mock.assert_called_with('new_path', 'rb')
-        self.assertEqual(client.delete_resource.call_count, 2)
+        self.assertEqual(client.delete_resource.call_count, 1)
 
     def test_multiple_file_resource_create(self):
         _, _ctx = self._prepare_master_node(create=True)
@@ -928,9 +923,14 @@ class TestTasks(unittest.TestCase):
         _ctx.node.properties['files'] = [{"resource_path": 'abc.yaml'}]
         _ctx.download_resource_and_render = MagicMock(return_value="new_path")
 
-        expected_value = {
+        defintion = KubernetesResourceDefinition(
+            **_ctx.node.properties['definition'])
+
+        expected_value = json.loads(json.dumps({
+            'kind': 'Pod',
+            'apiVersion': 'v1',
             'metadata': {'name': 'check_id'}
-        }
+        }))
 
         class _Result(object):
             def to_dict(self):
@@ -955,54 +955,25 @@ class TestTasks(unittest.TestCase):
                         tasks.multiple_file_resource_create(
                             client=client,
                             api_mapping=None,
-                            resource_definition=None
+                            resource_definition=[defintion]
                         )
                     file_mock.assert_called_with('new_path', 'rb')
-        self.assertEqual(_ctx.instance.runtime_properties, {
-            '__resource_definitions': [
-                {
-                    'kind': 'Pod',
-                    'spec': {
-                        'containers': [
-                            {
-                                'tty': True,
-                                'securityContext': {'privileged': True},
-                                'name': 'pod-c-1',
-                                'command': ['/bin/bash'],
-                                'image': 'centos:7',
-                                'stdin': True
-                            }
-                        ]
-                    },
-                    'apiVersion': 'v1',
-                    'metadata': {'name': 'pod-c'}
-                },
-                {
-                    'kind': 'Pod',
-                    'spec': {
-                        'containers': [
-                            {
-                                'tty': True,
-                                'securityContext': {'privileged': True},
-                                'name': 'pod-d-1',
-                                'command': ['/bin/bash'],
-                                'image': 'centos:7',
-                                'stdin': True
-                            }
-                        ]
-                    },
-                    'apiVersion': 'v1',
-                    'metadata': {'name': 'pod-d'}
-                }],
-            'kubernetes': {
-                'abc.yaml#0': {'metadata': {'name': 'check_id'}},
-                'abc.yaml#1': {'metadata': {'name': 'check_id'}}
-            }
-        })
+        self.assertEqual(
+            _ctx.instance.runtime_properties,
+            json.loads(json.dumps({
+                '__resource_definitions': [expected_value],
+                'kubernetes': {
+                    'abc.yaml#0': expected_value,
+                    'abc.yaml#1': expected_value
+                }
+            })))
         self.assertEqual(client.create_resource.call_count, 2)
 
     def test_multiple_file_resource_delete(self):
         _, _ctx = self._prepare_master_node()
+        defintion = KubernetesResourceDefinition(
+            **_ctx.node.properties['definition'])
+
         _ctx.instance.runtime_properties['kubernetes'] = {
             'abc.yaml#0': {
                 'metadata': {
@@ -1047,13 +1018,14 @@ class TestTasks(unittest.TestCase):
                             'cloudify_kubernetes.utils.open',
                             mock_open(read_data=FILE_YAML)
                     ) as file_mock:
-                        tasks.multiple_file_resource_delete(
-                            client=client,
-                            api_mapping=None,
-                            resource_definition=None
-                        )
+                        with self.assertRaises(OperationRetry):
+                            tasks.multiple_file_resource_delete(
+                                client=client,
+                                api_mapping=None,
+                                resource_definition=[defintion]
+                            )
                     file_mock.assert_called_with('new_path', 'rb')
-        self.assertEqual(client.delete_resource.call_count, 2)
+        self.assertEqual(client.delete_resource.call_count, 1)
 
 
 if __name__ == '__main__':

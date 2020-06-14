@@ -88,11 +88,8 @@ def retrieve_last_create_path(file_name=None, delete=True):
         except IndexError:
             raise NonRecoverableError('No resource could be resolved.')
 
-        ctx.logger.info('Except rd name {0}'.format(resource_definition['metadata']['name']))
-        ctx.logger.info('Except rd kind {0}'.format(resource_definition['kind']))
-
         # We now want to get the file that was in that resource.
-        for file_name, file_resource in (file_resources.items()):
+        for file_name, file_resource in list(file_resources.items()):
             if resource_definition['metadata']['name'] == \
                     file_resource['metadata']['name'] and \
                     resource_definition['kind'] == file_resource['kind']:
@@ -102,17 +99,12 @@ def retrieve_last_create_path(file_name=None, delete=True):
     resource_id = file_resource.get('metadata', {}).get('name')
     resource_kind = file_resource.get('kind')
 
-    ctx.logger.info('Except fr name {0}'.format(resource_id))
-    ctx.logger.info('Except fr kind {0}'.format(resource_kind))
-
     adjacent_file_name, _ = file_name.split('.yaml')
 
-    ctx.logger.info('File Resources before adjacent deal : {0}'.format(file_resources))
-
     for _f, _r in (file_resources.items()):
+        _r_name = _r['metadata']['name']
         if adjacent_file_name in _f and \
-                (_r['metadata']['name'] != resource_id or
-                 _r['kind'] != resource_kind    ):
+                (_r_name != resource_id or _r['kind'] != resource_kind):
             ctx.logger.info('updated ad res with {0}'.format({_f: _r}))
             adjacent_resources.update({_f: _r})
             del file_resources[_f]
@@ -124,10 +116,6 @@ def retrieve_last_create_path(file_name=None, delete=True):
     # force save
     ctx.instance.runtime_properties.dirty = True
     ctx.instance.update()
-
-    ctx.logger.info('file_name {0}'.format(file_name))
-    ctx.logger.info('file_resource {0}'.format(file_resource))
-    ctx.logger.info('adjacent_resources {0}'.format(adjacent_resources))
 
     return file_name, file_resource, adjacent_resources
 
@@ -325,7 +313,7 @@ def remove_resource_definition(resource_kind, resource_name):
 
 
 def retrieve_stored_resource(resource_definition, api_mapping, delete=False):
-    ctx.logger.info('Entering retrieve_stored_resource with {0}'.format((resource_definition, api_mapping, delete)))
+
     node_resource_definitions = ctx.instance.runtime_properties[DEFS]
     json_resource_definition = JsonCleanuper(resource_definition).to_dict()
     try:
@@ -358,7 +346,7 @@ def retrieve_stored_resource(resource_definition, api_mapping, delete=False):
             resource_definition.metadata['name'])
     ctx.instance.runtime_properties.dirty = True
     ctx.instance.update()
-    ctx.logger.info('LEaving retrieve_stored_resource with {0}'.format(ctx.instance.runtime_properties[DEFS]))
+
     return resource_definition, api_mapping
 
 
@@ -384,8 +372,6 @@ def retrieve_id(delete=False):
 
 
 def store_result_for_retrieve_id(result, path=None):
-
-    ctx.logger.info('store_result_for_retrieve_id result {0} path {1}.'.format(result, path))
 
     store_resource_definition(
         KubernetesResourceDefinition(

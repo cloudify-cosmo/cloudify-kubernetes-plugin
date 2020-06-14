@@ -28,14 +28,12 @@ from .decorators import (resource_task,
                          with_kubernetes_client)
 from .k8s.exceptions import KuberentesApiOperationError
 from .utils import (PERMIT_REDEFINE,
-                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES,
                     retrieve_id,
                     retrieve_path,
                     JsonCleanuper,
                     mapping_by_data,
                     mapping_by_kind,
                     retrieve_stored_resource,
-                    store_resource_definition,
                     retrieve_last_create_path,
                     store_result_for_retrieve_id,
                     resource_definitions_from_file,
@@ -366,7 +364,7 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
     path = retrieve_path(kwargs)
-    _, resource, _ = retrieve_last_create_path(retrieve_path(kwargs), delete=False)
+    _, resource, _ = retrieve_last_create_path(path, delete=False)
 
     # Read All resources.
     read_response = _do_resource_read(
@@ -396,25 +394,11 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
     """We want to delete the resources from the file that was created last
     with this node template."""
 
-    kubernetes = ctx.instance.runtime_properties.get('kubernetes', {}).keys()
-    __resource_definitions = ctx.instance.runtime_properties.get(
-        '__resource_definitions', [])
-
-    ctx.logger.info(
-        'Start properties: \n\n'
-        '{0}\n\n'
-        '{1}\n\n'
-        '{2}'.format(
-            kubernetes,
-            __resource_definitions,
-            resource_definition.to_dict()))
-
-    # The file from runtime properties. Not necessarily the file whose
-    # resources we want to delete.
+    path = retrieve_path(kwargs)
 
     try:
         path, resource, adjacent_resources = \
-            retrieve_last_create_path(retrieve_path(kwargs))
+            retrieve_last_create_path(path)
         resource_id = resource['metadata']['name']
         resource_kind = resource['kind']
         metadata = resource['metadata']
@@ -425,7 +409,7 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
         resource_id = resource_definition.metadata['name']
     else:
         api_version = resource.get('apiVersion') or \
-                      resource.get('api_version')
+            resource.get('api_version')
         if not api_version:
             raise NonRecoverableError(
                 'Received invalid resource '
