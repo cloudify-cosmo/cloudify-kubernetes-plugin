@@ -366,11 +366,16 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     path = retrieve_path(kwargs)
     _, resource, _ = retrieve_last_create_path(path, delete=False)
 
+    if resource:
+        resource_id = resource['metadata']['name']
+    else:
+        resource_id = resource_definition.metadata['name']
+
     # Read All resources.
     read_response = _do_resource_read(
         client,
         api_mapping,
-        resource['metadata']['name'],
+        resource_id,
         **kwargs
     )
     store_result_for_retrieve_id(read_response, path)
@@ -402,7 +407,7 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
         resource_id = resource['metadata']['name']
         resource_kind = resource['kind']
         metadata = resource['metadata']
-    except (NonRecoverableError, KeyError):
+    except (NonRecoverableError, TypeError, KeyError):
         adjacent_resources = {}
         resource_definition, api_mapping = retrieve_stored_resource(
             resource_definition, api_mapping, delete=True)

@@ -100,6 +100,9 @@ def retrieve_last_create_path(file_name=None, delete=True):
     if delete and file_name in file_resources:
         del file_resources[file_name]
 
+    if not file_resource:
+        return file_name, file_resource, adjacent_resources
+
     resource_id = file_resource.get('metadata', {}).get('name')
     resource_kind = file_resource.get('kind')
 

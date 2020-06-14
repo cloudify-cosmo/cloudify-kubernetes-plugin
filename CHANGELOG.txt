@@ -98,6 +98,6 @@
 2.7.2:
   - Support Python 3
 
-2.7.3:
+2.8.0:
   - Remove trailing slash in URL.
   - Support modifying a resource type and number during update workflow.
