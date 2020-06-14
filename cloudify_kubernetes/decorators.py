@@ -21,12 +21,14 @@ from cloudify.exceptions import (
 )
 from cloudify.decorators import operation
 
+from ._compat import text_type
 from .utils import (generate_traceback_exception,
                     retrieve_path,
                     get_node,
                     get_instance,
                     NODE_PROPERTY_FILE,
-                    NODE_PROPERTY_FILE_RESOURCE_PATH)
+                    NODE_PROPERTY_FILE_RESOURCE_PATH,
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
 from .k8s import (CloudifyKubernetesClient,
                   KubernetesApiAuthenticationVariants,
                   KubernetesApiConfigurationVariants,
@@ -41,7 +43,6 @@ NODE_PROPERTY_CONFIGURATION = 'configuration'
 RELATIONSHIP_TYPE_MANAGED_BY_MASTER = (
     'cloudify.kubernetes.relationships.managed_by_master'
 )
-INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
 
 
 def _retrieve_master(resource_instance):
@@ -74,8 +75,10 @@ def _retrieve_property(_ctx, property_name):
 
 
 def _multidefinition_resource_task(task, definitions, kwargs,
-                                   retrieve_mapping, use_existing=False,
-                                   cleanup_runtime_properties=False):
+                                   retrieve_mapping,
+                                   use_existing=False,
+                                   cleanup_runtime_properties=False,
+                                   resource_state_function=None):
     curr_num = 0
     # we have several definitions (not one!)
     multicalls = len(definitions) > 1
@@ -85,7 +88,7 @@ def _multidefinition_resource_task(task, definitions, kwargs,
         # save original path only in case multicalls
         origin_path = kwargs[
             NODE_PROPERTY_FILE].get(NODE_PROPERTY_FILE_RESOURCE_PATH)
-    elif NODE_PROPERTY_FILE in ctx.node.properties and multicalls:
+    elif NODE_PROPERTY_FILE in ctx.node.properties:
         # copy origin file name to kwargs
         kwargs[NODE_PROPERTY_FILE] = ctx.node.properties[NODE_PROPERTY_FILE]
         # save origin path
@@ -101,30 +104,46 @@ def _multidefinition_resource_task(task, definitions, kwargs,
             kwargs[NODE_PROPERTY_FILE][NODE_PROPERTY_FILE_RESOURCE_PATH] = (
                 "{name}#{curr_num}".format(
                     name=origin_path,
-                    curr_num=str(curr_num)
+                    curr_num=text_type(curr_num)
                 ))
             curr_num += 1
+
         # check current state
         path = retrieve_path(kwargs)
-        if path:
+        resource_id = definition.metadata.get('name')
+        if path and resource_state_function and resource_id:
+            current_state = resource_state_function(
+                resource_id=resource_id, **kwargs)
+        elif resource_state_function and resource_id:
+            current_state = resource_state_function(
+                resource_id=resource_id, **kwargs)
+        elif path:
             current_state = ctx.instance.runtime_properties.get(
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {}).get(path)
         else:
             current_state = ctx.instance.runtime_properties.get(
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
-        # ignore prexisted state
+
+        # ignore pre-existing state
         if not use_existing and current_state:
-            ctx.logger.info("Ignore existing object state")
-            continue
+            ctx.logger.info(
+                "The resource {0} unexpectedly exists. "
+                "Not executing operation.".format(definition.to_dict()))
+            ctx.instance.runtime_properties['__perform_task'] = False
         # ignore if we dont have any object yet
-        if use_existing and not current_state:
-            ctx.logger.info("Ignore unexisted object state")
-            continue
-        # finally run
+        elif use_existing and not current_state:
+            ctx.logger.info(
+                "Expected resource {0} to exist, but it does not. "
+                "Not executing operation.".format(definition.to_dict()))
+            ctx.instance.runtime_properties['__perform_task'] = False
+        else:
+            ctx.instance.runtime_properties['__perform_task'] = True
         task(**kwargs)
+        del ctx.instance.runtime_properties['__perform_task']
         # cleanup after successful run
         if current_state and cleanup_runtime_properties:
-            if path:
+            if path and path in ctx.instance.runtime_properties[
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES]:
                 del ctx.instance.runtime_properties[
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path]
             else:
@@ -143,9 +162,11 @@ def _multidefinition_resource_task(task, definitions, kwargs,
 
 def resource_task(retrieve_resource_definition=None,
                   retrieve_resources_definitions=None,
-                  retrieve_mapping=None, use_existing=False,
-                  cleanup_runtime_properties=False):
-    def decorator(task, **kwargs):
+                  retrieve_mapping=None,
+                  use_existing=False,
+                  cleanup_runtime_properties=False,
+                  resource_state_function=None):
+    def decorator(task, **_):
         def wrapper(**kwargs):
             try:
                 definitions = []
@@ -159,7 +180,9 @@ def resource_task(retrieve_resource_definition=None,
                 _multidefinition_resource_task(
                     task, definitions, kwargs, retrieve_mapping,
                     use_existing=use_existing,
-                    cleanup_runtime_properties=cleanup_runtime_properties)
+                    cleanup_runtime_properties=cleanup_runtime_properties,
+                    resource_state_function=resource_state_function
+                )
             except (KuberentesMappingNotFoundError,
                     KuberentesInvalidPayloadClassError,
                     KuberentesInvalidApiClassError,
@@ -202,7 +225,7 @@ def resource_task(retrieve_resource_definition=None,
     return decorator
 
 
-def with_kubernetes_client(function):
+def with_kubernetes_client(fn):
     def wrapper(**kwargs):
         configuration_property = _retrieve_property(
             ctx,
@@ -228,7 +251,7 @@ def with_kubernetes_client(function):
                 )
             )
 
-            function(**kwargs)
+            fn(**kwargs)
         except KuberentesApiInitializationFailedError as e:
             error_traceback = generate_traceback_exception()
             ctx.logger.error(

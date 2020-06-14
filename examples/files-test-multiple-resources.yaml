@@ -4,24 +4,26 @@ imports:
   - http://www.getcloudify.org/spec/cloudify/5.0.0/types.yaml
   - plugin:cloudify-kubernetes-plugin
 
-node_templates:
+inputs:
+  kubernetes_master:
+    type: string
 
-  master:
-    type: cloudify.kubernetes.nodes.Master
-    properties:
-      configuration:
-        api_options:
-          host: { concat: [ 'https://', { get_secret: kubernetes_master_ip }, ':', { get_secret: kubernetes_master_port } ] }
-          api_key: { get_secret: kubernetes_token }
-          debug: false
-          verify_ssl: false
+  resources:
+    default:
+        - resource_path: resources/pod-a.yaml
+        - resource_path: resources/pod-b.yaml
+
+node_templates:
 
   pods:
     type: cloudify.kubernetes.resources.MultipleFileDefinedResources
     properties:
-      files:
-        - resource_path: resources/pv.yaml
-        - resource_path: resources/pvc.yaml
-    relationships:
-      - type: cloudify.kubernetes.relationships.managed_by_master
-        target: master
+      client_config:
+        authentication:
+          gcp_service_account: { get_secret: gcp_credentials }
+        configuration:
+          api_options:
+            host: { get_input: kubernetes_master }
+            verify_ssl: false
+            debug: false
+      files: { get_input: resources }

@@ -22,7 +22,8 @@ from cloudify.state import current_ctx
 
 import cloudify_kubernetes.decorators as decorators
 from cloudify_kubernetes.k8s import (CloudifyKubernetesClient,
-                                     KuberentesInvalidApiMethodError)
+                                     KuberentesInvalidApiMethodError,
+                                     KubernetesResourceDefinition)
 
 
 class TestDecorators(unittest.TestCase):
@@ -43,8 +44,9 @@ class TestDecorators(unittest.TestCase):
         properties_dict = {
             'definition': {
                 'apiVersion': 'v1',
-                'metadata': 'c',
+                'metadata': {'name': 'c'},
                 'spec': 'd',
+                'kind': 'pod'
             },
             'api_mapping': {
                 'create': {
@@ -100,11 +102,14 @@ class TestDecorators(unittest.TestCase):
         mock_isfile = MagicMock(return_value=True)
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
+        defintion = KubernetesResourceDefinition(
+            **_ctx.node.properties['definition'])
+
         with patch('os.path.isfile', mock_isfile):
             with self.assertRaises(NonRecoverableError) as error:
                 decorators.resource_task(
                     retrieve_resources_definitions=MagicMock(
-                        return_value=[{}]),
+                        return_value=[defintion]),
                     retrieve_mapping=MagicMock(),
                     use_existing=True
                 )(
@@ -127,11 +132,14 @@ class TestDecorators(unittest.TestCase):
         mock_isfile = MagicMock(return_value=True)
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
+        defintion = KubernetesResourceDefinition(
+            **_ctx.node.properties['definition'])
+
         with patch('os.path.isfile', mock_isfile):
             with self.assertRaises(RecoverableError) as error:
                 decorators.resource_task(
                     retrieve_resources_definitions=MagicMock(
-                        return_value=[{}]),
+                        return_value=[defintion]),
                     retrieve_mapping=MagicMock(),
                     use_existing=True
                 )(
@@ -154,11 +162,14 @@ class TestDecorators(unittest.TestCase):
         mock_isfile = MagicMock(return_value=True)
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
+        defintion = KubernetesResourceDefinition(
+            **_ctx.node.properties['definition'])
+
         with patch('os.path.isfile', mock_isfile):
             with self.assertRaises(NonRecoverableError) as error:
                 decorators.resource_task(
                     retrieve_resources_definitions=MagicMock(
-                        return_value=[{}]),
+                        return_value=[defintion]),
                     retrieve_mapping=MagicMock(),
                     use_existing=True
                 )(

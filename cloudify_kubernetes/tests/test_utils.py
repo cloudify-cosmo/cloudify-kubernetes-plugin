@@ -20,15 +20,16 @@ from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
 
 from cloudify_kubernetes import utils
-from cloudify_kubernetes.k8s.client import KubernetesResourceDefinition
-from cloudify_kubernetes.k8s.exceptions import (
-    KuberentesInvalidDefinitionError,
-    KuberentesMappingNotFoundError
-)
+from cloudify.manager import DirtyTrackingDict
 from cloudify_kubernetes.k8s.mapping import (
     KubernetesSingleOperationApiMapping,
     KubernetesApiMapping
 )
+from cloudify_kubernetes.k8s.exceptions import (
+    KuberentesInvalidDefinitionError,
+    KuberentesMappingNotFoundError
+)
+from cloudify_kubernetes.k8s.client import KubernetesResourceDefinition
 
 
 class TestUtils(unittest.TestCase):
@@ -90,6 +91,7 @@ class TestUtils(unittest.TestCase):
                          kind=None):
 
         properties = {
+            'allow_node_redefinition': True,
             'options': {
                 'first': 'second'
             }
@@ -113,13 +115,13 @@ class TestUtils(unittest.TestCase):
             node_name="test_name",
             deployment_id="test_name",
             properties=properties,
-            runtime_properties={
+            runtime_properties=DirtyTrackingDict({
                 'kubernetes': {
                     'metadata': {
                         'name': "kubernetes_id"
                     }
                 }
-            },
+            }),
             relationships=[],
             operation={'retry_number': 0}
         )
@@ -193,20 +195,20 @@ class TestUtils(unittest.TestCase):
         self._prepare_context(with_api_mapping=False)
         mapping = self._prepare_mapping()
         self._assert_mapping(
-            utils.mapping_by_data(None, api_mapping=mapping)
+            utils.mapping_by_data(api_mapping=mapping)
         )
 
     def test_mapping_by_data_properties(self):
         self._prepare_context(with_api_mapping=True)
         self._assert_mapping(
-            utils.mapping_by_data(None)
+            utils.mapping_by_data()
         )
 
     def test_mapping_by_data_error(self):
         self._prepare_context(with_api_mapping=False)
 
         with self.assertRaises(KuberentesMappingNotFoundError):
-            utils.mapping_by_data(None)
+            utils.mapping_by_data()
 
     def test_mapping_by_kind(self):
         self._prepare_context(with_api_mapping=False)
@@ -434,6 +436,99 @@ class TestUtils(unittest.TestCase):
                 }
             }
         )
+
+    def test_resource_definition_storage_from_blueprint(self):
+        _ctx = self._prepare_context(with_definition=True)
+        definition = {
+            'apiVersion': 'v1',
+            'metadata': 'cc',
+            'spec': 'dd',
+            'kind': 'Deployment'
+        }
+        result_from_blueprint = utils.resource_definition_from_blueprint(
+            definition=definition
+        )
+        utils.store_resource_definition(result_from_blueprint)
+        self.assertIn('__resource_definitions',
+                      _ctx.instance.runtime_properties)
+        self.assertDictEqual(
+            definition,
+            _ctx.instance.runtime_properties['__resource_definitions'][0]
+        )
+        mock_mapping = KubernetesApiMapping(**self._prepare_mapping())
+        result_from_storage, mapping_from_storage = \
+            utils.retrieve_stored_resource(result_from_blueprint,
+                                           mock_mapping)
+        self.assertEqual(result_from_blueprint, result_from_storage)
+        self.assertTrue(isinstance(
+            mapping_from_storage, KubernetesApiMapping))
+
+    def test_resource_definition_storage_from_file(self):
+        _ctx = self._prepare_context(with_definition=False)
+
+        kwargs = {
+            'file': {
+                'resource_path': 'path'
+            }
+        }
+
+        definition1 = json.loads(json.dumps({
+            'apiVersion': 'v1',
+            'metadata': {'name': 'MyDeployment'},
+            'spec': 'dd',
+            'kind': 'Deployment'
+        }))
+
+        definition2 = json.loads(json.dumps({
+            'apiVersion': 'v1',
+            'metadata': {'name': 'MyService'},
+            'spec': 'ss',
+            'kind': 'Service'
+        }))
+
+        definition3 = json.loads(json.dumps({
+            'apiVersion': 'v1',
+            'metadata': {'name': 'MyIngress'},
+            'spec': 'ii',
+            'kind': 'Ingress'
+        }))
+
+        def _mocked_yaml_from_files(
+            resource_path,
+            target_path=None,
+            template_variables=None
+        ):
+            if resource_path == 'path':
+                return [definition1, definition2, definition3]
+
+        with patch(
+                'cloudify_kubernetes.utils._yaml_from_files',
+                _mocked_yaml_from_files
+        ):
+            results_from_file = utils.resource_definitions_from_file(**kwargs)
+            for rs in results_from_file:
+                utils.store_resource_definition(rs)
+            self.assertIn('__resource_definitions',
+                          _ctx.instance.runtime_properties)
+            self.assertDictEqual(
+                definition1,
+                _ctx.instance.runtime_properties['__resource_definitions'][0]
+            )
+            self.assertDictEqual(
+                definition2,
+                _ctx.instance.runtime_properties['__resource_definitions'][1]
+            )
+            self.assertDictEqual(
+                definition3,
+                _ctx.instance.runtime_properties['__resource_definitions'][2]
+            )
+            results_from_file.reverse()
+            mock_mapping = KubernetesApiMapping(**self._prepare_mapping())
+            for result_from_file in results_from_file:
+                result_from_storage, _ = \
+                    utils.retrieve_stored_resource(result_from_file,
+                                                   mock_mapping)
+                self.assertEqual(result_from_file, result_from_storage)
 
 
 if __name__ == '__main__':

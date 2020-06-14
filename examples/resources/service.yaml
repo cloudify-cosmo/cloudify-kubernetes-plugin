@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: wordpress
+  name: nginx-test-service
   labels:
     app: wordpress
 spec:
