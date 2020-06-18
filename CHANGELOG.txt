@@ -101,3 +101,6 @@
 2.8.0:
   - Remove trailing slash in URL.
   - Support modifying a resource type and number during update workflow.
+
+2.8.1:
+  - Update wagon builder to py2py3 wagon.
