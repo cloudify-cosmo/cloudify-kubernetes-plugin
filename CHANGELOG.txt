@@ -104,3 +104,4 @@
 
 2.8.1:
   - Update wagon builder to py2py3 wagon.
+  - Add 5.1.0 integration tests.
