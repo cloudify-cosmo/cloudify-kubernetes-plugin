@@ -158,6 +158,7 @@ def _do_resource_delete(client, api_mapping, resource_definition,
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
     use_existing=False,  # ignore already created
+    resource_state_function=_check_if_resource_exists
 )
 def resource_create(client, api_mapping, resource_definition, **kwargs):
     try:
@@ -272,6 +273,7 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_data,
     use_existing=False,  # ignore already created
+    resource_state_function=_check_if_resource_exists
 )
 def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     result = _do_resource_create(
@@ -304,6 +306,7 @@ def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_data,
     use_existing=True,  # get current object
     cleanup_runtime_properties=True,  # remove on successful run
+    resource_state_function=_check_if_resource_exists
 )
 def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
     resource_id = retrieve_id()
