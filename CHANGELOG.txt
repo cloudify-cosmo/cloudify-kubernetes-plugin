@@ -105,3 +105,6 @@
 2.8.1:
   - Update wagon builder to py2py3 wagon.
   - Add 5.1.0 integration tests.
+
+2.8.2:
+  - Add resource_state_function to resource_create,custom_resource_create and custom_resource_delete.
