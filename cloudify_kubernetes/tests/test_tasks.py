@@ -293,8 +293,15 @@ class TestTasks(unittest.TestCase):
                     file_resource_definition,
                     {adjacent_file_resource:
                      adjacent_file_resource_definition})
-        self.assertEqual(retrieve_last_create_path(delete=True),
-                         expected)
+        expected_b = (adjacent_file_resource,
+                      adjacent_file_resource_definition,
+                      {file_resource_name:
+                       file_resource_definition})
+        result = retrieve_last_create_path(delete=True)
+        try:
+            self.assertEqual(result, expected)
+        except AssertionError:
+            self.assertEqual(result, expected_b)
 
     def test_do_resource_status_check_unknown(self):
         # never raise exception on unknown types
@@ -701,11 +708,14 @@ class TestTasks(unittest.TestCase):
                     'kubernetes.config.load_kube_config',
                     MagicMock()
             ):
-                tasks.resource_create(
-                    client=MagicMock(),
-                    api_mapping=MagicMock(),
-                    resource_definition=None
-                )
+                with patch(
+                        'cloudify_kubernetes.tasks._do_resource_read',
+                        MagicMock()):
+                    tasks.resource_create(
+                        client=MagicMock(),
+                        api_mapping=MagicMock(),
+                        resource_definition=None
+                    )
 
         self.assertDictEqual(
             _ctx.instance.runtime_properties,
