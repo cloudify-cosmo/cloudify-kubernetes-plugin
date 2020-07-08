@@ -22,27 +22,11 @@ from ecosystem_tests.dorkl import (
     cleanup_on_failure, prepare_test
 )
 
-'''Temporary until all the plugins in the bundle will 
-released with py2py3 wagons'''
-UT_VERSION = '1.23.5'
-UT_WAGON = 'https://github.com/cloudify-incubator/cloudify-utilities-plugin/' \
-           'releases/download/{v}/cloudify_utilities_plugin-{v}-centos' \
-           '-Core-py27.py36-none-linux_x86_64.wgn'.format(v=UT_VERSION)
-UT_PLUGIN = 'https://github.com/cloudify-incubator/cloudify-utilities-' \
-            'plugin/releases/download/{v}/plugin.yaml'.format(v=UT_VERSION)
-GCP_VERSION = '1.6.6'
-GCP_WAGON = 'https://github.com/cloudify-cosmo/cloudify-gcp-plugin/' \
-            'releases/download/{v}/cloudify_gcp_plugin-{v}-centos-' \
-            'Core-py27.py36-none-linux_x86_64.wgn'.format(v=GCP_VERSION)
-GCP_PLUGIN = 'https://github.com/cloudify-cosmo/cloudify-gcp-plugin/releases/' \
-             'download/{v}/plugin.yaml'.format(v=GCP_VERSION)
-PLUGINS_TO_UPLOAD = [(UT_WAGON, UT_PLUGIN), (GCP_WAGON, GCP_PLUGIN)]
 SECRETS_TO_CREATE = {
     'gcp_credentials': True
 }
 
-prepare_test(plugins=PLUGINS_TO_UPLOAD, secrets=SECRETS_TO_CREATE,
-             execute_bundle_upload=False)
+prepare_test(secrets=SECRETS_TO_CREATE)
 
 blueprint_list = ['examples/blueprint-examples/'
                   'kubernetes/gcp-gke/blueprint.yaml']
