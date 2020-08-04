@@ -217,8 +217,8 @@ def get_definition_object(**kwargs):
 
 def validate_resource_definition(resource_definition):
     if not (
-            API_VERSION_DEFINITION in resource_definition and
-            METADATA_DEFINITION in resource_definition):
+            API_VERSION_DEFINITION in resource_definition
+            and METADATA_DEFINITION in resource_definition):
         raise KuberentesInvalidDefinitionError(
             'Incorrect format of resource definition, {0} or {1} '
             'are missing'.format(
