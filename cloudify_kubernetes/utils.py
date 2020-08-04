@@ -44,6 +44,8 @@ DEFS = '__resource_definitions'
 PERMIT_REDEFINE = 'allow_node_redefinition'
 INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
 FILENAMES = r'[A-Za-z0-9\.\_\-\/]*yaml\#[0-9]*'
+API_VERSION_DEFINITION = "apiVersion"
+METADATA_DEFINITION = "metadata"
 
 
 def retrieve_path(kwargs):
@@ -213,8 +215,18 @@ def get_definition_object(**kwargs):
     return definition
 
 
+def validate_resource_definition(resource_definition):
+    if not (API_VERSION_DEFINITION in resource_definition and METADATA_DEFINITION in resource_definition):
+        raise KuberentesInvalidDefinitionError(
+            'Incorrect format of resource definition, {0} or {1} are missing'.format(API_VERSION_DEFINITION,
+                                                                                     METADATA_DEFINITION)
+        )
+    return resource_definition
+
+
 def resource_definition_from_blueprint(**kwargs):
     definition = get_definition_object(**kwargs)
+    validate_resource_definition(definition)
     return KubernetesResourceDefinition(**definition)
 
 
@@ -229,7 +241,7 @@ def resource_definitions_from_file(**kwargs):
             'Invalid resource file definition.'
         )
 
-    return [KubernetesResourceDefinition(**definition)
+    return [KubernetesResourceDefinition(**validate_resource_definition(definition))
             for definition in _yaml_from_files(**file_resource)]
 
 
