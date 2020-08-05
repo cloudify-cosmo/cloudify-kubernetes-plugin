@@ -108,3 +108,6 @@
 
 2.8.2:
   - Add resource_state_function to resource_create,custom_resource_create and custom_resource_delete.
+
+2.8.3:
+  - Add simple validation on resource definition fields.

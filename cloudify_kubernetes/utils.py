@@ -46,6 +46,7 @@ INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
 FILENAMES = r'[A-Za-z0-9\.\_\-\/]*yaml\#[0-9]*'
 API_VERSION_DEFINITION = "apiVersion"
 METADATA_DEFINITION = "metadata"
+KIND_DEFINITION = "kind"
 
 
 def retrieve_path(kwargs):
@@ -216,12 +217,15 @@ def get_definition_object(**kwargs):
 
 
 def validate_resource_definition(resource_definition):
-    if API_VERSION_DEFINITION not in resource_definition or \
-            METADATA_DEFINITION not in resource_definition:
-        raise KuberentesInvalidDefinitionError(
-            'Incorrect format of resource definition, {0} or {1} '
-            'are missing'.format(
-                API_VERSION_DEFINITION, METADATA_DEFINITION))
+    for field in [KIND_DEFINITION, API_VERSION_DEFINITION,
+                  METADATA_DEFINITION]:
+        if field not in resource_definition:
+            raise KuberentesInvalidDefinitionError(
+                'Incorrect format of resource definition,one or more of: {0}, '
+                '{1}, {2} '
+                'are missing'.format(
+                    API_VERSION_DEFINITION, METADATA_DEFINITION,
+                    KIND_DEFINITION))
     return resource_definition
 
 
