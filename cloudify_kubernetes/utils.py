@@ -229,9 +229,8 @@ def resource_definitions_from_file(**kwargs):
             'Invalid resource file definition.'
         )
 
-    return [
-        KubernetesResourceDefinition(**definition)
-        for definition in _yaml_from_files(**file_resource)]
+    return [KubernetesResourceDefinition(**definition)
+            for definition in _yaml_from_files(**file_resource)]
 
 
 def get_instance(_ctx):
