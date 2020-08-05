@@ -52,7 +52,8 @@ class KubernetesResourceDefinition(object):
                  type=None,
                  stringData=None,
                  rules=None):
-        if not (kind and apiVersion and metadata):
+
+        if kind is None or apiVersion is None or metadata is None:
             raise KuberentesInvalidDefinitionError(
                 'Incorrect format of resource definition,one or more '
                 'of: {0}, '
