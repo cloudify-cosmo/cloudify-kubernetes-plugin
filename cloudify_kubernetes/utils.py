@@ -223,7 +223,7 @@ def validate_resource_definition(resource_definition):
             raise KuberentesInvalidDefinitionError(
                 'Incorrect format of resource definition,one or more of: {0}, '
                 '{1}, {2} '
-                'are missing'.format(
+                'are missing.'.format(
                     API_VERSION_DEFINITION, METADATA_DEFINITION,
                     KIND_DEFINITION))
     return resource_definition
