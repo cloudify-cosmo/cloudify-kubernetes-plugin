@@ -25,15 +25,21 @@ from .operations import (KubernetesReadOperation,
 from .exceptions import (KuberentesApiOperationError,
                          KuberentesInvalidApiClassError,
                          KuberentesInvalidApiMethodError,
-                         KuberentesInvalidPayloadClassError)
+                         KuberentesInvalidPayloadClassError,
+                         KuberentesInvalidDefinitionError
+                         )
+
+API_VERSION_DEFINITION = "apiVersion"
+METADATA_DEFINITION = "metadata"
+KIND_DEFINITION = "kind"
 
 
 class KubernetesResourceDefinition(object):
 
     def __init__(self,
-                 kind,
-                 apiVersion,
-                 metadata,
+                 kind=None,
+                 apiVersion=None,
+                 metadata=None,
                  spec=None,
                  parameters=None,
                  provisioner=None,
@@ -46,6 +52,15 @@ class KubernetesResourceDefinition(object):
                  type=None,
                  stringData=None,
                  rules=None):
+
+        if kind is None or apiVersion is None or metadata is None:
+            raise KuberentesInvalidDefinitionError(
+                'Incorrect format of resource definition,one or more '
+                'of: {0}, '
+                '{1}, {2} '
+                'are missing.'.format(
+                    API_VERSION_DEFINITION, METADATA_DEFINITION,
+                    KIND_DEFINITION))
 
         self.kind = kind.split('.')[-1]
         self.api_version = apiVersion
