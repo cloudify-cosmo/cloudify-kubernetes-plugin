@@ -111,3 +111,7 @@
 
 2.8.3:
   - Add simple validation on resource definition fields.
+
+2.9.0:
+  - Resolve resource uniqueness on name, kind, and namespace.
+  - Namespace resolution feature.

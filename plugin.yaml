@@ -3,8 +3,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.8.3'
-    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.8.3.zip
+    package_version: '2.9.0'
+    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.9.0.zip
 
 data_types:
 
@@ -327,6 +327,11 @@ node_types:
         description: >
           Permit changing the name and kind and number of resources defined in file.
         default: true
+      options:
+        description: >
+          API options depending on API operations execution
+        default:
+          namespace: default
 
   cloudify.kubernetes.resources.ResourceWithValidateStatus:
     derived_from: cloudify.kubernetes.resources.ResourceBase
@@ -347,11 +352,6 @@ node_types:
         type: cloudify.kubernetes.types.ResourceDefinition
         description: >
           Definition of resource object using native Kubernetes YAML spec
-      options:
-        description: >
-          API options depending on API operations execution
-        default:
-          namespace: default
     interfaces:
       cloudify.interfaces.lifecycle:
         create:
