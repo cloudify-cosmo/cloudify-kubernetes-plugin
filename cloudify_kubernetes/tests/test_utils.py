@@ -32,6 +32,24 @@ from cloudify_kubernetes.k8s.exceptions import (
 from cloudify_kubernetes.k8s.client import KubernetesResourceDefinition
 
 
+file_resources = """
+apiVersion: v1
+kind: Service
+metadata:
+  name: foo
+  namespace: bar
+spec: c
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bar
+  namespace: foo
+spec: d
+---
+"""
+
+
 class TestUtils(unittest.TestCase):
 
     def _assert_mapping(self, mapping):
@@ -173,7 +191,7 @@ class TestUtils(unittest.TestCase):
         )
 
     def test_yaml_from_files(self):
-        yaml_data = 'test: \n  a: 1 \n  b: 2'
+        yaml_data = 'test: \n  a: 1 \n  b: 2\n---'
 
         _ctx = MockCloudifyContext()
         _ctx.download_resource_and_render = \
@@ -188,7 +206,8 @@ class TestUtils(unittest.TestCase):
         ) as file_mock:
             result = utils._yaml_from_files('path')
 
-            self.assertEquals(list(result), [{'test': {'a': 1, 'b': 2}}])
+            self.assertEquals(list(result),
+                              [{'test': {'a': 1, 'b': 2, }}, None])
             file_mock.assert_called_once_with('local_path', 'rb')
 
     def test_mapping_by_data_kwargs(self):
@@ -314,33 +333,28 @@ class TestUtils(unittest.TestCase):
             }
         }
 
-        def _mocked_yaml_from_files(
-            resource_path,
-            target_path=None,
-            template_variables=None
-        ):
-            if resource_path == 'path':
-                return [{
-                    'apiVersion': 'v1',
-                    'kind': 'PersistentVolume',
-                    'metadata': 'a',
-                    'spec': 'b'
-                }]
-
-        with patch(
-                'cloudify_kubernetes.utils._yaml_from_files',
-                _mocked_yaml_from_files
-        ):
-            result = utils.resource_definitions_from_file(
-                **kwargs
-            )
+        with patch("cloudify_kubernetes.utils.open",
+                   mock_open(read_data=file_resources)) as _:
+            with patch('cloudify.ctx.download_resource_and_render'):
+                with patch('os.path.isfile'):
+                    with patch('os.path.getsize'):
+                        result = utils.resource_definitions_from_file(**kwargs)
 
             self.assertTrue(isinstance(result[0],
                                        KubernetesResourceDefinition))
-            self.assertEquals(result[0].kind, 'PersistentVolume')
+            self.assertEquals(result[0].kind, 'Service')
             self.assertEquals(result[0].api_version, 'v1')
-            self.assertEquals(result[0].metadata, 'a')
-            self.assertEquals(result[0].spec, 'b')
+            self.assertEquals(result[0].metadata,
+                              {'namespace': 'bar', 'name': 'foo'})
+            self.assertEquals(result[0].spec, 'c')
+
+            self.assertTrue(isinstance(result[1],
+                                       KubernetesResourceDefinition))
+            self.assertEquals(result[1].kind, 'Pod')
+            self.assertEquals(result[1].api_version, 'v1')
+            self.assertEquals(result[1].metadata,
+                              {'namespace': 'foo', 'name': 'bar'})
+            self.assertEquals(result[1].spec, 'd')
 
     def test_resource_definitions_from_file_properties(self):
         _ctx = MockCloudifyContext(

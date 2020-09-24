@@ -92,8 +92,7 @@
   - added client_config property to all resources
 
 2.7.1:
-  - added cloudify.kubernetes.resources.ResourceWithValidateStatus to handle all the resources that
-  didnt derived from ResourceBase type.
+  - added cloudify.kubernetes.resources.ResourceWithValidateStatus to handle all the resources that didnt derived from ResourceBase type.
 
 2.7.2:
   - Support Python 3

@@ -53,18 +53,34 @@ def retrieve_path(kwargs):
         .get(NODE_PROPERTY_FILE_RESOURCE_PATH, u'')
 
 
-def match_resource(left, right):
-    if left['metadata']['name'] == right['metadata']['name'] and \
-            left['kind'] == right['kind'] and \
-            left['metadata']['namespace'] == right['metadata']['namespace']:
-        return True
-    return False
+def match_resource(l, r):
+    """Compare a dict, l, and r,either a dict or a
+    KubernetesResourceDefinition, for equivalence.
 
+    :param l: a dict
+    :param r: a dict or a KubernetesResourceDefinition
+    :return: bool
+    """
 
-def match_resource_to_definition(rdict, rdef):
-    if rdict['kind'] == rdef.kind and \
-            rdict['metadata']['name'] == rdef.metadata['name'] and \
-            rdict['metadata']['namespace'] == rdef.metadata['namespace']:
+    l_name = l.get('metadata', {}).get('name')
+    try:
+        r_name = r.get('metadata', {}).get('name')
+    except AttributeError:
+        r_name = r.metadata.get('name')
+
+    l_namesp = l.get('metadata', {}).get('namespace', 'default')
+    try:
+        r_namesp = r.get('metadata', {}).get('namespace', 'default')
+    except AttributeError:
+        r_namesp = r.metadata.get('namespace', 'default')
+
+    l_kind = l.get('kind')
+    try:
+        r_kind = r.get('kind')
+    except AttributeError:
+        r_kind = r.kind
+
+    if all([l_name == r_name, l_kind == r_kind, l_namesp == r_namesp]):
         return True
     return False
 
@@ -118,18 +134,10 @@ def retrieve_last_create_path(file_name=None, delete=True):
     if not file_resource:
         return file_name, file_resource, adjacent_resources
 
-    resource_id = file_resource.get('metadata', {}).get('name')
-    resource_kind = file_resource.get('kind')
-    resource_namespace = file_resource.get('namespace')
-
     adjacent_file_name, _ = file_name.split('.yaml')
 
     for _f, _r in list(file_resources.items()):
-        _r_name = _r['metadata']['name']
-        if adjacent_file_name in _f and \
-                (_r_name != resource_id or
-                 _r['kind'] != resource_kind or
-                 _r['metadata']['namespace'] != resource_namespace):
+        if adjacent_file_name in _f and not match_resource(_r, file_resource):
             adjacent_resources.update({_f: _r})
             if delete:
                 del file_resources[_f]
@@ -249,7 +257,7 @@ def resource_definitions_from_file(**kwargs):
 
     resource_defs = []
     for definition in _yaml_from_files(**file_resource):
-        if not definition:
+        if not isinstance(definition, dict):
             ctx.logger.warn('Unexpected {d} definition.'.format(d=definition))
             continue
         resource_defs.append(KubernetesResourceDefinition(**definition))
@@ -315,7 +323,7 @@ def store_resource_definition(resource_definition):
         ctx.instance.runtime_properties[DEFS] = []
     ctx.logger.info('Trying: {0}'.format(resource_definition.to_dict()))
     for li in ctx.instance.runtime_properties.get(DEFS, []):
-        if match_resource_to_definition(li, resource_definition):
+        if match_resource(li, resource_definition):
             return
     ctx.logger.info('Adding: {0}'.format(resource_definition))
     ctx.instance.runtime_properties[DEFS].append(

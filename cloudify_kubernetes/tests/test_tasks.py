@@ -276,7 +276,7 @@ class TestTasks(unittest.TestCase):
         file_resource_definition = json.loads(json.dumps({
             'kind': 'Service',
             'apiVersion': 'v1',
-            'metadata': {'name': "id"}
+            'metadata': {'name': 'id'}
         }))
         adjacent_file_resource = 'test_file.yaml#0'
         adjacent_file_resource_definition = json.loads(json.dumps({
