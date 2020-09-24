@@ -63,23 +63,16 @@ def match_resource(l, r):
     """
 
     l_name = l.get('metadata', {}).get('name')
-    try:
-        r_name = r.get('metadata', {}).get('name')
-    except AttributeError:
-        r_name = r.metadata.get('name')
-
-    l_namesp = l.get('metadata', {}).get('namespace', 'default')
-    try:
-        r_namesp = r.get('metadata', {}).get('namespace', 'default')
-    except AttributeError:
-        r_namesp = r.metadata.get('namespace', 'default')
-
     l_kind = l.get('kind')
-    try:
-        r_kind = r.get('kind')
-    except AttributeError:
+    l_namesp = l.get('metadata', {}).get('namespace', 'default')
+    if isinstance(r, KubernetesResourceDefinition):
+        r_name = r.metadata.get('name')
+        r_namesp = r.metadata.get('namespace', 'default')
         r_kind = r.kind
-
+    else:
+        r_name = r.get('metadata', {}).get('name')
+        r_namesp = r.get('metadata', {}).get('namespace', 'default')
+        r_kind = r.get('kind')
     if all([l_name == r_name, l_kind == r_kind, l_namesp == r_namesp]):
         return True
     return False
@@ -440,7 +433,6 @@ def set_namespace(kwargs, resource_definition=None):
     if 'namespace' in kwargs:
         return
     resource_definition = resource_definition or {}
-    namespace = DEFAULT_NAMESPACE
     if isinstance(resource_definition, dict):
         namespace = resource_definition.get('metadata', {}).get('namespace')
     elif isinstance(resource_definition, KubernetesResourceDefinition):
@@ -450,11 +442,13 @@ def set_namespace(kwargs, resource_definition=None):
         namespaces = [x for x in node_instance.relationships if
                       'cloudify.kubernetes.resources.Namespace' in
                       x.target.node.type_hierarchy]
-        if len(namespaces) != 1:
-            ctx.logger.warn('Attempting to resolve missing namespace. '
-                            'Exactly one relationship to a Namespace '
-                            'node type was not found. Ignoring.')
+        if not namespaces:
+            namespace = DEFAULT_NAMESPACE
         else:
+            if len(namespaces) != 1:
+                ctx.logger.warn('Attempting to resolve missing namespace. '
+                                'Exactly one relationship to a Namespace '
+                                'node type was not found. Ignoring.')
             target = namespaces[0]
             data = target.instance.runtime_properties.get(
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {})

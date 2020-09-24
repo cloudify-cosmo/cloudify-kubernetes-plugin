@@ -544,6 +544,18 @@ class TestUtils(unittest.TestCase):
                                                    mock_mapping)
                 self.assertEqual(result_from_file, result_from_storage)
 
+    def test_set_namespace(self):
+        self._prepare_context(with_definition=False)
+        self.assertIsNone(utils.set_namespace({'namespace': 'default'}))
+        kwargs = {}
+        utils.set_namespace(kwargs)
+        self.assertIn('namespace', kwargs)
+        del kwargs['namespace']
+        resource = KubernetesResourceDefinition(
+            'foo', 'v1', {'name': 'bar'}, 'b')
+        utils.set_namespace(kwargs, resource)
+        self.assertIn('namespace', kwargs)
+
 
 if __name__ == '__main__':
     unittest.main()
