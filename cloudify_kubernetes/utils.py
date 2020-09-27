@@ -35,6 +35,7 @@ except ImportError:
     NODE_INSTANCE = 'node-instance'
     RELATIONSHIP_INSTANCE = 'relationship-instance'
 
+DEFAULT_NAMESPACE = 'default'
 NODE_PROPERTY_FILE_RESOURCE_PATH = 'resource_path'
 NODE_PROPERTY_API_MAPPING = 'api_mapping'
 NODE_PROPERTY_DEFINITION = 'definition'
@@ -50,6 +51,31 @@ def retrieve_path(kwargs):
     return kwargs\
         .get(NODE_PROPERTY_FILE, {})\
         .get(NODE_PROPERTY_FILE_RESOURCE_PATH, u'')
+
+
+def match_resource(l, r):
+    """Compare a dict, l, and r,either a dict or a
+    KubernetesResourceDefinition, for equivalence.
+
+    :param l: a dict
+    :param r: a dict or a KubernetesResourceDefinition
+    :return: bool
+    """
+
+    l_name = l.get('metadata', {}).get('name')
+    l_kind = l.get('kind')
+    l_namesp = l.get('metadata', {}).get('namespace', 'default')
+    if isinstance(r, KubernetesResourceDefinition):
+        r_name = r.metadata.get('name')
+        r_namesp = r.metadata.get('namespace', 'default')
+        r_kind = r.kind
+    else:
+        r_name = r.get('metadata', {}).get('name')
+        r_namesp = r.get('metadata', {}).get('namespace', 'default')
+        r_kind = r.get('kind')
+    if all([l_name == r_name, l_kind == r_kind, l_namesp == r_namesp]):
+        return True
+    return False
 
 
 def retrieve_last_create_path(file_name=None, delete=True):
@@ -92,9 +118,7 @@ def retrieve_last_create_path(file_name=None, delete=True):
 
         # We now want to get the file that was in that resource.
         for file_name, file_resource in file_resources.items():
-            if resource_definition['metadata']['name'] == \
-                    file_resource['metadata']['name'] and \
-                    resource_definition['kind'] == file_resource['kind']:
+            if match_resource(resource_definition, file_resource):
                 break
 
     if delete and file_name in file_resources:
@@ -103,15 +127,10 @@ def retrieve_last_create_path(file_name=None, delete=True):
     if not file_resource:
         return file_name, file_resource, adjacent_resources
 
-    resource_id = file_resource.get('metadata', {}).get('name')
-    resource_kind = file_resource.get('kind')
-
     adjacent_file_name, _ = file_name.split('.yaml')
 
     for _f, _r in list(file_resources.items()):
-        _r_name = _r['metadata']['name']
-        if adjacent_file_name in _f and \
-                (_r_name != resource_id or _r['kind'] != resource_kind):
+        if adjacent_file_name in _f and not match_resource(_r, file_resource):
             adjacent_resources.update({_f: _r})
             if delete:
                 del file_resources[_f]
@@ -181,7 +200,7 @@ def mapping_by_data(**kwargs):
     )
 
 
-def mapping_by_kind(resource_definition, **kwargs):
+def mapping_by_kind(resource_definition, **_):
     return get_mapping(kind=resource_definition.kind)
 
 
@@ -229,8 +248,13 @@ def resource_definitions_from_file(**kwargs):
             'Invalid resource file definition.'
         )
 
-    return [KubernetesResourceDefinition(**definition)
-            for definition in _yaml_from_files(**file_resource)]
+    resource_defs = []
+    for definition in _yaml_from_files(**file_resource):
+        if not isinstance(definition, dict):
+            ctx.logger.warn('Unexpected {d} definition.'.format(d=definition))
+            continue
+        resource_defs.append(KubernetesResourceDefinition(**definition))
+    return resource_defs
 
 
 def get_instance(_ctx):
@@ -292,8 +316,7 @@ def store_resource_definition(resource_definition):
         ctx.instance.runtime_properties[DEFS] = []
     ctx.logger.info('Trying: {0}'.format(resource_definition.to_dict()))
     for li in ctx.instance.runtime_properties.get(DEFS, []):
-        if li['kind'] == resource_definition.kind and \
-                li['metadata']['name'] == resource_definition.metadata['name']:
+        if match_resource(li, resource_definition):
             return
     ctx.logger.info('Adding: {0}'.format(resource_definition))
     ctx.instance.runtime_properties[DEFS].append(
@@ -404,3 +427,30 @@ def store_result_for_retrieve_id(result, path=None):
     # force save
     ctx.instance.runtime_properties.dirty = True
     ctx.instance.update()
+
+
+def set_namespace(kwargs, resource_definition=None):
+    if 'namespace' in kwargs:
+        return
+    resource_definition = resource_definition or {}
+    if isinstance(resource_definition, dict):
+        namespace = resource_definition.get('metadata', {}).get('namespace')
+    elif isinstance(resource_definition, KubernetesResourceDefinition):
+        namespace = resource_definition.metadata.get('namespace')
+    else:
+        node_instance = get_instance(ctx)
+        namespaces = [x for x in node_instance.relationships if
+                      'cloudify.kubernetes.resources.Namespace' in
+                      x.target.node.type_hierarchy]
+        if not namespaces:
+            namespace = DEFAULT_NAMESPACE
+        else:
+            if len(namespaces) != 1:
+                ctx.logger.warn('Attempting to resolve missing namespace. '
+                                'Exactly one relationship to a Namespace '
+                                'node type was not found. Ignoring.')
+            target = namespaces[0]
+            data = target.instance.runtime_properties.get(
+                INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {})
+            namespace = data['metadata']['name']
+    kwargs['namespace'] = namespace

@@ -37,17 +37,16 @@ from .utils import (PERMIT_REDEFINE,
                     retrieve_last_create_path,
                     store_result_for_retrieve_id,
                     resource_definitions_from_file,
-                    resource_definition_from_blueprint)
+                    resource_definition_from_blueprint,
+                    set_namespace)
 
 
-DEFAULT_NAMESPACE = 'default'
 NODE_PROPERTY_FILES = 'files'
 NODE_PROPERTY_OPTIONS = 'options'
 
 
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
-    if 'namespace' not in kwargs:
-        kwargs['namespace'] = DEFAULT_NAMESPACE
+    set_namespace(kwargs, resource_definition)
 
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
 
@@ -74,8 +73,7 @@ def _do_resource_read(client, api_mapping, resource_id, **kwargs):
             'resources were created and deleted out of order.'.format(
                 PERMIT_REDEFINE)
         )
-    if 'namespace' not in kwargs:
-        kwargs['namespace'] = DEFAULT_NAMESPACE
+    set_namespace(kwargs)
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     ctx.logger.debug('Node options {0}'.format(options))
     return JsonCleanuper(client.read_resource(
@@ -86,8 +84,7 @@ def _do_resource_read(client, api_mapping, resource_id, **kwargs):
 
 
 def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
-    if 'namespace' not in kwargs:
-        kwargs['namespace'] = DEFAULT_NAMESPACE
+    set_namespace(kwargs, resource_definition)
 
     return JsonCleanuper(client.update_resource(
         api_mapping,
@@ -121,8 +118,7 @@ def _do_resource_delete(client, api_mapping, resource_definition,
                         resource_id, **kwargs):
 
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    if 'namespace' not in options:
-        options['namespace'] = DEFAULT_NAMESPACE
+    set_namespace(options, resource_definition)
 
     # The required fields for all kubernetes resources are
     # - name
