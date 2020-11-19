@@ -44,7 +44,7 @@ setup(
     install_requires=[
         'cloudify-python-importer==0.2',
         'cloudify-common>=4.5',
-        'kubernetes==10.0.1',
+        'kubernetes==12.0.1',
         'pyyaml>=3.12',
         'pyasn1>=0.1.7',
         'pyasn1-modules>=0.0.5,<0.2.1',

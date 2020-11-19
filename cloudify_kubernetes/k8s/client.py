@@ -134,8 +134,17 @@ class CloudifyKubernetesClient(object):
         return self.api.__class__.__name__
 
     def _prepare_payload(self, class_name, resource_definition):
+        self.logger.info('CHECKING API {}'.format(self.api))
+        self.logger.info('CHECKING CLASS NAME {}'.format(class_name))
+        self.logger.info(
+            'CHECKING RESOURCE DEF {}'.format(resource_definition))
         if hasattr(self.api, class_name):
             self.logger.info('Kubernetes API initialized successfully')
+            classy = getattr(self.api, class_name)
+            defy = vars(resource_definition)
+            self.logger.info('CHECKING classy {}'.format(classy))
+            self.logger.info('CHECKING defy {}'.format(defy))
+
             return getattr(self.api, class_name)(**vars(resource_definition))
 
         raise KuberentesInvalidPayloadClassError(

@@ -114,3 +114,6 @@
 2.9.0:
   - Resolve resource uniqueness on name, kind, and namespace.
   - Namespace resolution feature.
+
+2.9.1:
+  - Upgrade SDK to 12.0.1.
