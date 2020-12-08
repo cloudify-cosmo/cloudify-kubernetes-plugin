@@ -46,6 +46,7 @@ setup(
         'cloudify-common>=4.5',
         'kubernetes==10.0.1',
         'pyyaml>=4.2b1',
+        'networkx==1.9.1',
         'pyasn1>=0.1.7',
         'pyasn1-modules>=0.0.5,<0.2.1',
         'oauth2client',  # used only in GCPServiceAccountAuthentication
