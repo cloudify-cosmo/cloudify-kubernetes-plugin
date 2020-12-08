@@ -29,6 +29,7 @@ from .k8s import (get_mapping,
 from .workflows import merge_definitions, DEFINITION_ADDITIONS
 
 from cloudify.exceptions import NonRecoverableError
+
 try:
     from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
 except ImportError:
@@ -53,26 +54,26 @@ def retrieve_path(kwargs):
         .get(NODE_PROPERTY_FILE_RESOURCE_PATH, u'')
 
 
-def match_resource(l, r):
-    """Compare a dict, l, and r,either a dict or a
+def match_resource(left, right):
+    """Compare a dict, left, and right,either a dict or a
     KubernetesResourceDefinition, for equivalence.
 
-    :param l: a dict
-    :param r: a dict or a KubernetesResourceDefinition
+    :param left: a dict
+    :param right: a dict or a KubernetesResourceDefinition
     :return: bool
     """
 
-    l_name = l.get('metadata', {}).get('name')
-    l_kind = l.get('kind')
-    l_namesp = l.get('metadata', {}).get('namespace', 'default')
-    if isinstance(r, KubernetesResourceDefinition):
-        r_name = r.metadata.get('name')
-        r_namesp = r.metadata.get('namespace', 'default')
-        r_kind = r.kind
+    l_name = left.get('metadata', {}).get('name')
+    l_kind = left.get('kind')
+    l_namesp = left.get('metadata', {}).get('namespace', 'default')
+    if isinstance(right, KubernetesResourceDefinition):
+        r_name = right.metadata.get('name')
+        r_namesp = right.metadata.get('namespace', 'default')
+        r_kind = right.kind
     else:
-        r_name = r.get('metadata', {}).get('name')
-        r_namesp = r.get('metadata', {}).get('namespace', 'default')
-        r_kind = r.get('kind')
+        r_name = right.get('metadata', {}).get('name')
+        r_namesp = right.get('metadata', {}).get('namespace', 'default')
+        r_kind = right.get('kind')
     if all([l_name == r_name, l_kind == r_kind, l_namesp == r_namesp]):
         return True
     return False
