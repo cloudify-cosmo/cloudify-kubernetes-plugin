@@ -689,7 +689,7 @@ class TestTasks(unittest.TestCase):
             )
 
         self.assertEqual(
-            text_type(error.exception),
+            text_type(error.exception.causes[0]['message']),
             "Cannot initialize Kubernetes API - no suitable configuration "
             "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
             "properties"
@@ -742,7 +742,7 @@ class TestTasks(unittest.TestCase):
             )
 
         self.assertEqual(
-            text_type(error.exception),
+            text_type(error.exception.causes[0]['message']),
             "Cannot initialize Kubernetes API - no suitable configuration "
             "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
             "properties"
@@ -866,9 +866,8 @@ class TestTasks(unittest.TestCase):
                                 resource_definition=None
                             )
                         file_mock.assert_called_with('new_path')
-
         self.assertEqual(
-            text_type(error.exception),
+            text_type(error.exception.causes[0]['message']),
             "Invalid resource file definition."
         )
 

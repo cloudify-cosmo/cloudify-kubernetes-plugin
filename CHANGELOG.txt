@@ -116,3 +116,5 @@
   - Namespace resolution feature.
 2.9.1:
   - Bump PyYAML
+2.9.2:
+  - Improved exception logging.

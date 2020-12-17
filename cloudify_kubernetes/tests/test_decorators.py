@@ -151,7 +151,7 @@ class TestDecorators(unittest.TestCase):
                 )()
 
         self.assertEqual(
-            str(error.exception), "error_text"
+            error.exception.causes[0]['message'], "error_text"
         )
 
     def test_resource_task_retrieve_resources_definitions(self):
@@ -181,7 +181,7 @@ class TestDecorators(unittest.TestCase):
                 )()
 
         self.assertEqual(
-            str(error.exception), "error_text"
+            error.exception.causes[0]['message'], "error_text"
         )
 
     def test_resource_task_retrieve_resource_definition(self):
@@ -207,7 +207,7 @@ class TestDecorators(unittest.TestCase):
                 )()
 
         self.assertEqual(
-            str(error.exception), "error_text"
+            error.exception.causes[0]['message'], "error_text"
         )
 
     def test_retrieve_master(self):
@@ -272,7 +272,7 @@ class TestDecorators(unittest.TestCase):
                             'error_text')))()
 
                 self.assertEqual(
-                    str(error.exception),
+                    error.exception.causes[0]['message'],
                     "error_text"
                 )
 
@@ -286,7 +286,7 @@ class TestDecorators(unittest.TestCase):
             decorators.with_kubernetes_client(function)()
 
         self.assertEqual(
-            str(error.exception),
+            error.exception.causes[0]['message'],
             "Cannot initialize Kubernetes API - no suitable configuration "
             "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
             "properties"
