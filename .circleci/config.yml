@@ -331,7 +331,6 @@ jobs:
       - checkout
       - validate_documentation
 
-
   unittests_py27:
     executor: py27
     steps:
