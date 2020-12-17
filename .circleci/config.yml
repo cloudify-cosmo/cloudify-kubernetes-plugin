@@ -352,13 +352,13 @@ jobs:
       - check_py3_compat
 
   wagon:
-    executor: wagon_generator
+    executor: py36
     steps:
       - checkout
       - generate_py27py36_wagon
 
   rhel_wagon:
-    executor: wagon_generator
+    executor: py36
     steps:
       - checkout
       - generate_rhel_py27py36_wagon
