@@ -118,3 +118,5 @@
   - Bump PyYAML
 2.9.2:
   - Improved exception logging.
+2.9.3:
+  - Correct issue in build.
