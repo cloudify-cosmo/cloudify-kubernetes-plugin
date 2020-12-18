@@ -98,7 +98,7 @@ commands:
           command: virtualenv env
       - run:
           name: install tox
-          command: pip install --user pygithub pyyaml==3.10
+          command: pip install --user pygithub
       - run:
           name: upgrade setuptools
           command: pip install --upgrade setuptools
@@ -130,7 +130,7 @@ commands:
           command: virtualenv env
       - run:
           name: install tox
-          command: pip install --user pygithub pyyaml==3.10
+          command: pip install --user pygithub
       - run:
           name: upgrade setuptools
           command: pip install --upgrade setuptools
@@ -271,7 +271,7 @@ commands:
           command: virtualenv env
       - run:
           name: install tox
-          command: pip install --user pygithub pyyaml==3.10
+          command: pip install --user pygithub
       - run:
           name: upgrade setuptools
           command: pip install --upgrade setuptools
@@ -306,7 +306,7 @@ commands:
           command: virtualenv env
       - run:
           name: install tox
-          command: pip install --user pygithub pyyaml==3.10
+          command: pip install --user pygithub
       - run:
           name: upgrade setuptools
           command: pip install --upgrade setuptools
