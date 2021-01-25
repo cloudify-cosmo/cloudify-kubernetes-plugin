@@ -49,9 +49,10 @@ def _retrieve_master(resource_instance):
             return relationship.target
 
 
-def _retrieve_property(_ctx, property_name):
-    property_from_client_config = get_node(_ctx).properties \
-        .get('client_config', {}).get(property_name, {})
+def _retrieve_property(_ctx, property_name, client_config=None):
+    client_config = client_config or get_node(_ctx).properties.get(
+        'client_config', {})
+    property_from_client_config = client_config.get(property_name, {})
     target = _retrieve_master(get_instance(_ctx))
 
     if target:
@@ -204,14 +205,17 @@ def resource_task(retrieve_resource_definition=None,
 
 def with_kubernetes_client(fn):
     def wrapper(**kwargs):
+        client_config_from_inputs = kwargs.get('client_config')
         configuration_property = _retrieve_property(
             ctx,
-            NODE_PROPERTY_CONFIGURATION
+            NODE_PROPERTY_CONFIGURATION,
+            client_config_from_inputs
         )
 
         authentication_property = _retrieve_property(
             ctx,
-            NODE_PROPERTY_AUTHENTICATION
+            NODE_PROPERTY_AUTHENTICATION,
+            client_config_from_inputs
         )
 
         try:

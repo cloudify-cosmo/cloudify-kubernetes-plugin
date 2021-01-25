@@ -15,13 +15,12 @@ node_templates:
     type: cloudify.kubernetes.resources.Deployment
     properties:
       client_config:
-        authentication:
-          gcp_service_account: { get_secret: gcp_credentials }
         configuration:
           api_options:
             host: { get_input: kubernetes_master }
-            verify_ssl: false
+            api_key: { get_secret: kubernetes_token }
             debug: false
+            verify_ssl: false
       definition:
         apiVersion: apps/v1
         kind: Deployment
