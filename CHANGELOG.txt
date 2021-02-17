@@ -120,3 +120,5 @@
   - Improved exception logging.
 2.9.3:
   - Correct issue in build.
+2.9.4:
+  - Support file content in addition to paths for ssl_ca_cert, cert_file, key_file.
