@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import json
 import unittest
 from mock import (MagicMock, mock_open, patch)
@@ -555,6 +556,24 @@ class TestUtils(unittest.TestCase):
             'foo', 'v1', {'name': 'bar'}, 'b')
         utils.set_namespace(kwargs, resource)
         self.assertIn('namespace', kwargs)
+
+    def test_tempfiles_for_certs_and_keys(self):
+        config = {
+            'api_options': {
+                'host': 'foo',
+                'api_key': 'bar',
+                'verify_ssl': True,
+                'ssl_ca_cert': 'baz',
+                'cert_file': 'taco',
+                'key_file': 'bell'
+            }
+        }
+        config = utils.create_tempfiles_for_certs_and_keys(config)
+        for key in utils.CERT_KEYS:
+            assert os.path.isfile(config['api_options'][key])
+        utils.delete_tempfiles_for_certs_and_keys(config)
+        for key in utils.CERT_KEYS:
+            assert os.path.exists(config['api_options'][key]) is False
 
 
 if __name__ == '__main__':
