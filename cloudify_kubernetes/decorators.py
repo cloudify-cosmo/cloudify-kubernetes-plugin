@@ -27,6 +27,8 @@ from .utils import (generate_traceback_exception,
                     get_instance,
                     NODE_PROPERTY_FILE,
                     NODE_PROPERTY_FILE_RESOURCE_PATH,
+                    create_tempfiles_for_certs_and_keys,
+                    delete_tempfiles_for_certs_and_keys,
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
 from .k8s import (CloudifyKubernetesClient,
                   KubernetesApiAuthenticationVariants,
@@ -218,6 +220,9 @@ def with_kubernetes_client(fn):
             client_config_from_inputs
         )
 
+        configuration_property = create_tempfiles_for_certs_and_keys(
+            configuration_property)
+
         try:
             kwargs['client'] = CloudifyKubernetesClient(
                 ctx.logger,
@@ -240,5 +245,7 @@ def with_kubernetes_client(fn):
                 'Error encountered',
                 causes=[generate_traceback_exception()]
             )
+        finally:
+            delete_tempfiles_for_certs_and_keys(configuration_property)
 
     return operation(func=wrapper, resumable=True)

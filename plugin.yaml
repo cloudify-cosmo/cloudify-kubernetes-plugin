@@ -2,8 +2,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.9.3'
-    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.9.3.zip
+    package_version: '2.9.4'
+    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.9.4.zip
 
 data_types:
 
@@ -29,15 +29,18 @@ data_types:
           HTTP/HTTPS URL to Kubernetes API
 
       ssl_ca_cert:
+        description: Either a path to a file or the content of a CA Cert file.
         type: string
         required: false
 
       cert_file:
+        description: Either a path to a file or the content of a Cert file.
         type: string
         required: false
 
       key_file:
         type: string
+        description: Either a path to a file or the content of a key file.
         required: false
 
       verify_ssl:

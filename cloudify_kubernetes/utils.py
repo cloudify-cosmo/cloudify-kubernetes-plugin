@@ -14,6 +14,7 @@
 #
 import os
 import sys
+from tempfile import NamedTemporaryFile
 from collections import OrderedDict
 
 import yaml
@@ -46,6 +47,7 @@ DEFS = '__resource_definitions'
 PERMIT_REDEFINE = 'allow_node_redefinition'
 INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
 FILENAMES = r'[A-Za-z0-9\.\_\-\/]*yaml\#[0-9]*'
+CERT_KEYS = ['ssl_ca_cert', 'cert_file', 'key_file']
 
 
 def retrieve_path(kwargs):
@@ -455,3 +457,21 @@ def set_namespace(kwargs, resource_definition=None):
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {})
             namespace = data['metadata']['name']
     kwargs['namespace'] = namespace
+
+
+def create_tempfiles_for_certs_and_keys(config):
+    for prop in CERT_KEYS:
+        current_value = config.get('api_options', {}).get(prop)
+        if current_value and not os.path.isfile(current_value):
+            fin = NamedTemporaryFile('w', suffix='__cfy.k8s__', delete=False)
+            fin.write(current_value)
+            fin.close()
+            config['api_options'][prop] = fin.name
+    return config
+
+
+def delete_tempfiles_for_certs_and_keys(config):
+    for prop in CERT_KEYS:
+        current_value = config.get('api_options', {}).get(prop, '')
+        if current_value and current_value.endswith('__cfy.k8s__'):
+            os.remove(current_value)

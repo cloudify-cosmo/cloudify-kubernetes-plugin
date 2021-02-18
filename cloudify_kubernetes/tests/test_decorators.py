@@ -310,6 +310,38 @@ class TestDecorators(unittest.TestCase):
             ):
                 decorators.with_kubernetes_client(function)()
 
+    def test_with_kubernetes_client_certificate_files(self):
+        _, _ctx = self._prepare_master_node(with_relationship_to_master=False,
+                                            with_client_config=True)
+
+        _ctx.node.properties['client_config'] = {
+            'configuration': {
+                'api_options': {
+                    'host': 'foo',
+                    'api_key': 'bar',
+                    'verify_ssl': True,
+                    'ssl_ca_cert': 'baz',
+                    'cert_file': 'taco',
+                    'key_file': 'bell'
+                }
+            }
+        }
+
+        mock_isfile = MagicMock(return_value=True)
+
+        _ctx.download_resource = MagicMock(return_value="downloaded_resource")
+
+        def function(client, **kwargs):
+            self.assertTrue(isinstance(client, CloudifyKubernetesClient))
+
+        with patch('os.path.isfile', mock_isfile):
+            with patch(
+                    'cloudify_kubernetes.k8s.config.'
+                    'kubernetes.config.load_kube_config',
+                    MagicMock()
+            ):
+                decorators.with_kubernetes_client(function)()
+
 
 if __name__ == '__main__':
     unittest.main()
