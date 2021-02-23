@@ -26,7 +26,7 @@ executors:
     machine:
       image: ubuntu-1604:201903-01
 
-  cloudify-machine-510:
+  cloudify-machine-py3:
     machine:
       image: ubuntu-1604:201903-01
 
@@ -179,7 +179,25 @@ commands:
           paths:
             - build/*
 
-  run_integration_tests_505:
+  build_archive:
+    steps:
+      - attach_workspace:
+          at: workspace
+      - run:
+          name: Create Workspace Build directory.
+          command: mkdir -p workspace/build
+      - run:
+          name: Build Bundle
+          command: |
+            git clone https://github.com/cloudify-incubator/cloudify-ecosystem-test.git
+            pip install -e cloudify-ecosystem-test
+            python -c 'from ecosystem_cicd_tools import packaging; packaging.build_plugins_bundle_with_workspace()'
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - build/*
+
+  create_manager_container_505:
     steps:
       - run:
           name: "Pull Submodules"
@@ -213,9 +231,8 @@ commands:
       - run:
           name: install local project
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - run: pytest -s .circleci/test_examples.py
 
-  run_integration_tests_510:
+  create_manager_container_py3:
     steps:
       - run:
           name: "Pull Submodules"
@@ -251,7 +268,14 @@ commands:
       - run:
           name: install local project
           command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
-      - run: pytest -s .circleci/test_examples.py
+
+  prepare_test_manager:
+    steps:
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --bundle-path workspace/build/cloudify-plugins-bundle.tgz
+
+  run_gke_test:
+    steps:
+      - run: ecosystem-test local-blueprint-test  -b examples/blueprint-examples/kubernetes/gcp-gke/blueprint.yaml --test-id=gcp-gke  -i resource_prefix=kube-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000
 
   release_plugin:
     steps:
@@ -364,23 +388,31 @@ jobs:
       - checkout
       - generate_rhel_py27py36_wagon
 
-  integration_tests_505:
+  build_bundle:
+    executor: py36
+    steps:
+      - checkout
+      - build_archive
+
+  kubernetes_integration_tests_505:
     executor: cloudify-machine
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: gcp
     steps:
       - checkout
-      - run_integration_tests_505
+      - create_manager_container_505
+      - prepare_test_manager
+      - run_gke_test
 
-  integration_tests_510:
-    executor: cloudify-machine-510
+  kubernetes_integration_tests_py3:
+    executor: cloudify-machine-py3
     environment:
       CLOUDIFY_SSL_TRUST_ALL: true
-      IAAS: gcp
     steps:
       - checkout
-      - run_integration_tests_510
+      - create_manager_container_py3
+      - prepare_test_manager
+      - run_gke_test
 
   release:
     executor: py36
@@ -407,34 +439,46 @@ workflows:
       - wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master)/
+#              only: /([0-9\.]*\-build|master)/
+              only: /RD-1499-use-ecosystem-test-cli/
       - rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master)/
-      - integration_tests_505:
+#              only: /([0-9\.]*\-build|master)/
+              only: /RD-1499-use-ecosystem-test-cli/
+      - build_bundle:
+          filters:
+            branches:
+#              only: /master/
+              only: /RD-1499-use-ecosystem-test-cli/
           requires:
             - wagon
             - rhel_wagon
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master)/
-      - integration_tests_510:
+      - kubernetes_integration_tests_505:
           requires:
-            - wagon
-            - rhel_wagon
+            - build_bundle
           filters:
             branches:
-              only: /([0-9\.]*\-build|master)/
+#              only: /([0-9\.]*\-build|master)/
+              only: /RD-1499-use-ecosystem-test-cli/
+      - kubernetes_integration_tests_py3:
+          requires:
+            - build_bundle
+          filters:
+            branches:
+#              only: /([0-9\.]*\-build|master)/
+              only: /RD-1499-use-ecosystem-test-cli/
       - release:
           filters:
             branches:
               only: /master/
           requires:
+            - unittests_py27
+            - unittests_py36
             - wagon
             - rhel_wagon
-            - integration_tests_505
-            - integration_tests_510
+            - kubernetes_integration_tests_505
+            - kubernetes_integration_tests_py3
       - merge_docs:
           filters:
             branches:
@@ -464,17 +508,22 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
-      - integration_tests_505:
+      - build_bundle:
+          filters:
+            branches:
+              only: /master/
           requires:
             - wagon
             - rhel_wagon
+      - kubernetes_integration_tests_505:
+          requires:
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
-      - integration_tests_510:
+      - kubernetes_integration_tests_py3:
           requires:
-            - wagon
-            - rhel_wagon
+            - build_bundle
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
