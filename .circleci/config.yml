@@ -433,18 +433,15 @@ workflows:
       - wagon:
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master)/
-              only: /RD-1499-use-ecosystem-test-cli/
+              only: /([0-9\.]*\-build|master)/
       - rhel_wagon:
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master)/
-              only: /RD-1499-use-ecosystem-test-cli/
+              only: /([0-9\.]*\-build|master)/
       - build_bundle:
           filters:
             branches:
-#              only: /master/
-              only: /RD-1499-use-ecosystem-test-cli/
+              only: /master/
           requires:
             - wagon
             - rhel_wagon
@@ -453,15 +450,13 @@ workflows:
             - build_bundle
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master)/
-              only: /RD-1499-use-ecosystem-test-cli/
+              only: /([0-9\.]*\-build|master)/
       - kubernetes_integration_tests_py3:
           requires:
             - build_bundle
           filters:
             branches:
-#              only: /([0-9\.]*\-build|master)/
-              only: /RD-1499-use-ecosystem-test-cli/
+              only: /([0-9\.]*\-build|master)/
       - release:
           filters:
             branches:
