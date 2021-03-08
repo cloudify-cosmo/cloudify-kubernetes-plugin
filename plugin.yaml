@@ -364,6 +364,8 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_update
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
+        pull:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
   cloudify.kubernetes.resources.ClusterRoleBinding:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
@@ -557,6 +559,8 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
+        pull:
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
 
   cloudify.kubernetes.resources.MultipleFileDefinedResources:
     derived_from: cloudify.kubernetes.resources.ResourceWithValidateStatus
@@ -577,6 +581,8 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_delete
+        pull:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
 
 relationships:
 
