@@ -122,3 +122,6 @@
   - Correct issue in build.
 2.9.4:
   - Support file content in addition to paths for ssl_ca_cert, cert_file, key_file.
+2.10.0:
+  - Add pull operation.
+  - Save in resource_definitions the updated result from kubernetes API.
