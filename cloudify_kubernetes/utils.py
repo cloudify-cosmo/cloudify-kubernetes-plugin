@@ -318,8 +318,12 @@ def store_resource_definition(resource_definition):
     if DEFS not in ctx.instance.runtime_properties:
         ctx.instance.runtime_properties[DEFS] = []
     ctx.logger.info('Trying: {0}'.format(resource_definition.to_dict()))
-    for li in ctx.instance.runtime_properties.get(DEFS, []):
+    for index, li in enumerate(ctx.instance.runtime_properties.get(DEFS, [])):
         if match_resource(li, resource_definition):
+            # We found a match but still updating the resource definition
+            # because fields like metadata.labels can change.
+            ctx.instance.runtime_properties.get(DEFS)[
+                index] = JsonCleanuper(resource_definition).to_dict()
             return
     ctx.logger.info('Adding: {0}'.format(resource_definition))
     ctx.instance.runtime_properties[DEFS].append(
