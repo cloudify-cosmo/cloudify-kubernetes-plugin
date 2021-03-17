@@ -487,25 +487,24 @@ SUPPORTED_API_MAPPINGS = {
     ),
     'CustomResourceDefinition': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
-            api='ApiextensionsV1beta1Api',
+            api='ApiextensionsV1Api',
             method='create_custom_resource_definition',
-            payload='V1beta1CustomResourceDefinition'
+            payload='V1CustomResourceDefinition'
         ),
         read=KubernetesSingleOperationApiMapping(
-            api='ApiextensionsV1beta1Api',
+            api='ApiextensionsV1Api',
             method='read_custom_resource_definition',
         ),
         update=KubernetesSingleOperationApiMapping(
-            api='ApiextensionsV1beta1Api',
+            api='ApiextensionsV1Api',
             method='patch_custom_resource_definition'
         ),
         delete=KubernetesSingleOperationApiMapping(
-            api='ApiextensionsV1beta1Api',
+            api='ApiextensionsV1Api',
             method='delete_custom_resource_definition',
             payload='V1DeleteOptions'
         ),
     ),
-
 }
 
 
