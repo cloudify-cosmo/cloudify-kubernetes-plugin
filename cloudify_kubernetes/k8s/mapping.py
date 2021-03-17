@@ -505,6 +505,24 @@ SUPPORTED_API_MAPPINGS = {
             payload='V1DeleteOptions'
         ),
     ),
+    'CustomObjectsApi': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='CustomObjectsApi',
+            method='create_namespaced_custom_object',
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='CustomObjectsApi',
+            method='get_namespaced_custom_object',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='CustomObjectsApi',
+            method='patch_namespaced_custom_object',
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='CustomObjectsApi',
+            method='delete_namespaced_custom_object',
+        ),
+    )
 }
 
 

@@ -457,6 +457,21 @@ node_types:
   cloudify.kubernetes.resources.CustomResourceDefinition:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
+  cloudify.kubernetes.resources.CustomObject:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      group:
+        type: string
+        description: The group name provided in the custom resource definition. This can also be provided as a cloudify-crd-group label in the metadata or before the '/' in the apiVersion declaration of the resource.
+        required: false.
+      plural:
+        type: string
+        description: The plural name provided in the custom resource definition. This can also be provided as a cloudify-crd-plural label in the metadata.
+        required: false.
+      version:
+        type: string
+        description: The version name provided in the custom resource definition. This can also be provided as a cloudify-crd-version label in the metadata or after the '/' in the apiVersion declaration of the resource.
+        required: false.
 
   cloudify.kubernetes.resources.Service:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
