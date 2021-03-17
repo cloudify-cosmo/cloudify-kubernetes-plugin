@@ -125,3 +125,5 @@
 2.10.0:
   - Add pull operation.
   - Save in resource_definitions the updated result from kubernetes API.
+2.11.0:
+  - Support Custom Resource Definitions and Custom Objects API.

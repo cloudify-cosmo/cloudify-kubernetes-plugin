@@ -7,23 +7,22 @@ imports:
 inputs:
   kubernetes_master:
     type: string
+    default: { get_secret: kubernetes_master_endpoint }
 
   resources:
     default:
-        - resource_path: resources/pod-a.yaml
-        - resource_path: resources/pod-b.yaml
+      - resource_path: resources/cloudify-crd.yaml
 
 node_templates:
 
-  pods:
+  resources:
     type: cloudify.kubernetes.resources.MultipleFileDefinedResources
     properties:
       client_config:
-        authentication:
-          gcp_service_account: { get_secret: gcp_credentials }
         configuration:
           api_options:
             host: { get_input: kubernetes_master }
+            api_key: { get_secret: kubernetes_token }
             verify_ssl: false
             debug: false
       files: { get_input: resources }

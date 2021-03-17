@@ -28,7 +28,6 @@ from .decorators import (resource_task,
                          with_kubernetes_client)
 from .k8s.exceptions import KuberentesApiOperationError
 from .utils import (PERMIT_REDEFINE,
-                    retrieve_id,
                     retrieve_path,
                     JsonCleanuper,
                     mapping_by_data,
@@ -38,7 +37,9 @@ from .utils import (PERMIT_REDEFINE,
                     store_result_for_retrieve_id,
                     resource_definitions_from_file,
                     resource_definition_from_blueprint,
-                    set_namespace)
+                    set_namespace,
+                    set_custom_resource,
+                    validate_file_resources)
 
 
 NODE_PROPERTY_FILES = 'files'
@@ -46,45 +47,44 @@ NODE_PROPERTY_OPTIONS = 'options'
 
 
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
-    set_namespace(kwargs, resource_definition)
-
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-
-    ctx.logger.debug('Node options {0}'.format(options))
+    set_namespace(kwargs, resource_definition)
+    set_custom_resource(options, resource_definition)
     perform_task = ctx.instance.runtime_properties.get('__perform_task', False)
+
     if ctx.node.properties.get('use_external_resource') and not perform_task:
         return JsonCleanuper(client.read_resource(
             api_mapping,
-            resource_definition.metadata['name'],
-            options
-        )).to_dict()
+            resource_definition,
+            options)).to_dict()
     return JsonCleanuper(client.create_resource(
         api_mapping,
         resource_definition,
-        options
-    )).to_dict()
+        options)).to_dict()
 
 
-def _do_resource_read(client, api_mapping, resource_id, **kwargs):
-    if not resource_id:
+def _do_resource_read(client, api_mapping, resource_definition, **kwargs):
+    if not resource_definition:
         raise NonRecoverableError(
             'No resource was found in runtime properties for reading. '
             'This can occur when the node property {0} is True, and '
             'resources were created and deleted out of order.'.format(
                 PERMIT_REDEFINE)
         )
-    set_namespace(kwargs)
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    ctx.logger.debug('Node options {0}'.format(options))
+    set_namespace(kwargs, resource_definition)
+    set_custom_resource(options, resource_definition)
     return JsonCleanuper(client.read_resource(
         api_mapping,
-        resource_id,
+        resource_definition,
         options
     )).to_dict()
 
 
 def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
+    options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     set_namespace(kwargs, resource_definition)
+    set_custom_resource(options, resource_definition)
 
     return JsonCleanuper(client.update_resource(
         api_mapping,
@@ -106,11 +106,16 @@ def _do_resource_status_check(resource_kind, response):
     return True
 
 
-def _check_if_resource_exists(client, api_mapping, resource_id, **kwargs):
+def _check_if_resource_exists(client,
+                              api_mapping,
+                              resource_definition,
+                              **kwargs):
     try:
-        return _do_resource_read(client, api_mapping, resource_id, **kwargs)
+        return _do_resource_read(
+            client, api_mapping, resource_definition, **kwargs)
     except KuberentesApiOperationError:
-        ctx.logger.error('The resource {0} was not found.'.format(resource_id))
+        ctx.logger.error('The resource {0} was not found.'.format(
+            resource_definition.metadata['name']))
         return
 
 
@@ -118,7 +123,8 @@ def _do_resource_delete(client, api_mapping, resource_definition,
                         resource_id, **kwargs):
 
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
-    set_namespace(options, resource_definition)
+    set_namespace(kwargs, resource_definition)
+    set_custom_resource(options, resource_definition)
 
     # The required fields for all kubernetes resources are
     # - name
@@ -189,11 +195,7 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
 
     # Read All resources.
     read_response = _do_resource_read(
-        client,
-        api_mapping,
-        retrieve_id(),
-        **kwargs
-    )
+        client, api_mapping, resource_definition, **kwargs)
 
     # Store read response.
     store_result_for_retrieve_id(read_response)
@@ -233,10 +235,9 @@ def resource_update(client, api_mapping, resource_definition, **kwargs):
     resource_state_function=_check_if_resource_exists
 )
 def resource_delete(client, api_mapping, resource_definition, **kwargs):
-    resource_id = retrieve_id(ctx.instance)
     try:
         read_result = _do_resource_read(
-            client, api_mapping, resource_id, **kwargs)
+            client, api_mapping, resource_definition, **kwargs)
     except KuberentesApiOperationError as e:
         if '"code":404' in text_type(e):
             ctx.logger.debug(
@@ -305,10 +306,9 @@ def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
     resource_state_function=_check_if_resource_exists
 )
 def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
-    resource_id = retrieve_id()
     try:
         read_result = _do_resource_read(
-            client, api_mapping, resource_id, **kwargs)
+            client, api_mapping, resource_definition, **kwargs)
     except KuberentesApiOperationError as e:
         if '(404)' in text_type(e):
             ctx.logger.debug(
@@ -365,18 +365,9 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     path = retrieve_path(kwargs)
     _, resource, _ = retrieve_last_create_path(path, delete=False)
 
-    if resource:
-        resource_id = resource['metadata']['name']
-    else:
-        resource_id = resource_definition.metadata['name']
-
     # Read All resources.
     read_response = _do_resource_read(
-        client,
-        api_mapping,
-        resource_id,
-        **kwargs
-    )
+        client, api_mapping, resource_definition, **kwargs)
     store_result_for_retrieve_id(read_response, path)
 
     resource_type = getattr(resource_definition, 'kind')
@@ -403,14 +394,12 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
     try:
         path, resource, adjacent_resources = \
             retrieve_last_create_path(path)
-        resource_id = resource['metadata']['name']
         resource_kind = resource['kind']
         metadata = resource['metadata']
     except (NonRecoverableError, TypeError, KeyError):
         adjacent_resources = {}
         resource_definition, api_mapping = retrieve_stored_resource(
             resource_definition, api_mapping, delete=True)
-        resource_id = resource_definition.metadata['name']
     else:
         api_version = resource.get('apiVersion') or \
             resource.get('api_version')
@@ -428,8 +417,7 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
 
     # We now want to see if the resource exists.
     try:
-        _do_resource_read(
-            client, api_mapping, resource_id, **kwargs)
+        _do_resource_read(client, api_mapping, resource_definition, **kwargs)
     except (NonRecoverableError, KuberentesApiOperationError) as e:
         # The resource has been deleted, or something.
         if adjacent_resources and '(404)' in text_type(e):
@@ -488,6 +476,7 @@ def multiple_file_resource_create(**kwargs):
         NODE_PROPERTY_FILES,
         ctx.node.properties.get(NODE_PROPERTY_FILES, [])
     )
+    validate_file_resources(file_resources)
 
     for file_resource in file_resources:
         file_resource_create(file=file_resource, **kwargs)
@@ -498,6 +487,7 @@ def multiple_file_resource_read(**kwargs):
         NODE_PROPERTY_FILES,
         ctx.node.properties.get(NODE_PROPERTY_FILES, [])
     )
+    validate_file_resources(file_resources)
 
     for file_resource in file_resources:
         file_resource_read(file=file_resource, **kwargs)
@@ -508,6 +498,7 @@ def multiple_file_resource_delete(**kwargs):
         NODE_PROPERTY_FILES,
         ctx.node.properties.get(NODE_PROPERTY_FILES, [])
     )
+    validate_file_resources(file_resources)
 
     for file_resource in file_resources:
         file_resource_delete(file=file_resource, **kwargs)

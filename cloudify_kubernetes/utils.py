@@ -48,6 +48,9 @@ PERMIT_REDEFINE = 'allow_node_redefinition'
 INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
 FILENAMES = r'[A-Za-z0-9\.\_\-\/]*yaml\#[0-9]*'
 CERT_KEYS = ['ssl_ca_cert', 'cert_file', 'key_file']
+CUSTOM_OBJECT_ANNOTATIONS = ['cloudify-crd-group',
+                             'cloudify-crd-plural',
+                             'cloudify-crd-version']
 
 
 def retrieve_path(kwargs):
@@ -204,6 +207,14 @@ def mapping_by_data(**kwargs):
 
 
 def mapping_by_kind(resource_definition, **_):
+    try:
+        annotations = resource_definition.metadata.get(
+            'annotations', {}).keys()
+    except AttributeError:
+        pass
+    else:
+        if set(CUSTOM_OBJECT_ANNOTATIONS).issubset(set(annotations)):
+            return get_mapping(kind='CustomObjectsApi')
     return get_mapping(kind=resource_definition.kind)
 
 
@@ -246,10 +257,7 @@ def resource_definitions_from_file(**kwargs):
         ctx.node.properties.get(NODE_PROPERTY_FILE, None)
     )
 
-    if not file_resource:
-        raise KuberentesInvalidDefinitionError(
-            'Invalid resource file definition.'
-        )
+    validate_file_resource(file_resource)
 
     resource_defs = []
     for definition in _yaml_from_files(**file_resource):
@@ -258,6 +266,28 @@ def resource_definitions_from_file(**kwargs):
             continue
         resource_defs.append(KubernetesResourceDefinition(**definition))
     return resource_defs
+
+
+def validate_file_resource(file_resource):
+    if not file_resource or not isinstance(file_resource, dict):
+        raise NonRecoverableError(
+            'Invalid resource file specification. '
+            'The file properties must be a dictionary with the keys: '
+            'resource_path (required), template_variables, and target_path. '
+            'File resource: {file_resource}'.format(
+                file_resource=file_resource)
+        )
+
+
+def validate_file_resources(file_resources):
+    if not file_resources or not isinstance(file_resources, list):
+        raise NonRecoverableError(
+            'Invalid resource file specification. '
+            'The file properties must be a list of dictionaries with the keys:'
+            ' resource_path (required), template_variables, and target_path. '
+            'File resource: {file_resource}'.format(
+                file_resource=file_resources)
+        )
 
 
 def get_instance(_ctx):
@@ -277,7 +307,10 @@ def get_node(_ctx):
 class JsonCleanuper(object):
 
     def __init__(self, ob):
-        resource = ob.to_dict()
+        if isinstance(ob, dict):
+            resource = ob
+        else:
+            resource = ob.to_dict()
 
         if isinstance(resource, list):
             self._cleanuped_list(resource)
@@ -437,8 +470,6 @@ def store_result_for_retrieve_id(result, path=None):
 
 
 def set_namespace(kwargs, resource_definition=None):
-    if 'namespace' in kwargs:
-        return
     resource_definition = resource_definition or {}
     if isinstance(resource_definition, dict):
         namespace = resource_definition.get('metadata', {}).get('namespace')
@@ -461,6 +492,48 @@ def set_namespace(kwargs, resource_definition=None):
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {})
             namespace = data['metadata']['name']
     kwargs['namespace'] = namespace
+
+
+def set_custom_resource(kwargs,
+                        resource_definition=None,
+                        group=None,
+                        plural=None,
+                        version=None,
+                        **_):
+    """For custom objects, we need to provide in the kwargs, the group plural,
+    and version keys. This is how we handled it for namespace. There is really
+    no ideal way to do this, because there is not a universal way
+    to define custom objects in Kubernetes.
+
+    So we rely on user input in metadata.
+
+    :param kwargs:
+    :param resource_definition:
+    :param group:
+    :param plural:
+    :param version:
+    :return:
+    """
+    resource_definition = resource_definition or {}
+    annotations = {}
+    if isinstance(resource_definition, dict):
+        annotations = resource_definition.get(
+            'metadata', {}).get('annotations', {})
+    elif isinstance(resource_definition, KubernetesResourceDefinition):
+        annotations = resource_definition.metadata.get('annotations', {})
+    if annotations is None:
+        annotations = {}
+    group = annotations.get(
+        'cloudify-crd-group', group or kwargs.get('group'))
+    plural = annotations.get(
+        'cloudify-crd-plural', plural or kwargs.get('plural'))
+    version = annotations.get(
+        'cloudify-crd-version', version or kwargs.get('version'))
+    if group and plural and version:
+        kwargs.update({
+            'group': group,
+            'plural': plural,
+            'version': version})
 
 
 def create_tempfiles_for_certs_and_keys(config):

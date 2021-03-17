@@ -8,9 +8,11 @@ inputs:
 
   resource_path:
     type: string
+    default: file-test-multiple-resources.yaml
 
   kubernetes_master:
     type: string
+    default: { get_secret: kubernetes_master_endpoint }
 
   validate_status:
     type: boolean

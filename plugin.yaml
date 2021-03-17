@@ -295,6 +295,35 @@ data_types:
           Authentication properties of Kubernetes Cloud providers. Optional.
           Currently supported providers: Google Cloud Platform.
 
+  cloudify.kubernetes.types.Options:
+    description: API options depending on API operations execution.
+    properties:
+      namespace:
+        type: string
+        description: The resource namespace.
+        default: default
+
+  cloudify.kubernetes.types.CustomObjectsOptions:
+    description: API options depending on API operations execution.
+    properties:
+      namespace:
+        type: string
+        description: The resource namespace.
+        default: default
+      group:
+        type: string
+        description: The custom object resource API group.
+        required: true
+      plural:
+        type: string
+        description: The custom object resource API plural name.
+        required: true
+      version:
+        type: string
+        description: The custom object resource API version.
+        required: true
+
+
 node_types:
 
   cloudify.kubernetes.nodes.Master:
@@ -330,10 +359,8 @@ node_types:
           Permit changing the name and kind and number of resources defined in file.
         default: true
       options:
-        description: >
-          API options depending on API operations execution
-        default:
-          namespace: default
+        description: API options depending on API operations execution.
+        type: cloudify.kubernetes.types.Options
 
   cloudify.kubernetes.resources.ResourceWithValidateStatus:
     derived_from: cloudify.kubernetes.resources.ResourceBase
@@ -460,18 +487,8 @@ node_types:
   cloudify.kubernetes.resources.CustomObject:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
-      group:
-        type: string
-        description: The group name provided in the custom resource definition. This can also be provided as a cloudify-crd-group label in the metadata or before the '/' in the apiVersion declaration of the resource.
-        required: false.
-      plural:
-        type: string
-        description: The plural name provided in the custom resource definition. This can also be provided as a cloudify-crd-plural label in the metadata.
-        required: false.
-      version:
-        type: string
-        description: The version name provided in the custom resource definition. This can also be provided as a cloudify-crd-version label in the metadata or after the '/' in the apiVersion declaration of the resource.
-        required: false.
+      options:
+        type: cloudify.kubernetes.types.CustomObjectsOptions
 
   cloudify.kubernetes.resources.Service:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource

@@ -17,13 +17,16 @@
 # pylint: skip-file
 
 import sys
+import inspect
 PY2 = sys.version_info[0] == 2
 
 if PY2:
     text_type = unicode
+    getfullargspec = inspect.getargspec
 else:
+    getfullargspec = inspect.getfullargspec
     text_type = str
 
 __all__ = [
-    'PY2', 'text_type'
+    'PY2', 'text_type', 'getfullargspec'
 ]

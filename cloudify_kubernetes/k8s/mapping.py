@@ -168,20 +168,20 @@ SUPPORTED_API_MAPPINGS = {
     ),
     'ClusterRoleBinding': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
-            api='RbacAuthorizationV1beta1Api',
+            api='RbacAuthorizationV1Api',
             method='create_cluster_role_binding',
             payload='V1beta1ClusterRoleBinding'
         ),
         read=KubernetesSingleOperationApiMapping(
-            api='RbacAuthorizationV1beta1Api',
+            api='RbacAuthorizationV1Api',
             method='read_cluster_role_binding',
         ),
         update=KubernetesSingleOperationApiMapping(
-            api='RbacAuthorizationV1beta1Api',
+            api='RbacAuthorizationV1Api',
             method='patch_cluster_role_binding',
         ),
         delete=KubernetesSingleOperationApiMapping(
-            api='RbacAuthorizationV1beta1Api',
+            api='RbacAuthorizationV1Api',
             method='delete_cluster_role_binding',
             payload='V1DeleteOptions'
         ),
@@ -509,6 +509,7 @@ SUPPORTED_API_MAPPINGS = {
         create=KubernetesSingleOperationApiMapping(
             api='CustomObjectsApi',
             method='create_namespaced_custom_object',
+            payload=None,
         ),
         read=KubernetesSingleOperationApiMapping(
             api='CustomObjectsApi',
@@ -521,8 +522,49 @@ SUPPORTED_API_MAPPINGS = {
         delete=KubernetesSingleOperationApiMapping(
             api='CustomObjectsApi',
             method='delete_namespaced_custom_object',
+            payload='V1DeleteOptions'
         ),
-    )
+    ),
+    'MutatingWebhookConfiguration': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='AdmissionregistrationV1Api',
+            method='create_mutating_webhook_configuration',
+            payload='V1MutatingWebhookConfiguration'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='AdmissionregistrationV1Api',
+            method='read_mutating_webhook_configuration',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='AdmissionregistrationV1Api',
+            method='patch_mutating_webhook_configuration'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='AdmissionregistrationV1Api',
+            method='delete_mutating_webhook_configuration',
+            payload='V1DeleteOptions'
+        ),
+    ),
+    'ValidatingWebhookConfiguration': KubernetesApiMapping(
+        create=KubernetesSingleOperationApiMapping(
+            api='AdmissionregistrationV1Api',
+            method='create_validating_webhook_configuration',
+            payload='V1ValidatingWebhookConfiguration'
+        ),
+        read=KubernetesSingleOperationApiMapping(
+            api='AdmissionregistrationV1Api',
+            method='read_validating_webhook_configuration',
+        ),
+        update=KubernetesSingleOperationApiMapping(
+            api='AdmissionregistrationV1Api',
+            method='patch_validating_webhook_configuration'
+        ),
+        delete=KubernetesSingleOperationApiMapping(
+            api='AdmissionregistrationV1Api',
+            method='delete_validating_webhook_configuration',
+            payload='V1DeleteOptions'
+        ),
+    ),
 }
 
 

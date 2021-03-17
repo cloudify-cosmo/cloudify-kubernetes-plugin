@@ -25,6 +25,8 @@ from cloudify_kubernetes.k8s import (CloudifyKubernetesClient,
                                      KubernetesResourceDefinition,
                                      KuberentesApiOperationError)
 
+METADATA = {'metadata': {'name': 'foo'}}
+
 
 class TestClient(unittest.TestCase):
 
@@ -213,7 +215,7 @@ class TestClient(unittest.TestCase):
                 mappingMock,
                 KubernetesResourceDefinition(kind="1.2.3.4",
                                              apiVersion="v1",
-                                             metadata="metadata",
+                                             metadata=METADATA,
                                              spec="spec"),
                 {'first': 'b'}
             ).to_dict(),
@@ -232,7 +234,7 @@ class TestClient(unittest.TestCase):
                 mappingMock,
                 KubernetesResourceDefinition(kind="ClusterRoleBinding",
                                              apiVersion="v1",
-                                             metadata="metadata",
+                                             metadata=METADATA,
                                              roleRef="roleRef",
                                              subjects="subjects"),
                 {'first': 'b'}
@@ -271,7 +273,7 @@ class TestClient(unittest.TestCase):
                 mappingMock,
                 KubernetesResourceDefinition(kind="1.2.3.4",
                                              apiVersion="v1",
-                                             metadata="metadata",
+                                             metadata=METADATA,
                                              spec="spec"),
                 "resource_id", {'first': 'b'}
             ).to_dict(),
@@ -286,9 +288,11 @@ class TestClient(unittest.TestCase):
 
         instance, mappingMock = self._prepere_mocks()
 
+        resource_def = MagicMock(metadata={'name': 'resource_id'})
+
         self.assertEqual(
             instance.read_resource(
-                mappingMock, "resource_id", {'first': 'b'}
+                mappingMock, resource_def, {'first': 'b'}
             ),
             ('resource_id', 'b')
         )
@@ -298,49 +302,49 @@ class TestKubernetesResourceDefinition(unittest.TestCase):
     def test_KubernetesResourceDefinitionGeneral(self):
         instance = KubernetesResourceDefinition(kind="1.2.3.4",
                                                 apiVersion="v1",
-                                                metadata="metadata",
+                                                metadata=METADATA,
                                                 spec="spec")
 
         self.assertEqual(instance.kind, "4")
         self.assertEqual(instance.api_version, "v1")
-        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.metadata, METADATA)
         self.assertEqual(instance.spec, "spec")
 
     def test_KubernetesResourceDefinitionStorage(self):
         instance = KubernetesResourceDefinition(kind="1.2.3.4",
                                                 apiVersion="v1",
-                                                metadata="metadata",
+                                                metadata=METADATA,
                                                 parameters="parameters",
                                                 provisioner="provisioner")
 
         self.assertEqual(instance.kind, "4")
         self.assertEqual(instance.api_version, "v1")
-        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.metadata, METADATA)
         self.assertEqual(instance.parameters, "parameters")
         self.assertEqual(instance.provisioner, "provisioner")
 
     def test_KubernetesRole(self):
         instance = KubernetesResourceDefinition(kind="1.2.3.4",
                                                 apiVersion="v1",
-                                                metadata="metadata",
+                                                metadata=METADATA,
                                                 roleRef="roleRef",
                                                 subjects="subjects")
 
         self.assertEqual(instance.kind, "4")
         self.assertEqual(instance.api_version, "v1")
-        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.metadata, METADATA)
         self.assertEqual(instance.role_ref, "roleRef")
         self.assertEqual(instance.subjects, "subjects")
 
     def test_KubernetesConfig(self):
         instance = KubernetesResourceDefinition(kind="1.2.3.4",
                                                 apiVersion="v1",
-                                                metadata="metadata",
+                                                metadata=METADATA,
                                                 data="data")
 
         self.assertEqual(instance.kind, "4")
         self.assertEqual(instance.api_version, "v1")
-        self.assertEqual(instance.metadata, "metadata")
+        self.assertEqual(instance.metadata, METADATA)
         self.assertEqual(instance.data, "data")
 
 
