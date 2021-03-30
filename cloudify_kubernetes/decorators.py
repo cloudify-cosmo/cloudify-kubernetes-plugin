@@ -112,12 +112,8 @@ def _multidefinition_resource_task(task, definitions, kwargs,
         # check current state
         path = retrieve_path(kwargs)
         resource_id = definition.metadata.get('name')
-        if path and resource_state_function and resource_id:
-            current_state = resource_state_function(
-                resource_id=resource_id, **kwargs)
-        elif resource_state_function and resource_id:
-            current_state = resource_state_function(
-                resource_id=resource_id, **kwargs)
+        if resource_state_function and resource_id:
+            current_state = resource_state_function(**kwargs)
         elif path:
             current_state = ctx.instance.runtime_properties.get(
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {}).get(path)

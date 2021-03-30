@@ -2,8 +2,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.10.0'
-    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.10.0.zip
+    package_version: '2.11.0'
+    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.11.0.zip
 
 data_types:
 
@@ -295,6 +295,35 @@ data_types:
           Authentication properties of Kubernetes Cloud providers. Optional.
           Currently supported providers: Google Cloud Platform.
 
+  cloudify.kubernetes.types.Options:
+    description: API options depending on API operations execution.
+    properties:
+      namespace:
+        type: string
+        description: The resource namespace.
+        default: default
+
+  cloudify.kubernetes.types.CustomObjectsOptions:
+    description: API options depending on API operations execution.
+    properties:
+      namespace:
+        type: string
+        description: The resource namespace.
+        default: default
+      group:
+        type: string
+        description: The custom object resource API group.
+        required: true
+      plural:
+        type: string
+        description: The custom object resource API plural name.
+        required: true
+      version:
+        type: string
+        description: The custom object resource API version.
+        required: true
+
+
 node_types:
 
   cloudify.kubernetes.nodes.Master:
@@ -330,10 +359,8 @@ node_types:
           Permit changing the name and kind and number of resources defined in file.
         default: true
       options:
-        description: >
-          API options depending on API operations execution
-        default:
-          namespace: default
+        description: API options depending on API operations execution.
+        type: cloudify.kubernetes.types.Options
 
   cloudify.kubernetes.resources.ResourceWithValidateStatus:
     derived_from: cloudify.kubernetes.resources.ResourceBase
@@ -456,6 +483,12 @@ node_types:
 
   cloudify.kubernetes.resources.CustomResourceDefinition:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+
+  cloudify.kubernetes.resources.CustomObject:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      options:
+        type: cloudify.kubernetes.types.CustomObjectsOptions
 
   cloudify.kubernetes.resources.Service:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource

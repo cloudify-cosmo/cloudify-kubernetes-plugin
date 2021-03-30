@@ -17,8 +17,9 @@ import json
 import unittest
 from mock import (MagicMock, mock_open, patch)
 
-from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
+from cloudify.mocks import MockCloudifyContext
+from cloudify.exceptions import NonRecoverableError
 
 from cloudify_kubernetes import utils
 from cloudify.manager import DirtyTrackingDict
@@ -414,7 +415,7 @@ class TestUtils(unittest.TestCase):
     def test_resource_definitions_from_file_error(self):
         self._prepare_context(with_definition=False)
 
-        with self.assertRaises(KuberentesInvalidDefinitionError):
+        with self.assertRaises(NonRecoverableError):
             utils.resource_definitions_from_file()
 
     def test_get_definition_object(self):

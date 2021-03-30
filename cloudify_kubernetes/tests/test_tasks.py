@@ -544,7 +544,7 @@ class TestTasks(unittest.TestCase):
             def __call__(self, api_mapping, resource_definition, options):
                 if api_mapping == 'fake_api_mapping':
                     if resource_definition == \
-                            fake_resource_def.metadata['name']:
+                            fake_resource_def:
                         if options['first'] == 'second':
                             return _Result()
 
