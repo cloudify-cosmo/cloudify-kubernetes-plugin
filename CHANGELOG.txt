@@ -129,3 +129,5 @@
   - Support Custom Resource Definitions and Custom Objects API.
 2.11.1:
   - Degrade Kubernetes
+2.11.2:
+  - Add previously used options to options dictionary.
