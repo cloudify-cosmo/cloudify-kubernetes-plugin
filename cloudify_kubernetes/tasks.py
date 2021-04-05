@@ -32,6 +32,8 @@ from .utils import (PERMIT_REDEFINE,
                     JsonCleanuper,
                     mapping_by_data,
                     mapping_by_kind,
+                    NODE_PROPERTY_FILES,
+                    NODE_PROPERTY_OPTIONS,
                     retrieve_stored_resource,
                     retrieve_last_create_path,
                     store_result_for_retrieve_id,
@@ -40,10 +42,6 @@ from .utils import (PERMIT_REDEFINE,
                     set_namespace,
                     set_custom_resource,
                     validate_file_resources)
-
-
-NODE_PROPERTY_FILES = 'files'
-NODE_PROPERTY_OPTIONS = 'options'
 
 
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):

@@ -196,6 +196,9 @@ class CloudifyKubernetesClient(object):
         return None
 
     def _execute(self, operation, arguments):
+        for k, v in list(arguments.items()):
+            if not v:
+                del arguments[k]
         try:
             self.logger.info('Executing operation {0}'.format(operation))
             self.logger.info('Executing operation arguments {0}'.format(
