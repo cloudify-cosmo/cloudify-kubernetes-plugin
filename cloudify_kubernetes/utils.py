@@ -68,7 +68,6 @@ def match_resource(left, right):
     :param right: a dict or a KubernetesResourceDefinition
     :return: bool
     """
-
     l_name = left.get('metadata', {}).get('name')
     l_kind = left.get('kind')
     l_namesp = left.get('metadata', {}).get('namespace', 'default')
@@ -356,6 +355,7 @@ def store_resource_definition(resource_definition):
         if match_resource(li, resource_definition):
             # We found a match but still updating the resource definition
             # because fields like metadata.labels can change.
+
             ctx.instance.runtime_properties.get(DEFS)[
                 index] = JsonCleanuper(resource_definition).to_dict()
             return
@@ -553,3 +553,37 @@ def delete_tempfiles_for_certs_and_keys(config):
         current_value = config.get('api_options', {}).get(prop, '')
         if current_value and current_value.endswith('__cfy.k8s__'):
             os.remove(current_value)
+
+
+def handle_existing_resource(resource_exists, definition):
+    expected = ctx.node.properties.get('use_external_resource', False)
+    create_anyway = ctx.node.properties.get('create_if_missing', False)
+    use_anyway = ctx.node.properties.get('use_if_exists', True)
+
+    no_create = (resource_exists and expected) or \
+                (resource_exists and not expected and use_anyway)
+    create = (not resource_exists and not expected) or \
+             (not resource_exists and expected and create_anyway)
+
+    if no_create:
+        ctx.logger.info('The resource {r} exists. Not executing operation.'
+                        .format(r=definition.to_dict()))
+        ctx.instance.runtime_properties['__perform_task'] = False
+    elif create:
+        ctx.instance.runtime_properties['__perform_task'] = True
+    else:
+        ctx.logger.info('Expected resource {r} to exist, but it does not and '
+                        'create_if_missing is {cim}. Not executing operation.'
+                        .format(r=definition.to_dict(), cim=create_anyway))
+        ctx.instance.runtime_properties['__perform_task'] = False
+
+
+def handle_delete_resource(resource_exists):
+    expected = ctx.node.properties.get('use_external_resource', False)
+
+    if resource_exists and expected:
+        ctx.logger.info('The resource {r} exists as expected. '
+                        'Not executing operation.'.format(r=resource_exists))
+        ctx.instance.runtime_properties['__perform_task'] = False
+    else:
+        ctx.instance.runtime_properties['__perform_task'] = True

@@ -35,7 +35,9 @@ from cloudify_kubernetes.k8s.mapping import (
     KubernetesSingleOperationApiMapping
 )
 from cloudify_kubernetes._compat import text_type
-from cloudify_kubernetes.k8s import KubernetesResourceDefinition
+from cloudify_kubernetes.k8s import (
+    KuberentesApiOperationError,
+    KubernetesResourceDefinition)
 from cloudify_kubernetes.decorators import RELATIONSHIP_TYPE_MANAGED_BY_MASTER
 
 FILE_YAML = """
@@ -164,7 +166,9 @@ class TestTasks(unittest.TestCase):
         self.patch_mock_mappings.stop()
         super(TestTasks, self).tearDown()
 
-    def _prepare_master_node(self, api_mapping=None, external=False,
+    def _prepare_master_node(self,
+                             api_mapping=None,
+                             external=False,
                              create=False):
         node = MagicMock()
         node.properties = {
@@ -181,6 +185,7 @@ class TestTasks(unittest.TestCase):
             'use_external_resource': external,
             'validate_resource_status': True,
             'allow_node_redefinition': True,
+            'use_if_exists': True,
             'definition': json.loads(json.dumps({
                 'kind': 'Pod',
                 'apiVersion': 'v1',
@@ -483,8 +488,9 @@ class TestTasks(unittest.TestCase):
             )
 
     def test_do_resource_create(self):
-        self._prepare_master_node()
-
+        _, _ctx = self._prepare_master_node()
+        current_ctx.set(_ctx)
+        _ctx.instance.runtime_properties['__perform_task'] = True
         expected_value = {
             'kubernetes': {
                 'body': {'payload_param': 'payload_value'},
@@ -500,6 +506,9 @@ class TestTasks(unittest.TestCase):
         fake_mapping_def = KubernetesApiMapping(
             create=fake_mapping_dict, read=fake_mapping_dict,
             update=fake_mapping_dict, delete=fake_mapping_dict)
+
+        result = MagicMock()
+        result.to_dict.return_value = expected_value
 
         class _Result(object):
             def to_dict(self):
@@ -661,8 +670,8 @@ class TestTasks(unittest.TestCase):
                 return expected_value
 
         class _ReadResource(object):
-            def __call__(self, api_mapping, resource_id, options):
-                if resource_id == 'fake_id':
+            def __call__(self, api_mapping, resource_definition, options):
+                if resource_definition.metadata['name'] == 'test':
                     if options['first'] == 'second':
                         return _Result()
 
@@ -673,7 +682,7 @@ class TestTasks(unittest.TestCase):
             client=client,
             api_mapping=fake_mapping_def,
             resource_definition=fake_resource_def,
-            resource_id='fake_id'
+            resource_id='test'
         )
 
         self.assertEqual(result, expected_value)
@@ -710,7 +719,7 @@ class TestTasks(unittest.TestCase):
             ):
                 with patch(
                         'cloudify_kubernetes.tasks._do_resource_read',
-                        MagicMock()):
+                        return_value=RESPONSE):
                     tasks.resource_create(
                         client=MagicMock(),
                         api_mapping=MagicMock(),
@@ -752,7 +761,6 @@ class TestTasks(unittest.TestCase):
         _, _ctx = self._prepare_master_node()
 
         mock_isfile = MagicMock(return_value=True)
-
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
         with patch('os.path.isfile', mock_isfile):
@@ -799,6 +807,8 @@ class TestTasks(unittest.TestCase):
 
         client = MagicMock()
         client.create_resource = Mock(return_value=_Result())
+        client.read_resource.side_effect = [
+            KuberentesApiOperationError, KuberentesApiOperationError]
 
         mock_isfile = MagicMock(return_value=True)
         mock_fileWithSize = MagicMock(return_value=1)
@@ -934,7 +944,6 @@ class TestTasks(unittest.TestCase):
 
         defintion = KubernetesResourceDefinition(
             **_ctx.node.properties['definition'])
-
         expected_value = json.loads(json.dumps({
             'kind': 'Pod',
             'apiVersion': 'v1',
@@ -945,8 +954,13 @@ class TestTasks(unittest.TestCase):
             def to_dict(self):
                 return expected_value
 
+        def read_results(result):
+            return result
+
         client = MagicMock()
-        client.create_resource = Mock(return_value=_Result())
+        client.create_resource.return_value = _Result()
+        client.read_resource.side_effect = [
+            KuberentesApiOperationError, KuberentesApiOperationError]
 
         mock_isfile = MagicMock(return_value=True)
         mock_fileWithSize = MagicMock(return_value=1)
@@ -963,7 +977,7 @@ class TestTasks(unittest.TestCase):
                     ) as file_mock:
                         tasks.multiple_file_resource_create(
                             client=client,
-                            api_mapping=None,
+                            api_mapping=MagicMock(),
                             resource_definition=[defintion]
                         )
                     file_mock.assert_called_with('new_path', 'rb')

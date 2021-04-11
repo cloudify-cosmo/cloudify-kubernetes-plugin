@@ -110,8 +110,7 @@ class TestDecorators(unittest.TestCase):
                 decorators.resource_task(
                     retrieve_resources_definitions=MagicMock(
                         return_value=[defintion]),
-                    retrieve_mapping=MagicMock(),
-                    use_existing=True
+                    retrieve_mapping=MagicMock()
                 )(
                     MagicMock(
                         side_effect=NonRecoverableError(
@@ -140,8 +139,7 @@ class TestDecorators(unittest.TestCase):
                 decorators.resource_task(
                     retrieve_resources_definitions=MagicMock(
                         return_value=[defintion]),
-                    retrieve_mapping=MagicMock(),
-                    use_existing=True
+                    retrieve_mapping=MagicMock()
                 )(
                     MagicMock(
                         side_effect=Exception(
@@ -170,8 +168,7 @@ class TestDecorators(unittest.TestCase):
                 decorators.resource_task(
                     retrieve_resources_definitions=MagicMock(
                         return_value=[defintion]),
-                    retrieve_mapping=MagicMock(),
-                    use_existing=True
+                    retrieve_mapping=MagicMock()
                 )(
                     MagicMock(
                         side_effect=KuberentesInvalidApiMethodError(
@@ -196,8 +193,7 @@ class TestDecorators(unittest.TestCase):
             with self.assertRaises(NonRecoverableError) as error:
                 decorators.resource_task(
                     retrieve_resource_definition=MagicMock(),
-                    retrieve_mapping=MagicMock(),
-                    use_existing=True
+                    retrieve_mapping=MagicMock()
                 )(
                     MagicMock(
                         side_effect=KuberentesInvalidApiMethodError(
