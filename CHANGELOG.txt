@@ -131,3 +131,6 @@
   - Degrade Kubernetes
 2.11.2:
   - Add previously used options to options dictionary.
+2.12.0:
+  - Add use_if_exists property to all node types.
+  - Add create_if_missing property to all node types.

@@ -2,8 +2,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.11.2'
-    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.11.2.zip
+    package_version: '2.12.0'
+    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.12.0.zip
 
 data_types:
 
@@ -364,6 +364,21 @@ node_types:
         description: >
           Permit changing the name and kind and number of resources defined in file.
         default: true
+      use_external_resource:
+        type: boolean
+        description: >
+          If the resource is expected to already exist.
+        default: false
+      create_if_missing:
+        type: boolean
+        description: >
+          If the resource is supposed to exist, and it does not, then create. Such resources will not deleted on uninstall.
+        default: false
+      use_if_exists:
+        type: boolean
+        description: >
+          If a resource with this name and kind already exists in the provided namespace, then use it instead of failing because the resource already exists. Such resources will be deleted on uninstall.
+        default: true
       options:
         description: API options depending on API operations execution.
         type: cloudify.kubernetes.types.Options
@@ -379,10 +394,6 @@ node_types:
   cloudify.kubernetes.resources.BlueprintDefinedResource:
     derived_from: cloudify.kubernetes.resources.ResourceWithValidateStatus
     properties:
-      use_external_resource:
-        type: boolean
-        description: Indicates that you want to use an existing resource in Kubernetes.
-        default: false
       definition:
         type: cloudify.kubernetes.types.ResourceDefinition
         description: >
@@ -456,15 +467,9 @@ node_types:
 
   cloudify.kubernetes.resources.Node:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    properties:
-      use_external_resource:
-        default: true
 
   cloudify.kubernetes.resources.Namespace:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    properties:
-      use_external_resource:
-        default: true
 
   cloudify.kubernetes.resources.Pod:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource

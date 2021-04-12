@@ -21,22 +21,23 @@ from cloudify.exceptions import (
 from cloudify.decorators import operation
 
 from ._compat import text_type
-from .utils import (generate_traceback_exception,
-                    retrieve_path,
-                    get_node,
+from .utils import (get_node,
                     get_instance,
+                    retrieve_path,
                     NODE_PROPERTY_FILE,
+                    handle_existing_resource,
+                    generate_traceback_exception,
                     NODE_PROPERTY_FILE_RESOURCE_PATH,
                     create_tempfiles_for_certs_and_keys,
                     delete_tempfiles_for_certs_and_keys,
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
 from .k8s import (CloudifyKubernetesClient,
-                  KubernetesApiAuthenticationVariants,
-                  KubernetesApiConfigurationVariants,
-                  KuberentesInvalidPayloadClassError,
+                  KuberentesMappingNotFoundError,
                   KuberentesInvalidApiClassError,
                   KuberentesInvalidApiMethodError,
-                  KuberentesMappingNotFoundError)
+                  KubernetesApiConfigurationVariants,
+                  KuberentesInvalidPayloadClassError,
+                  KubernetesApiAuthenticationVariants)
 
 NODE_PROPERTY_AUTHENTICATION = 'authentication'
 NODE_PROPERTY_CONFIGURATION = 'configuration'
@@ -77,7 +78,6 @@ def _retrieve_property(_ctx, property_name, client_config=None):
 
 def _multidefinition_resource_task(task, definitions, kwargs,
                                    retrieve_mapping,
-                                   use_existing=False,
                                    cleanup_runtime_properties=False,
                                    resource_state_function=None):
     curr_num = 0
@@ -121,26 +121,14 @@ def _multidefinition_resource_task(task, definitions, kwargs,
             current_state = ctx.instance.runtime_properties.get(
                 INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
 
+        handle_existing_resource(current_state, definition)
         # ignore pre-existing state
-        if not use_existing and current_state:
-            ctx.logger.info(
-                "The resource {0} unexpectedly exists. "
-                "Not executing operation.".format(definition.to_dict()))
-            ctx.instance.runtime_properties['__perform_task'] = False
-        # ignore if we dont have any object yet
-        elif use_existing and not current_state:
-            ctx.logger.info(
-                "Expected resource {0} to exist, but it does not. "
-                "Not executing operation.".format(definition.to_dict()))
-            ctx.instance.runtime_properties['__perform_task'] = False
-        else:
-            ctx.instance.runtime_properties['__perform_task'] = True
         task(**kwargs)
         del ctx.instance.runtime_properties['__perform_task']
         # cleanup after successful run
         if current_state and cleanup_runtime_properties:
-            if path and path in ctx.instance.runtime_properties[
-                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES]:
+            if path and path in ctx.instance.runtime_properties.get(
+                    INSTANCE_RUNTIME_PROPERTY_KUBERNETES, {}):
                 del ctx.instance.runtime_properties[
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES][path]
             else:
@@ -160,7 +148,6 @@ def _multidefinition_resource_task(task, definitions, kwargs,
 def resource_task(retrieve_resource_definition=None,
                   retrieve_resources_definitions=None,
                   retrieve_mapping=None,
-                  use_existing=False,
                   cleanup_runtime_properties=False,
                   resource_state_function=None):
     def decorator(task, **_):
@@ -176,7 +163,6 @@ def resource_task(retrieve_resource_definition=None,
                 # apply definition
                 _multidefinition_resource_task(
                     task, definitions, kwargs, retrieve_mapping,
-                    use_existing=use_existing,
                     cleanup_runtime_properties=cleanup_runtime_properties,
                     resource_state_function=resource_state_function
                 )

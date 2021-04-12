@@ -576,6 +576,71 @@ class TestUtils(unittest.TestCase):
         for key in utils.CERT_KEYS:
             assert os.path.exists(config['api_options'][key]) is False
 
+    def test_handle_existing_resource(self):
+        _ctx = self._prepare_context()
+        definition = MagicMock()
+        definition.to_dict.return_value = {'foo': 'bar'}
+
+        resource_exists = False
+        _ctx.node.properties['use_external_resource'] = False
+        _ctx.node.properties['create_if_missing'] = False
+        _ctx.node.properties['use_if_exists'] = False
+        current_ctx.set(_ctx)
+        utils.handle_existing_resource(resource_exists, definition)
+        # The resource doesn't exist and it's not supposed to. So we perform.
+        self.assertTrue(_ctx.instance.runtime_properties['__perform_task'])
+
+        resource_exists = False
+        _ctx.node.properties['use_external_resource'] = True
+        _ctx.node.properties['create_if_missing'] = True
+        _ctx.node.properties['use_if_exists'] = False
+        current_ctx.set(_ctx)
+        utils.handle_existing_resource(resource_exists, definition)
+        # The resource doesn't exist. It should, and we want to create anyway.
+        self.assertTrue(_ctx.instance.runtime_properties['__perform_task'])
+
+        resource_exists = True
+        utils.handle_existing_resource(resource_exists, definition)
+        # The resource exists. It should. So we don't want to recreate it.
+        self.assertFalse(_ctx.instance.runtime_properties['__perform_task'])
+
+        resource_exists = False
+        _ctx.node.properties['use_external_resource'] = True
+        _ctx.node.properties['create_if_missing'] = False
+        _ctx.node.properties['use_if_exists'] = False
+        current_ctx.set(_ctx)
+        utils.handle_existing_resource(resource_exists, definition)
+        # The resource doesn't exist. It should, but we wont create it.
+        self.assertFalse(_ctx.instance.runtime_properties['__perform_task'])
+
+        resource_exists = True
+        _ctx.node.properties['use_external_resource'] = True
+        _ctx.node.properties['create_if_missing'] = False
+        _ctx.node.properties['use_if_exists'] = False
+        current_ctx.set(_ctx)
+        utils.handle_existing_resource(resource_exists, definition)
+        # The resource exists. It should. So we don't want to do anything.
+        self.assertFalse(_ctx.instance.runtime_properties['__perform_task'])
+
+        resource_exists = True
+        _ctx.node.properties['use_external_resource'] = True
+        _ctx.node.properties['create_if_missing'] = True
+        _ctx.node.properties['use_if_exists'] = False
+        current_ctx.set(_ctx)
+        utils.handle_existing_resource(resource_exists, definition)
+        # The resource exists. It should. We say create anyway. But we still
+        # should not.
+        self.assertFalse(_ctx.instance.runtime_properties['__perform_task'])
+
+        resource_exists = True
+        _ctx.node.properties['use_external_resource'] = False
+        _ctx.node.properties['create_if_missing'] = False
+        _ctx.node.properties['use_if_exists'] = True
+        current_ctx.set(_ctx)
+        utils.handle_existing_resource(resource_exists, definition)
+        # The resource exists. It shouldn't. We say use anyway. No create.
+        self.assertFalse(_ctx.instance.runtime_properties['__perform_task'])
+
 
 if __name__ == '__main__':
     unittest.main()

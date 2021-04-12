@@ -27,21 +27,23 @@ from .k8s import (status_mapping,
 from .decorators import (resource_task,
                          with_kubernetes_client)
 from .k8s.exceptions import KuberentesApiOperationError
-from .utils import (PERMIT_REDEFINE,
+from .utils import (set_namespace,
                     retrieve_path,
                     JsonCleanuper,
+                    PERMIT_REDEFINE,
                     mapping_by_data,
                     mapping_by_kind,
+                    set_custom_resource,
                     NODE_PROPERTY_FILES,
                     NODE_PROPERTY_OPTIONS,
+                    handle_delete_resource,
+                    validate_file_resources,
+                    handle_existing_resource,
                     retrieve_stored_resource,
                     retrieve_last_create_path,
                     store_result_for_retrieve_id,
                     resource_definitions_from_file,
-                    resource_definition_from_blueprint,
-                    set_namespace,
-                    set_custom_resource,
-                    validate_file_resources)
+                    resource_definition_from_blueprint)
 
 
 def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
@@ -49,12 +51,9 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
     set_namespace(kwargs, resource_definition)
     set_custom_resource(options, resource_definition)
     perform_task = ctx.instance.runtime_properties.get('__perform_task', False)
-
-    if ctx.node.properties.get('use_external_resource') and not perform_task:
-        return JsonCleanuper(client.read_resource(
-            api_mapping,
-            resource_definition,
-            options)).to_dict()
+    if not perform_task:
+        return _do_resource_read(
+            client, api_mapping, resource_definition, **kwargs)
     return JsonCleanuper(client.create_resource(
         api_mapping,
         resource_definition,
@@ -104,10 +103,10 @@ def _do_resource_status_check(resource_kind, response):
     return True
 
 
-def _check_if_resource_exists(client,
-                              api_mapping,
-                              resource_definition,
-                              **kwargs):
+def check_if_resource_exists(client,
+                             api_mapping,
+                             resource_definition,
+                             **kwargs):
     try:
         return _do_resource_read(
             client, api_mapping, resource_definition, **kwargs)
@@ -119,7 +118,6 @@ def _check_if_resource_exists(client,
 
 def _do_resource_delete(client, api_mapping, resource_definition,
                         resource_id, **kwargs):
-
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     set_namespace(kwargs, resource_definition)
     set_custom_resource(options, resource_definition)
@@ -138,13 +136,12 @@ def _do_resource_delete(client, api_mapping, resource_definition,
     # The resource is not a type of ``ReplicationController`` then we must
     # pass all the required fields
 
+    resource_exists = check_if_resource_exists(
+        client, api_mapping, resource_definition, **kwargs)
+    handle_delete_resource(resource_exists)
     perform_task = ctx.instance.runtime_properties.get('__perform_task', False)
-    if ctx.node.properties.get('use_external_resource') and not perform_task:
-        return JsonCleanuper(client.read_resource(
-            api_mapping,
-            resource_id,
-            options
-        )).to_dict()
+    if not perform_task:
+        return JsonCleanuper(resource_exists).to_dict()
     return JsonCleanuper(client.delete_resource(
         api_mapping,
         resource_definition,
@@ -157,8 +154,7 @@ def _do_resource_delete(client, api_mapping, resource_definition,
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
-    use_existing=False,  # ignore already created
-    resource_state_function=_check_if_resource_exists
+    resource_state_function=check_if_resource_exists
 )
 def resource_create(client, api_mapping, resource_definition, **kwargs):
     try:
@@ -184,8 +180,7 @@ def resource_create(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
-    use_existing=True,  # get current object
-    resource_state_function=_check_if_resource_exists
+    resource_state_function=check_if_resource_exists
 )
 def resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
@@ -212,8 +207,7 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
-    use_existing=True,  # get current object
-    resource_state_function=_check_if_resource_exists
+    resource_state_function=check_if_resource_exists
 )
 def resource_update(client, api_mapping, resource_definition, **kwargs):
     result = _do_resource_update(
@@ -228,9 +222,8 @@ def resource_update(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
-    use_existing=True,  # get current object
     cleanup_runtime_properties=True,  # remove on successful run
-    resource_state_function=_check_if_resource_exists
+    resource_state_function=check_if_resource_exists
 )
 def resource_delete(client, api_mapping, resource_definition, **kwargs):
     try:
@@ -254,10 +247,11 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
             **kwargs
         )
 
+        handle_delete_resource(read_result)
         perform_task = ctx.instance.runtime_properties.get('__perform_task',
                                                            False)
-        if not ctx.node.properties.get(
-                'use_external_resource') and perform_task:
+
+        if perform_task:
             store_result_for_retrieve_id(read_result)
             raise OperationRetry(
                 'Delete response: {0}'.format(delete_response))
@@ -267,8 +261,7 @@ def resource_delete(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_data,
-    use_existing=False,  # ignore already created
-    resource_state_function=_check_if_resource_exists
+    resource_state_function=check_if_resource_exists
 )
 def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     result = _do_resource_create(
@@ -283,7 +276,6 @@ def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_data,
-    use_existing=True,  # get current object
 )
 def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
     read_response = \
@@ -299,9 +291,8 @@ def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_data,
-    use_existing=True,  # get current object
     cleanup_runtime_properties=True,  # remove on successful run
-    resource_state_function=_check_if_resource_exists
+    resource_state_function=check_if_resource_exists
 )
 def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
     try:
@@ -324,10 +315,13 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
             resource_definition.metadata['name'],
             **kwargs
         )
+        resource_exists = check_if_resource_exists(
+            client, api_mapping, resource_definition, **kwargs)
+        handle_delete_resource(resource_exists)
         perform_task = ctx.instance.runtime_properties.get('__perform_task',
                                                            False)
-        if not ctx.node.properties.get(
-                'use_external_resource') and perform_task:
+
+        if perform_task:
             store_result_for_retrieve_id(read_result)
             raise OperationRetry(
                 'Delete response: {0}'.format(delete_response))
@@ -337,16 +331,21 @@ def custom_resource_delete(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
-    use_existing=False,  # ignore already created
 )
 def file_resource_create(client, api_mapping, resource_definition, **kwargs):
-
-    result = _do_resource_create(
-        client,
-        api_mapping,
-        resource_definition,
-        **kwargs
-    )
+    result = check_if_resource_exists(
+        client, api_mapping, resource_definition, **kwargs)
+    handle_existing_resource(result, resource_definition)
+    perform_task = ctx.instance.runtime_properties.get('__perform_task',
+                                                       False)
+    if perform_task:
+        result = _do_resource_create(
+            client,
+            api_mapping,
+            resource_definition,
+            **kwargs
+        )
+    ctx.logger.info('Create result: {}'.format(result))
     path = retrieve_path(kwargs)
     store_result_for_retrieve_id(result, path)
 
@@ -355,7 +354,6 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
-    use_existing=True,  # get current object
 )
 def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
@@ -379,9 +377,8 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
 @resource_task(
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
-    use_existing=True,  # get current object
     cleanup_runtime_properties=True,  # remove on successful run
-    resource_state_function=_check_if_resource_exists
+    resource_state_function=check_if_resource_exists
 )
 def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
     """We want to delete the resources from the file that was created last
@@ -440,25 +437,37 @@ def file_resource_delete(client, api_mapping, resource_definition, **kwargs):
                 'Raising error: {0}'.format(text_type(e)))
     else:
         # We now know that the resource has not been deleted.
-        delete_response = _do_resource_delete(
-            client,
-            api_mapping,
-            resource_definition,
-            resource_definition.metadata['name'],
-            **kwargs
-        )
+        try:
+            delete_response = _do_resource_delete(
+                client,
+                api_mapping,
+                resource_definition,
+                resource_definition.metadata['name'],
+                **kwargs
+            )
+        except KuberentesApiOperationError as e:
+            if '(404)' in text_type(e):
+                ctx.logger.debug(
+                    'Ignoring error: {0}'.format(text_type(e)))
+            else:
+                raise
         # Since the resource has only been asyncronously deleted, we
         # need to put it back in all our runtime properties in order to
         # let it be deleted again only not to be restored.
-        store_result_for_retrieve_id(
-            JsonCleanuper(resource_definition).to_dict(),
-            path
-        )
-        # Also the adjacent resources:
-        for k, v in adjacent_resources.items():
-            store_result_for_retrieve_id(v, k)
-        # And now, we rerun to hopefully fail.
-        raise OperationRetry('Delete response: {0}'.format(delete_response))
+        handle_delete_resource(resource_definition)
+        perform_task = ctx.instance.runtime_properties.get('__perform_task',
+                                                           False)
+        if perform_task:
+            store_result_for_retrieve_id(
+                JsonCleanuper(resource_definition).to_dict(),
+                path
+            )
+            # Also the adjacent resources:
+            for k, v in adjacent_resources.items():
+                store_result_for_retrieve_id(v, k)
+            # And now, we rerun to hopefully fail.
+            raise OperationRetry('Delete response: {0}'.format(
+                delete_response))
     # If I have not thought of another scenario, we need to go back and
     # read the logs.
     if adjacent_resources:
