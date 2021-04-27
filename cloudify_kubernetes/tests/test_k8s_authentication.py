@@ -26,21 +26,15 @@ from cloudify_kubernetes.k8s.exceptions import KuberentesAuthenticationError
 class BaseTestK8SAuthentication(unittest.TestCase):
     def _mock_api(self):
         api_key = {}
-        mock_api_key = MagicMock()
-        mock_api_key.__setitem__.side_effect = api_key.__setitem__
 
         api_key_prefix = {}
-        mock_api_key_prefix = MagicMock()
-        mock_api_key_prefix.__setitem__.side_effect = \
-            api_key_prefix.__setitem__
 
         mock_configuration = MagicMock(
-            api_key=mock_api_key,
-            api_key_prefix=mock_api_key_prefix
+            api_key={},
+            api_key_prefix={}
         )
-        mock_api = MagicMock(configuration=mock_configuration)
 
-        return api_key, api_key_prefix, mock_api
+        return api_key, api_key_prefix, mock_configuration
 
 
 class TestKubernetesApiAuthentication(BaseTestK8SAuthentication):
@@ -51,10 +45,8 @@ class TestKubernetesApiAuthentication(BaseTestK8SAuthentication):
 
         self.assertEqual(instance.logger, 'logger')
         self.assertEqual(instance.authentication_data, 'conf')
-        self.assertFalse(instance._do_authenticate(mock_api))
-
-        with self.assertRaises(KuberentesAuthenticationError):
-            instance.authenticate(mock_api)
+        self.assertEqual(instance._do_authenticate(mock_api), mock_api)
+        self.assertEqual(instance.authenticate(mock_api), mock_api)
 
 
 class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
@@ -95,8 +87,8 @@ class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
             MagicMock(return_value=mock_credentials)
         ):
             instance.authenticate(mock_api)
-        api_key = mock_api.configuration.api_key
-        api_key_prefix = mock_api.configuration.api_key_prefix
+        api_key = mock_api.api_key
+        api_key_prefix = mock_api.api_key_prefix
         self.assertEquals(token, api_key['authorization'])
         self.assertEquals('Bearer', api_key_prefix['authorization'])
 

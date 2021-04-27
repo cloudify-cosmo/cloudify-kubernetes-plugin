@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kubernetes.client import V1DeleteOptions
-from kubernetes.client.rest import ApiException
+import kubernetes
 
 from cloudify.exceptions import NonRecoverableError
 
@@ -125,12 +124,33 @@ class CloudifyKubernetesClient(object):
 
     def __init__(self, logger, api_configuration, api_authentication=None):
         self.logger = logger
-        self.api = api_configuration.prepare_api()
+        prepare_api = api_configuration.prepare_api()
+        if isinstance(prepare_api, kubernetes.client.Configuration):
 
-        if api_authentication:
-            api_authentication.authenticate(self.api)
+            if api_authentication:
+                self.configuration = api_authentication.authenticate(
+                    prepare_api)
+            else:
+                self.configuration = prepare_api
 
-        self.logger.info('Kubernetes API initialized successfully')
+            self.api = kubernetes.client
+            self.api.configuration = \
+                kubernetes.client.Configuration.set_default(
+                    self.configuration)
+            self.client = kubernetes.client.ApiClient(
+                configuration=self.api.configuration)
+
+        else:
+
+            if prepare_api:
+                self.api = prepare_api
+            else:
+                self.api = kubernetes.client
+
+            self.configuration = None
+            self.client = self.api.ApiClient()
+
+        self.logger.info('Kubernetes API initialized successfully.')
 
     @property
     def _name(self):
@@ -149,7 +169,7 @@ class CloudifyKubernetesClient(object):
 
     def _prepare_api_method(self, class_name, method_name):
         if hasattr(self.api, class_name):
-            api = getattr(self.api, class_name)()
+            api = getattr(self.api, class_name)(api_client=self.client)
 
             if hasattr(api, method_name):
                 method = getattr(api, method_name)
@@ -208,7 +228,7 @@ class CloudifyKubernetesClient(object):
             self.logger.debug('Result: {0}'.format(result))
 
             return result
-        except ApiException as e:
+        except kubernetes.client.rest.ApiException as e:
             if 'the namespace of the provided object does not match ' \
                'the namespace sent on the request' in text_type(e):
                 raise NonRecoverableError(text_type(e))
@@ -274,7 +294,7 @@ class CloudifyKubernetesClient(object):
 
             # Trim '_' from ``delete_resource`` instance keys
             # Since these represent options args
-            if isinstance(delete_resource, V1DeleteOptions):
+            if isinstance(delete_resource, kubernetes.client.V1DeleteOptions):
                 delete_resource = \
                     {k[1:]: v for k, v in vars(delete_resource).items()}
 

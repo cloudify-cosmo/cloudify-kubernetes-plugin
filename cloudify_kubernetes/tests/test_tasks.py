@@ -149,6 +149,19 @@ class TestTasks(unittest.TestCase):
             return_value=RESPONSE
         )
 
+        class MockConfig(object):
+
+            @staticmethod
+            def set_default(*_, **__):
+                return MockConfig()
+
+        self.mock_client.Configuration = MockConfig
+
+        class MockDelete(object):
+            pass
+
+        self.mock_client.V1DeleteOptions = MockDelete
+
         self.patch_mock_loader = patch(
             'kubernetes.config.load_kube_config', self.mock_loader
         )

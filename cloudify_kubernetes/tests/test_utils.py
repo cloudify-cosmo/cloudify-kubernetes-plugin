@@ -336,7 +336,7 @@ class TestUtils(unittest.TestCase):
         }
 
         with patch("cloudify_kubernetes.utils.open",
-                   mock_open(read_data=file_resources)) as _:
+                   mock_open(read_data=file_resources)):
             with patch('cloudify.ctx.download_resource_and_render'):
                 with patch('os.path.isfile'):
                     with patch('os.path.getsize'):

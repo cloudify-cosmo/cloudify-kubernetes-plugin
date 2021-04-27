@@ -15,6 +15,7 @@
 import unittest
 from mock import MagicMock
 
+from kubernetes import client as kubernetes_client
 from kubernetes.client.rest import ApiException
 
 from cloudify_kubernetes._compat import text_type
@@ -33,10 +34,17 @@ class TestClient(unittest.TestCase):
     def test_init(self):
         logger = MagicMock()
         api_configuration = MagicMock()
-        api_configuration.prepare_api = MagicMock(return_value="APi")
+        api_configuration.prepare_api = MagicMock(return_value=None)
         instance = CloudifyKubernetesClient(logger, api_configuration)
         self.assertEqual(instance.logger, logger)
-        self.assertEqual(instance.api, "APi")
+        self.assertEqual(instance.api, kubernetes_client)
+
+        api_configuration = MagicMock()
+        prepared_api = MagicMock()
+        api_configuration.prepare_api = MagicMock(return_value=prepared_api)
+        instance = CloudifyKubernetesClient(logger, api_configuration)
+        self.assertEqual(instance.logger, logger)
+        self.assertEqual(instance.api, prepared_api)
 
     def test_name(self):
         logger = MagicMock()
@@ -53,6 +61,9 @@ class TestClient(unittest.TestCase):
         api_configuration = MagicMock()
 
         class FakeApi(object):
+
+            def ApiClient(self, *_, **__):
+                return MagicMock(*_, **__)
 
             def __getattr__(self, name):
                 raise AttributeError()
@@ -74,6 +85,9 @@ class TestClient(unittest.TestCase):
         api_configuration = MagicMock()
 
         class FakeApi(object):
+
+            def ApiClient(self, *_, **__):
+                return MagicMock(*_, **__)
 
             def __getattr__(self, name):
                 raise AttributeError()
