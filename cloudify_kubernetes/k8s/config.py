@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import kubernetes
 import os
+import kubernetes
 
 from kubernetes.config.kube_config import KUBE_CONFIG_DEFAULT_LOCATION
-from kubernetes.client import Configuration
+
 from .exceptions import KuberentesApiInitializationFailedError
 
 
@@ -58,10 +58,12 @@ class BlueprintFileConfiguration(KubernetesApiConfiguration):
                 if manager_file_path and os.path.isfile(
                     os.path.expanduser(manager_file_path)
                 ):
+                    configuration = kubernetes.client.Configuration()
                     kubernetes.config.load_kube_config(
-                        config_file=manager_file_path
+                        config_file=manager_file_path,
+                        client_configuration=configuration
                     )
-                    return kubernetes.client
+                    return configuration
             except Exception as e:
                 self.logger.error(
                     'Cannot download config file from blueprint: {0}'
@@ -83,10 +85,12 @@ class ManagerFilePathConfiguration(KubernetesApiConfiguration):
             if manager_file_path and os.path.isfile(
                 os.path.expanduser(manager_file_path)
             ):
+                configuration = kubernetes.client.Configuration()
                 kubernetes.config.load_kube_config(
-                    config_file=manager_file_path
+                    config_file=manager_file_path,
+                    client_configuration=configuration
                 )
-                return kubernetes.client
+                return configuration
 
         return None
 
@@ -106,9 +110,9 @@ class FileContentConfiguration(KubernetesApiConfiguration):
                 ))
             )
 
-            config = type.__call__(Configuration)
+            config = type.__call__(kubernetes.client.Configuration)
             loader.load_and_set(config)
-            Configuration.set_default(config)
+            kubernetes.client.Configuration.set_default(config)
 
             return kubernetes.client
 
@@ -131,7 +135,6 @@ class ApiOptionsConfiguration(KubernetesApiConfiguration):
                 api_options[self.API_OPTIONS_HOST_KEY] = \
                     api_options[self.API_OPTIONS_HOST_KEY].rstrip('/')
 
-            api = kubernetes.client
             configuration = kubernetes.client.Configuration()
 
             for key in self.API_OPTIONS_ALL_KEYS:
@@ -143,9 +146,7 @@ class ApiOptionsConfiguration(KubernetesApiConfiguration):
                             {"authorization":
                                 "Bearer {0}".format(api_options[key])}
                     setattr(configuration, key, api_options[key])
-
-            api.Configuration.set_default(configuration)
-            return api
+            return configuration
         return None
 
 
@@ -188,4 +189,3 @@ class KubernetesApiConfigurationVariants(KubernetesApiConfiguration):
             'variant found for {0} properties'
             .format(self.configuration_data)
         )
-        return None

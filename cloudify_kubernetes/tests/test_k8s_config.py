@@ -84,12 +84,13 @@ class TestBlueprintFileConfiguration(unittest.TestCase):
             ):
                 with patch('kubernetes.client', mock_client):
                     self.assertEqual(
-                        instance.prepare_api(), mock_client
+                        instance.prepare_api(), mock_client.Configuration()
                     )
 
         mock_download_resource.assert_called_with('kubernetes.conf')
         mock_kubernetes_config_load_kube_config.assert_called_with(
-            config_file='downloaded_resource'
+            config_file='downloaded_resource',
+            client_configuration=mock_client.Configuration()
         )
 
 
@@ -128,12 +129,13 @@ class TestManagerFilePathConfiguration(unittest.TestCase):
             ):
                 with patch('kubernetes.client', mock_client):
                     self.assertEqual(
-                        instance.prepare_api(), mock_client
+                        instance.prepare_api(), mock_client.Configuration()
                     )
 
         mock_isfile.assert_called_with('kubernetes.conf')
         mock_kubernetes_config_load_kube_config.assert_called_with(
-            config_file='kubernetes.conf'
+            config_file='kubernetes.conf',
+            client_configuration=mock_client.Configuration()
         )
 
 
@@ -156,7 +158,14 @@ class TestFileContentConfiguration(unittest.TestCase):
         mock_download_resource = MagicMock()
         mock_logger = MagicMock()
         mock_config = MagicMock()
+
+        class Config(object):
+
+            def set_default(self, *_, **__):
+                pass
+
         mock_client = MagicMock()
+        mock_client.Configuration = Config
 
         instance = FileContentConfiguration(
             mock_logger,
@@ -208,7 +217,7 @@ class TestApiOptionsConfiguration(unittest.TestCase):
 
         with patch('kubernetes.client', mock_client):
             self.assertEqual(
-                instance.prepare_api(), mock_client
+                instance.prepare_api(), mock_client.Configuration()
             )
 
         # check keys
@@ -221,7 +230,7 @@ class TestApiOptionsConfiguration(unittest.TestCase):
             config = MagicMock()
             mock_client.Configuration = MagicMock(return_value=config)
             self.assertEqual(
-                instance.prepare_api(), mock_client
+                instance.prepare_api(), mock_client.Configuration()
             )
             self.assertEqual(config.api_key,
                              {'authorization': 'Bearer secret key'})
@@ -245,7 +254,14 @@ class TestKubernetesApiConfigurationVariants(unittest.TestCase):
     def test_KubernetesApiConfigurationVariants(self):
         mock_logger = MagicMock()
         mock_config = MagicMock()
+
+        class Config(object):
+
+            def set_default(self, *_, **__):
+                pass
+
         mock_client = MagicMock()
+        mock_client.Configuration = Config
 
         instance = KubernetesApiConfigurationVariants(
             mock_logger,

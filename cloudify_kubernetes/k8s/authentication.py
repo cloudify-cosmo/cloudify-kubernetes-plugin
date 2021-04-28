@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import json
-import kubernetes
 
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -28,11 +27,30 @@ class KubernetesApiAuthentication(object):
         self.authentication_data = authentication_data
 
     def _do_authenticate(self, api):
-        return False
+        if api:
+            return api
 
     def authenticate(self, api):
-        if self._do_authenticate(api):
-            return None
+        authenticated = self._do_authenticate(api)
+        if authenticated:
+            return authenticated
+
+        raise KuberentesAuthenticationError(
+            'Cannot use {0} authenticate option for data: {1} and API: {2}'
+            .format(
+                self.__class__.__name__,
+                self.authentication_data,
+                api
+            )
+        )
+
+
+class StandardBearerToken(KubernetesApiAuthentication):
+
+    def _do_authenticate(self, api):
+
+        if hasattr(api, 'api_key') and hasattr(api, 'api_key_prefix'):
+            return api
 
         raise KuberentesAuthenticationError(
             'Cannot use {0} authenticate option for data: {1} and API: {2}'
@@ -56,11 +74,10 @@ class GCPServiceAccountAuthentication(KubernetesApiAuthentication):
 
     TOKEN_PREFIX = 'Bearer'
 
-    def _do_authenticate(self, api):
+    def _do_authenticate(self, configuration):
         service_account_file_content = self.authentication_data.get(
             self.PROPERTY_GCE_SERVICE_ACCOUNT
         )
-
         if service_account_file_content:
 
             if isinstance(service_account_file_content, text_type):
@@ -71,21 +88,27 @@ class GCPServiceAccountAuthentication(KubernetesApiAuthentication):
                 service_account_file_content,
                 self.SCOPES
             )
-            # re-init configuration object
-            api.configuration = kubernetes.client.Configuration()
             token = credentials.get_access_token().access_token
-            # added re-init because the bellow was giving no api_key attribute
-            api.configuration.api_key[self.K8S_API_AUTHORIZATION] = token
-            api.configuration.api_key_prefix[self.K8S_API_AUTHORIZATION]\
+            configuration.api_key[self.K8S_API_AUTHORIZATION] = token
+            configuration.api_key_prefix[self.K8S_API_AUTHORIZATION]\
                 = self.TOKEN_PREFIX
+            return configuration
 
-            return True
+        raise KuberentesAuthenticationError(
+            'Cannot use {0} authenticate option for data: {1} and API: {2}'
+            .format(
+                self.__class__.__name__,
+                self.authentication_data,
+                configuration
+            )
+        )
 
 
 class KubernetesApiAuthenticationVariants(KubernetesApiAuthentication):
 
     VARIANTS = (
         GCPServiceAccountAuthentication,
+        StandardBearerToken,
     )
 
     def authenticate(self, api):
@@ -108,7 +131,7 @@ class KubernetesApiAuthenticationVariants(KubernetesApiAuthentication):
                 )
 
         self.logger.warn(
-            'Cannot initialize Kubernetes API - no suitable configuration '
+            'Cannot initialize Kubernetes API - no suitable authentication '
             'variant found for {0} properties'
             .format(self.authentication_data)
         )
