@@ -2,8 +2,8 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.12.1'
-    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.12.1.zip
+    package_version: '2.13.0'
+    source: https://github.com/cloudify-cosmo/cloudify-kubernetes-plugin/archive/2.13.0.zip
 
 data_types:
 
@@ -353,7 +353,7 @@ node_types:
   cloudify.kubernetes.resources.ResourceBase:
     derived_from: cloudify.nodes.Root
     properties:
-      client_config:
+      client_config: &client_config
         type: cloudify.kubernetes.types.ClientConfig
         required: false
         description: >
@@ -628,9 +628,34 @@ node_types:
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
 
+  cloudify.kubernetes.resources.SharedCluster:
+    derived_from: cloudify.nodes.SharedResource
+    properties:
+      client_config: *client_config
+      options:
+        description: API options depending on API operations execution.
+        type: cloudify.kubernetes.types.Options
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        configure:
+          implementation: kubernetes.cloudify_kubernetes.tasks.refresh_config
+        start:
+          implementation: kubernetes.cloudify_kubernetes.tasks.create_token
+        poststart:
+          implementation: kubernetes.cloudify_kubernetes.tasks.read_token
+        prestop:
+          implementation: kubernetes.cloudify_kubernetes.tasks.refresh_config
+        stop:
+          implementation: kubernetes.cloudify_kubernetes.tasks.delete_token
+        pull:
+          implementation: kubernetes.cloudify_kubernetes.tasks.read_token
+
 relationships:
 
   cloudify.kubernetes.relationships.managed_by_master:
+    derived_from: cloudify.relationships.connected_to
+
+  cloudify.relationships.kubernetes.connected_to_shared_cluster:
     derived_from: cloudify.relationships.connected_to
 
 workflows:

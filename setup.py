@@ -13,7 +13,11 @@
 # limitations under the License.
 
 import os
+import sys
+import inspect
 from setuptools import setup
+
+PY2 = sys.version_info[0] == 2
 
 
 def read(rel_path):
@@ -33,15 +37,12 @@ def get_version(rel_file='plugin.yaml'):
     raise RuntimeError('Unable to find version string.')
 
 
-setup(
-    name='cloudify-kubernetes-plugin',
-    version=get_version(),
-    author='Cloudify Platform Ltd.',
-    author_email='hello@cloudify.co',
-    description='Plugin provides Kubernetes management possibility',
-    packages=['cloudify_kubernetes', 'cloudify_kubernetes.k8s'],
-    license='LICENSE',
-    install_requires=[
+cloudify_types = 'cloudify-types @ ' \
+                 'git+https://github.com/cloudify-cosmo/cloudify-manager.git' \
+                 '@5.2.3-build#subdirectory=cloudify_types'
+
+
+install_requires = [
         'cloudify-python-importer==0.2',
         'cloudify-common>=4.5',
         'kubernetes==12.0.1',
@@ -50,5 +51,24 @@ setup(
         'pyasn1>=0.1.7',
         'pyasn1-modules>=0.0.5,<0.2.1',
         'oauth2client',  # used only in GCPServiceAccountAuthentication
-    ]
+]
+
+if not PY2:
+    install_requires.append(cloudify_types)
+else:
+    install_requires.append('rsa==4.5')
+
+setup(
+    name='cloudify-kubernetes-plugin',
+    version=get_version(),
+    author='Cloudify Platform Ltd.',
+    author_email='hello@cloudify.co',
+    description='Plugin provides Kubernetes management possibility',
+    include_package_data=True,
+    packages=['cloudify_kubernetes',
+              'cloudify_kubernetes.k8s',
+              'cloudify_kubernetes.tasks',
+              'cloudify_kubernetes.tasks.nested_resources'],
+    license='LICENSE',
+    install_requires=install_requires
 )

@@ -27,6 +27,7 @@ executors:
       image: ubuntu-1604:201903-01
 
 commands:
+
   run_unittest:
     steps:
       - run:
@@ -37,6 +38,9 @@ commands:
       - run:
           name: install tox
           command: pip install --user tox
+      - run:
+          name: install tox
+          command: pip install -r test-requirements.txt -r dev-requirements.txt
       - run:
           name: Run Flake8
           command: /home/circleci/.local/bin/tox -e pep8

@@ -136,3 +136,5 @@
   - Add create_if_missing property to all node types.
 2.12.1:
   - Update client.
+2.13.0:
+  - Add token type.

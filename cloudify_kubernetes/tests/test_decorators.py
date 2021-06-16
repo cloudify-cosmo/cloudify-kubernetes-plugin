@@ -13,17 +13,18 @@
 # limitations under the License.
 
 
-from mock import (MagicMock, patch)
 import unittest
+from mock import MagicMock, patch
 
-from cloudify.exceptions import RecoverableError, NonRecoverableError
-from cloudify.mocks import MockCloudifyContext
 from cloudify.state import current_ctx
+from cloudify.mocks import MockCloudifyContext
+from cloudify.exceptions import RecoverableError, NonRecoverableError
 
-import cloudify_kubernetes.decorators as decorators
-from cloudify_kubernetes.k8s import (CloudifyKubernetesClient,
-                                     KuberentesInvalidApiMethodError,
-                                     KubernetesResourceDefinition)
+from .. import decorators
+from ..k8s import (
+    CloudifyKubernetesClient,
+    KubernetesResourceDefinition,
+    KuberentesInvalidApiMethodError)
 
 
 class TestDecorators(unittest.TestCase):
