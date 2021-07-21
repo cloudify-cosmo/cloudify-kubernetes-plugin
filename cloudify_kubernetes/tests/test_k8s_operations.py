@@ -11,15 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import unittest
 from mock import MagicMock
 from kubernetes.client.rest import ApiException
 
-from cloudify_kubernetes.k8s.operations import (KubernetesCreateOperation,
-                                                KubernetesReadOperation,
-                                                KubernetesUpdateOperation,
-                                                KubernetesDeleteOperation)
-from cloudify_kubernetes.k8s.exceptions import KuberentesApiOperationError
+from ..k8s.operations import (
+    KubernetesReadOperation,
+    KubernetesCreateOperation,
+    KubernetesUpdateOperation,
+    KubernetesDeleteOperation)
+
+from ..k8s.exceptions import KuberentesApiOperationError
 
 
 class TestKubernetesCreateOperation(unittest.TestCase):

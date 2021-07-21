@@ -14,12 +14,11 @@
 
 import unittest
 
-from cloudify_kubernetes.k8s.exceptions import KuberentesMappingNotFoundError
-from cloudify_kubernetes.k8s.mapping import (
-    KubernetesSingleOperationApiMapping,
+from ..k8s.exceptions import KuberentesMappingNotFoundError
+from ..k8s.mapping import (
+    get_mapping,
     KubernetesApiMapping,
-    get_mapping
-)
+    KubernetesSingleOperationApiMapping)
 
 
 class TestMapping(unittest.TestCase):

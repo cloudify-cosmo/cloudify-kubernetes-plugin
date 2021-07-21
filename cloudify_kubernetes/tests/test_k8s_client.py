@@ -15,16 +15,17 @@
 import unittest
 from mock import MagicMock
 
-from kubernetes import client as kubernetes_client
 from kubernetes.client.rest import ApiException
+from kubernetes import client as kubernetes_client
 
-from cloudify_kubernetes._compat import text_type
-from cloudify_kubernetes.k8s import (CloudifyKubernetesClient,
-                                     KuberentesInvalidPayloadClassError,
-                                     KuberentesInvalidApiClassError,
-                                     KuberentesInvalidApiMethodError,
-                                     KubernetesResourceDefinition,
-                                     KuberentesApiOperationError)
+from .._compat import text_type
+from ..k8s import (
+    CloudifyKubernetesClient,
+    KuberentesApiOperationError,
+    KubernetesResourceDefinition,
+    KuberentesInvalidApiClassError,
+    KuberentesInvalidApiMethodError,
+    KuberentesInvalidPayloadClassError)
 
 METADATA = {'metadata': {'name': 'foo'}}
 

@@ -19,7 +19,16 @@ from collections import OrderedDict
 
 import yaml
 from cloudify import ctx
+from cloudify.manager import get_rest_client
 from cloudify.utils import exception_to_error_cause
+from cloudify.exceptions import NonRecoverableError
+from cloudify_rest_client.exceptions import CloudifyClientError
+
+try:
+    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
+except ImportError:
+    NODE_INSTANCE = 'node-instance'
+    RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 from ._compat import text_type
 from .k8s import (get_mapping,
@@ -28,14 +37,6 @@ from .k8s import (get_mapping,
                   KuberentesMappingNotFoundError,
                   KuberentesInvalidDefinitionError)
 from .workflows import merge_definitions, DEFINITION_ADDITIONS
-
-from cloudify.exceptions import NonRecoverableError
-
-try:
-    from cloudify.constants import RELATIONSHIP_INSTANCE, NODE_INSTANCE
-except ImportError:
-    NODE_INSTANCE = 'node-instance'
-    RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 DEFAULT_NAMESPACE = 'default'
 NODE_PROPERTY_FILE_RESOURCE_PATH = 'resource_path'
@@ -52,6 +53,9 @@ CERT_KEYS = ['ssl_ca_cert', 'cert_file', 'key_file']
 CUSTOM_OBJECT_ANNOTATIONS = ['cloudify-crd-group',
                              'cloudify-crd-plural',
                              'cloudify-crd-version']
+CLUSTER_TYPE = 'cloudify.kubernetes.resources.SharedCluster'
+CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster']
+CLUSTER_REL = 'cloudify.relationships.kubernetes.connected_to_shared_cluster'
 
 
 def retrieve_path(kwargs):
@@ -266,6 +270,11 @@ def resource_definitions_from_file(**kwargs):
             continue
         resource_defs.append(KubernetesResourceDefinition(**definition))
     return resource_defs
+
+
+def resource_definition_from_payload(**kwargs):
+    payload = kwargs.get('payload')
+    return KubernetesResourceDefinition(**yaml.load(payload))
 
 
 def validate_file_resource(file_resource):
@@ -587,3 +596,91 @@ def handle_delete_resource(resource_exists):
         ctx.instance.runtime_properties['__perform_task'] = False
     else:
         ctx.instance.runtime_properties['__perform_task'] = True
+
+
+def with_rest_client(func):
+    """
+    :param func: This is a class for the aws resource need to be
+    invoked
+    :return: a wrapper object encapsulating the invoked function
+    """
+
+    def wrapper_inner(*args, **kwargs):
+        kwargs['rest_client'] = get_rest_client()
+        return func(*args, **kwargs)
+    return wrapper_inner
+
+
+@with_rest_client
+def get_deployment_node_instances(deployment_id, rest_client):
+    try:
+        return rest_client.node_instances.list(
+            deployment_id=deployment_id,
+            _include=['id', 'node_id', 'runtime_properties'])
+    except CloudifyClientError:
+        return
+
+
+@with_rest_client
+def get_node_rest(deployment_id, node_id, rest_client):
+    try:
+        return rest_client.nodes.get(
+            deployment_id=deployment_id,
+            node_id=node_id,
+            _include=['type_hierarchy'])
+    except CloudifyClientError:
+        return
+
+
+@with_rest_client
+def execute_workflow(deployment_id, workflow_id, parameters, rest_client):
+    return rest_client.executions.start(deployment_id=deployment_id,
+                                        workflow_id=workflow_id,
+                                        parameters=parameters,
+                                        allow_custom_parameters=True)
+
+
+def get_kubernetes_cluster_node_instance_id(deployment_id):
+    for node_instance in get_deployment_node_instances(deployment_id):
+        node = get_node_rest(deployment_id, node_instance.node_id)
+        for node_type in node.type_hierarchy:
+            if node_type in CLUSTER_TYPES:
+                return node_instance.id
+    raise NonRecoverableError(
+        'The shared resource does not contain a supported Kubernetes Cluster '
+        'in node types {types}'.format(types=CLUSTER_TYPES))
+
+
+def get_client_config(**kwargs):
+    """We might get the client config from kwargs (node properties), or from
+    a relationship to a shared cluster.
+
+    :param kwargs: from node properties
+    :return:
+    """
+
+    # It probably happens in a NI context, but maybe it happens in a
+    # relationship.
+    # It is problematic to program for just NI. Leads to problem later on.
+    node_instance = get_instance(ctx)
+    for x in node_instance.relationships:
+        if CLUSTER_REL in x.type_hierarchy and \
+                CLUSTER_TYPE in x.target.node.type_hierarchy:
+            # If we have a relationship to a shared cluster,
+            # Then lets build the client config based on its runtime
+            # properties, which are set in the post start operation.
+            endpoint = x.target.instance.runtime_properties['k8s-ip']
+            token = x.target.instance.runtime_properties['k8s-service-account-token']  # noqa
+            ssl_ca_cert = x.target.instance.runtime_properties['k8s-cacert']
+            return {
+                'configuration': {
+                    'api_options': {
+                        'host': endpoint,
+                        'api_key': token,
+                        'debug': False,
+                        'verify_ssl': True,
+                        'ssl_ca_cert': ssl_ca_cert
+                    }
+                }
+            }
+    return kwargs.get('client_config')

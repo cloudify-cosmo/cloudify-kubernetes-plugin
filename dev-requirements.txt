@@ -1,4 +1,6 @@
 pyasn1-modules==0.0.5
 pyasn1==0.1.7
-cloudify-common>-5.1.0
+# cloudify-common==5.1.0
 networkx==1.9.1
+# rsa==4.5
+# oauth2client
