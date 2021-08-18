@@ -31,8 +31,8 @@ commands:
   run_unittest:
     steps:
     - checkout
-    - run: git submodule sync
-    - run: git submodule update --init
+    # - run: git submodule sync
+    # - run: git submodule update --init
 
   check_py3_compat:
     steps:
