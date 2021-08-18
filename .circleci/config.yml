@@ -16,7 +16,7 @@ executors:
 
   py36:
     docker:
-      - image: python:3.6.5
+      - image: circleci/python:3.6
 
   wagon_generator:
     machine:
