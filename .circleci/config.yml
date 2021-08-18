@@ -16,7 +16,7 @@ executors:
 
   py36:
     docker:
-      - image: earthmancfy/cloudify_ecosystem_test_python-3.6.5
+      - image: python:3.6.5
 
   wagon_generator:
     machine:
@@ -30,9 +30,20 @@ commands:
 
   run_unittest:
     steps:
-    - checkout
-    # - run: git submodule sync
-    # - run: git submodule update --init
+      - run:
+          name: "Pull Submodules"
+          command: |
+            git submodule init
+            git submodule update --remote --recursive
+      - run:
+          name: install tox
+          command: pip install virtualenv tox
+      - run:
+          name: install tox
+          command: pip install -r test-requirements.txt -r dev-requirements.txt
+      - run:
+          name: Run Tox
+          command: tox
 
   check_py3_compat:
     steps:
