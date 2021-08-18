@@ -54,7 +54,8 @@ CUSTOM_OBJECT_ANNOTATIONS = ['cloudify-crd-group',
                              'cloudify-crd-plural',
                              'cloudify-crd-version']
 CLUSTER_TYPE = 'cloudify.kubernetes.resources.SharedCluster'
-CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster']
+CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster',
+                 'cloudify.azure.nodes.compute.ManagedCluster']
 CLUSTER_REL = 'cloudify.relationships.kubernetes.connected_to_shared_cluster'
 
 

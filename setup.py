@@ -43,14 +43,14 @@ cloudify_types = 'cloudify-types @ ' \
 
 
 install_requires = [
-        'cloudify-python-importer==0.2',
-        'cloudify-common>=4.5',
-        'kubernetes==12.0.1',
-        'pyyaml>=4.2b1',
-        'networkx==1.9.1',
-        'pyasn1>=0.1.7',
-        'pyasn1-modules>=0.0.5,<0.2.1',
-        'oauth2client',  # used only in GCPServiceAccountAuthentication
+    'cloudify-python-importer==0.2',
+    'cloudify-common>=4.5',
+    'kubernetes==12.0.1',
+    'pyyaml>=4.2b1',
+    'networkx==1.9.1',
+    'pyasn1>=0.1.7',
+    'pyasn1-modules>=0.0.5,<0.2.1',
+    'oauth2client',  # used only in GCPServiceAccountAuthentication
 ]
 
 if not PY2:

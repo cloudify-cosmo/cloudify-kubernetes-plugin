@@ -37,16 +37,13 @@ commands:
             git submodule update --remote --recursive
       - run:
           name: install tox
-          command: pip install --user tox
+          command: pip install virtualenv tox
       - run:
           name: install tox
           command: pip install -r test-requirements.txt -r dev-requirements.txt
       - run:
-          name: Run Flake8
-          command: /home/circleci/.local/bin/tox -e pep8
-      - run:
-         name: Run nosetest
-         command: /home/circleci/.local/bin/tox -e nosetest
+          name: Run Tox
+          command: tox
 
   check_py3_compat:
     steps:

@@ -138,3 +138,5 @@
   - Update client.
 2.13.0:
   - Add token type.
+2.13.1:
+  - RD-2199 - Support AKS Discovery
