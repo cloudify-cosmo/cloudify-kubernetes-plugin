@@ -16,7 +16,7 @@ executors:
 
   py36:
     docker:
-      - image: circleci/python:3.6
+      - image: earthmancfy/cloudify_ecosystem_test_python-3.6.5
 
   wagon_generator:
     machine:
@@ -30,23 +30,9 @@ commands:
 
   run_unittest:
     steps:
-      - run:
-          name: "Pull Submodules"
-          command: |
-            git submodule init
-            git submodule update --remote --recursive
-      - run:
-          name: install tox
-          command: pip install --user tox
-      - run:
-          name: install tox
-          command: pip install -r test-requirements.txt -r dev-requirements.txt
-      - run:
-          name: Run Flake8
-          command: /home/circleci/.local/bin/tox -e pep8
-      - run:
-         name: Run nosetest
-         command: /home/circleci/.local/bin/tox -e nosetest
+    - checkout
+    - run: git submodule sync
+    - run: git submodule update --init
 
   check_py3_compat:
     steps:
