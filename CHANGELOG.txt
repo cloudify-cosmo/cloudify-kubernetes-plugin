@@ -140,3 +140,5 @@
   - Add token type.
 2.13.1:
   - RD-2199 - Support AKS Discovery
+2.13.2:
+  - RD-2198 - Support GKE Discovery
