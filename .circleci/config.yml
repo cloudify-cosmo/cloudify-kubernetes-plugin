@@ -101,7 +101,7 @@ commands:
           command: pip install --upgrade setuptools
       - run:
           name: install local project
-          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/latest.zip
+          command: pip install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/lgatest.zip
       - attach_workspace:
           at: workspace
       - run: ecosystem-test validate-docs
