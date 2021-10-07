@@ -24,8 +24,9 @@ from ._compat import text_type
 from .utils import (get_node,
                     get_instance,
                     retrieve_path,
-                    NODE_PROPERTY_FILE,
                     get_client_config,
+                    NODE_PROPERTY_FILE,
+                    NODE_PROPERTY_OPTIONS,
                     handle_existing_resource,
                     generate_traceback_exception,
                     NODE_PROPERTY_FILE_RESOURCE_PATH,
@@ -104,7 +105,10 @@ def _multidefinition_resource_task(task, definitions, kwargs,
     for definition in definitions:
         kwargs['resource_definition'] = definition
         if retrieve_mapping:
+            kwargs['node_options'] = \
+                ctx.node.properties[NODE_PROPERTY_OPTIONS].keys()
             kwargs['api_mapping'] = retrieve_mapping(**kwargs)
+            kwargs.pop('node_options')
         # we can have several resources in one file
         if origin_path:
             kwargs[NODE_PROPERTY_FILE][NODE_PROPERTY_FILE_RESOURCE_PATH] = (

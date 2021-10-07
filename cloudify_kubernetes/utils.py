@@ -50,6 +50,7 @@ PERMIT_REDEFINE = 'allow_node_redefinition'
 INSTANCE_RUNTIME_PROPERTY_KUBERNETES = 'kubernetes'
 FILENAMES = r'[A-Za-z0-9\.\_\-\/]*yaml\#[0-9]*'
 CERT_KEYS = ['ssl_ca_cert', 'cert_file', 'key_file']
+CUSTOM_OBJECT_NODE_OPTIONS = ['plural', 'group', 'version']
 CUSTOM_OBJECT_ANNOTATIONS = ['cloudify-crd-group',
                              'cloudify-crd-plural',
                              'cloudify-crd-version']
@@ -214,7 +215,8 @@ def mapping_by_data(**kwargs):
     )
 
 
-def mapping_by_kind(resource_definition, **_):
+def mapping_by_kind(resource_definition, node_options=None, **_):
+    node_options = node_options or []
     try:
         annotations = resource_definition.metadata.get(
             'annotations', {}).keys()
@@ -223,7 +225,12 @@ def mapping_by_kind(resource_definition, **_):
     else:
         if set(CUSTOM_OBJECT_ANNOTATIONS).issubset(set(annotations)):
             return get_mapping(kind='CustomObjectsApi')
-    return get_mapping(kind=resource_definition.kind)
+    try:
+        return get_mapping(kind=resource_definition.kind)
+    except KuberentesMappingNotFoundError:
+        if set(CUSTOM_OBJECT_NODE_OPTIONS).issubset(set(node_options)):
+            return get_mapping(kind='CustomObjectsApi')
+        raise
 
 
 def get_definition_object(**kwargs):
@@ -406,6 +413,7 @@ def retrieve_stored_resource(resource_definition, api_mapping, delete=False):
         ctx.logger.error('No stored resource definitions found.')
         stored_resource_definition = json_resource_definition
     allow_node_definition = ctx.node.properties[PERMIT_REDEFINE]
+    node_options = ctx.node.properties[NODE_PROPERTY_OPTIONS].keys()
     if (json_resource_definition != stored_resource_definition) and \
             allow_node_definition:
         ctx.logger.error(
@@ -423,7 +431,8 @@ def retrieve_stored_resource(resource_definition, api_mapping, delete=False):
         )
         resource_definition = KubernetesResourceDefinition(
             **stored_resource_definition)
-        api_mapping = mapping_by_kind(resource_definition)
+        api_mapping = mapping_by_kind(
+            resource_definition, node_options=node_options)
     if delete:
         remove_resource_definition(
             resource_definition.kind,
