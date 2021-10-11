@@ -22,6 +22,11 @@ executors:
     machine:
       image: ubuntu-1604:201903-01
 
+  arm_wagon_generator:
+    machine:
+      image: ubuntu-2004:202101-01
+      resource_class: arm.medium
+
   cloudify-machine-py3:
     machine:
       image: ubuntu-1604:201903-01
@@ -150,6 +155,25 @@ commands:
               git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
               docker build -t cloudify-wagon-builder-centos cloudify-wagon-build-containers/centos_7_py3
               docker run -v ~/project/:/packaging cloudify-wagon-builder-centos
+      - run:
+          name: copy wagon to workspace
+          command: cp *.wgn workspace/build/
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - build/*
+
+  generate_arch64_wagon:
+    steps:
+      - run:
+          name: Create Workspace Build directory.
+          command: mkdir -p workspace/build
+      - run:
+          name: Build py36 Wagon
+          command: |
+              git clone https://github.com/cloudify-cosmo/cloudify-wagon-build-containers.git
+              docker build -t centos_aarch64 cloudify-wagon-build-containers/aarch_64/centos_7_py3
+              docker run -v ~/project/:/packaging centos_aarch64
       - run:
           name: copy wagon to workspace
           command: cp *.wgn workspace/build/
@@ -342,6 +366,12 @@ jobs:
       - checkout
       - generate_py36_wagon
 
+  arch64_wagon:
+    executor: arm_wagon_generator
+    steps:
+      - checkout
+      - generate_arch64_wagon
+
   rhel_wagon:
     executor: wagon_generator
     steps:
@@ -390,6 +420,10 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - rhel_wagon:
           filters:
             branches:
@@ -401,6 +435,7 @@ workflows:
           requires:
             - wagon
             - rhel_wagon
+            - arch64_wagon
       - kubernetes_integration_tests_py3:
           requires:
             - build_bundle
@@ -428,7 +463,7 @@ workflows:
   nightly:
     triggers:
     - schedule:
-        cron: "0 1 * * *"
+        cron: "0 1 * * 0,1,3,5"
         filters:
           branches:
             only:
@@ -442,6 +477,10 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
+      - arch64_wagon:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - rhel_wagon:
           filters:
             branches:
@@ -452,6 +491,7 @@ workflows:
               only: /master/
           requires:
             - wagon
+            - arch64_wagon
             - rhel_wagon
       - kubernetes_integration_tests_py3:
           requires:
