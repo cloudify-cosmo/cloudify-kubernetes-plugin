@@ -435,7 +435,6 @@ workflows:
           requires:
             - wagon
             - rhel_wagon
-            - arch64_wagon
       - kubernetes_integration_tests_py3:
           requires:
             - build_bundle
@@ -477,10 +476,6 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
-      - arch64_wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
       - rhel_wagon:
           filters:
             branches:
@@ -491,7 +486,6 @@ workflows:
               only: /master/
           requires:
             - wagon
-            - arch64_wagon
             - rhel_wagon
       - kubernetes_integration_tests_py3:
           requires:
