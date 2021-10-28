@@ -144,3 +144,5 @@
   - RD-2198 - Support GKE Discovery
 2.13.3:
   - RD-3325-Handle-Superfluous-Annotations
+2.13.4:
+  - CYBL-1297: Enable skipping __resource_definitions runtime property.

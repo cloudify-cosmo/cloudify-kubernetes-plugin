@@ -385,7 +385,7 @@ def store_resource_definition(resource_definition):
 
 
 def remove_resource_definition(resource_kind, resource_name):
-    resource_definitions = ctx.instance.runtime_properties[DEFS]
+    resource_definitions = ctx.instance.runtime_properties.get(DEFS, [])
     ctx.logger.info('REMOVE {0} {1}'.format(resource_kind, resource_name))
     c = 0
     for list_item in resource_definitions:
@@ -405,7 +405,7 @@ def remove_resource_definition(resource_kind, resource_name):
 
 def retrieve_stored_resource(resource_definition, api_mapping, delete=False):
 
-    node_resource_definitions = ctx.instance.runtime_properties[DEFS]
+    node_resource_definitions = ctx.instance.runtime_properties.get(DEFS, [])
     json_resource_definition = JsonCleanuper(resource_definition).to_dict()
     try:
         stored_resource_definition = node_resource_definitions.pop()
