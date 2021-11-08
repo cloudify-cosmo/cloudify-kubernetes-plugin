@@ -434,6 +434,7 @@ workflows:
               only: /master/
           requires:
             - wagon
+            - arch64_wagon
             - rhel_wagon
       - kubernetes_integration_tests_py3:
           requires:
