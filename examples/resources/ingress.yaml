@@ -1,4 +1,4 @@
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: test-ingress
@@ -8,9 +8,12 @@ spec:
   rules:
   - http:
       paths:
-      - path: /testpath
+      - pathType: Prefix
+        path: /testpath
         backend:
-          serviceName: test
-          servicePort: 80
-
-
+          # serviceName: test
+          # servicePort: 80
+          service:
+            name: service2
+            port:
+              number: 80
