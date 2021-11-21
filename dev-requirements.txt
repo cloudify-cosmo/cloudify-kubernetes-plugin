@@ -37,7 +37,7 @@ wheel===0.37.0
 rsa===4.7.2
 pyasn1===0.4.8
 pika===1.1.0
-Jinja2===2.10.3
+Jinja2===2.11.3
 networkx===1.9.1
 monotonic===1.6
 oauthlib===3.1.1
