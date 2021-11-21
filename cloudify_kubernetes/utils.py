@@ -192,12 +192,12 @@ def _yaml_from_files(
 
     # Validate file content if it contains at least one dict
     file_content = file_content.strip()
-    if len(list(yaml.load_all(file_content))) == 0:
+    if len(list(yaml.load_all(file_content, Loader=yaml.SafeLoader))) == 0:
         raise KuberentesInvalidDefinitionError(
             'Invalid resource file definition.'
         )
 
-    return yaml.load_all(file_content)
+    return yaml.load_all(file_content, Loader=yaml.SafeLoader)
 
 
 def mapping_by_data(**kwargs):
@@ -285,7 +285,8 @@ def resource_definitions_from_file(**kwargs):
 
 def resource_definition_from_payload(**kwargs):
     payload = kwargs.get('payload')
-    return KubernetesResourceDefinition(**yaml.load(payload))
+    return KubernetesResourceDefinition(
+        **yaml.load(payload, Loader=yaml.SafeLoader))
 
 
 def validate_file_resource(file_resource):

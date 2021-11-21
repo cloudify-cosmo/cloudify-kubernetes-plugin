@@ -247,22 +247,49 @@ class CloudifyKubernetesClient(object):
                 options['namespace'] = namespace_from_def
         self.logger.debug('Options API Request {0}'.format(options))
 
+    def execute_with_alternates(self,
+                                operation, mapping, options, mapping_key):
+        api_and_method = getattr(mapping, mapping_key)
+        try:
+            return self._execute(self._prepare_operation(
+                operation, **vars(api_and_method)), options)
+        except KuberentesApiOperationError as e:
+            str_e = str(e)
+            if 'does not match the expected API version' in str_e:
+                self.logger.error(
+                    'The mapping API and Method {} failed: {}'.format(
+                        api_and_method, str_e))
+                for alternate in api_and_method.alternates:
+                    try:
+                        return self._execute(self._prepare_operation(
+                            operation, **vars(alternate)), options)
+                    except KuberentesApiOperationError as e2:
+                        str_e2 = str(e2)
+                        if 'does not match the expected API version' not in \
+                                str_e2:
+                            raise e2
+                        self.logger.error(
+                            'The alternate mapping API and Method '
+                            '{} {} failed: {}'.format(
+                                alternate.api, alternate.payload, str(e2)))
+                        continue
+            raise e
+
     def create_resource(self, mapping, resource_definition, options):
         options['body'] = self._prepare_payload(
             mapping.create.payload, resource_definition
         )
         self.match_namespace(resource_definition, options)
         self.logger.debug('Options API Request {0}'.format(options))
-        return self._execute(self._prepare_operation(
-            KubernetesCreateOperation, **vars(mapping.create)
-        ), options)
+        return self.execute_with_alternates(
+            KubernetesCreateOperation, mapping, options, 'create')
 
     def read_resource(self, mapping, resource_definition, options):
         options['name'] = resource_definition.metadata['name']
         self.match_namespace(resource_definition, options)
-        return self._execute(self._prepare_operation(
-            KubernetesReadOperation, **vars(mapping.read)
-        ), options)
+
+        return self.execute_with_alternates(
+            KubernetesReadOperation, mapping, options, 'read')
 
     def update_resource(self, mapping, resource_definition, options):
         options['body'] = self._prepare_payload(
@@ -270,9 +297,8 @@ class CloudifyKubernetesClient(object):
         )
         options['name'] = resource_definition.metadata['name']
         self.match_namespace(resource_definition, options)
-        return self._execute(self._prepare_operation(
-            KubernetesUpdateOperation, **vars(mapping.update)
-        ), options)
+        return self.execute_with_alternates(
+            KubernetesUpdateOperation, mapping, options, 'update')
 
     def delete_resource(self, mapping, resource_definition,
                         resource_id, options):
@@ -303,6 +329,5 @@ class CloudifyKubernetesClient(object):
                        if k not in delete_resource.keys()}
 
         self.match_namespace(resource_definition, options)
-        return self._execute(self._prepare_operation(
-            KubernetesDeleteOperation, **vars(mapping.delete)), options
-        )
+        return self.execute_with_alternates(
+            KubernetesDeleteOperation, mapping, options, 'delete')

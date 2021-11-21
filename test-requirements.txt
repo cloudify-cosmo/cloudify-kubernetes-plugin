@@ -2,6 +2,5 @@ flake8
 testtools
 mock
 nose-testconfig
-nose
-nose-cov
-pytest
+nose==1.3.7
+nose-cov==1.6

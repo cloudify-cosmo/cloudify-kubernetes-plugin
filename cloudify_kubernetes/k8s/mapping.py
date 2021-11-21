@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import inspect
+from re import search
+
+from kubernetes import client as kube_api
+
 from .exceptions import KuberentesMappingNotFoundError
 
 
@@ -20,6 +26,79 @@ class KubernetesSingleOperationApiMapping(object):
         self.api = api
         self.method = method
         self.payload = payload
+        self.kubernetes_apis = self.get_kubernetes_apis()
+
+    @staticmethod
+    def get_kubernetes_apis():
+        """ Create a list of all available APIs in the current version of
+        Kubernetes Python library.
+
+        :return:
+        """
+        kubernetes_apis = {}
+        for name, obj in inspect.getmembers(kube_api):
+            try:
+                path = inspect.getfile(obj)
+            except TypeError:
+                path = None
+            if path and 'kubernetes/client/api' in path:
+                kubernetes_apis[name] = obj
+        return kubernetes_apis
+
+    def get_apis_with_method(self):
+        """ Get a list of APIs that support self.method function.
+
+        :return:
+        """
+        alternates = []
+        for name, value in self.kubernetes_apis.items():
+            if name == self.api:
+                continue
+            method_obj = getattr(value, self.method, None)
+            if not method_obj:
+                continue
+            if self.payload:
+                payload_name = self.get_method_payload_name(method_obj)
+                alternates.append(
+                    KubernetesSingleOperationApiMapping(
+                        api=name,
+                        method=self.method,
+                        payload=payload_name
+                    )
+                )
+            else:
+                alternates.append(
+                    KubernetesSingleOperationApiMapping(
+                        api=name,
+                        method=self.method
+                    )
+                )
+        return alternates
+
+    @staticmethod
+    def get_method_payload_name(method_obj):
+        """All Kubernetes API methods have a doc string that matches the
+        pattern "param ObjectName body", which is our "payload" object.
+
+        :param str method_obj: The name of the API method, for example
+            create_namespaced_ingress.
+        :return:
+        """
+        body_param_pattern = "param\\s(.*?)\\sbody"
+        docs = inspect.getdoc(method_obj)
+        body_param_result = search(body_param_pattern, docs)
+        return_param_pattern = "\\:return\\:\\s(.*?)\\n"
+        return_param_result = search(return_param_pattern, docs)
+        if not body_param_result and not return_param_pattern:
+            return
+        elif body_param_result and body_param_result.group(1) != 'object':
+            return body_param_result.group(1)
+        elif 'tuple' not in return_param_result.group(1):
+            return return_param_result.group(1)
+
+    @property
+    def alternates(self):
+        return self.get_apis_with_method()
 
 
 class KubernetesApiMapping(object):
