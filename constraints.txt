@@ -1,4 +1,4 @@
-cloudify-common===5.2.3b0
+cloudify-common===5.2.3
 # https://github.com/cloudify-cosmo/cloudify-manager/archive/refs/heads/5.2.3-build.zip#subdirectory=cloudify_types
 # PyYAML==5.2b1
 # google-auth===1.27.0
