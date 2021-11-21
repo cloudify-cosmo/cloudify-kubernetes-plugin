@@ -147,3 +147,4 @@
 2.13.4:
   - CYBL-1297: Enable skipping __resource_definitions runtime property.
 2.13.5: Rerelease with aarch64 support.
+2.13.6: RD-3555 - Future Proof Kubernetes API Mapping
