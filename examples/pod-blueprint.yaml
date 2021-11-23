@@ -1,0 +1,36 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
+  - plugin:cloudify-kubernetes-plugin
+
+inputs:
+
+  kubernetes_master:
+    type: string
+
+node_templates:
+
+  pod:
+    type: cloudify.kubernetes.resources.Pod
+    properties:
+      options:
+        namespace: nely
+      client_config:
+        authentication:
+          gcp_service_account: { get_secret: gcp_credentials }
+        configuration:
+          api_options:
+            host: { get_input: kubernetes_master }
+            verify_ssl: false
+            debug: false
+      definition:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: nginx-test-pod
+          namespace: nely1
+        spec:
+          containers:
+          - name: nginx-test-pod
+            image: nginx:stable

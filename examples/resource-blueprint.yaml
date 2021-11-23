@@ -8,7 +8,7 @@ inputs:
 
   resource_path:
     type: string
-    default: resources/namespace.yaml
+    default: resources/pod.yaml
 
   kubernetes_master:
     type: string
@@ -30,6 +30,8 @@ node_templates:
   resource:
     type: cloudify.kubernetes.resources.FileDefinedResource
     properties:
+      options:
+        namespace: nely
       client_config:
         authentication:
           gcp_service_account: { get_secret: gcp_credentials }
