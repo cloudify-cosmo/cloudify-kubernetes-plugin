@@ -30,7 +30,7 @@ node_templates:
         kind: Pod
         metadata:
           name: nginx-test-pod
-          namespace: nely2
+          # namespace: nely2
         spec:
           containers:
           - name: nginx-test-pod
