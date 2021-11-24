@@ -8,6 +8,7 @@ inputs:
 
   kubernetes_master:
     type: string
+    default: { get_secret: kubernetes_master_endpoint }
 
 node_templates:
 
