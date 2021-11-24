@@ -31,7 +31,7 @@ node_templates:
     type: cloudify.kubernetes.resources.FileDefinedResource
     properties:
       options:
-        namespace: nely
+        namespace: nely1
       client_config:
         authentication:
           gcp_service_account: { get_secret: gcp_credentials }
