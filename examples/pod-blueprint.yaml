@@ -15,7 +15,7 @@ node_templates:
     type: cloudify.kubernetes.resources.Pod
     properties:
       options:
-        namespace: nely
+        namespace: nely1
       client_config:
         authentication:
           gcp_service_account: { get_secret: gcp_credentials }
@@ -29,7 +29,7 @@ node_templates:
         kind: Pod
         metadata:
           name: nginx-test-pod
-          namespace: nely1
+          namespace: nely2
         spec:
           containers:
           - name: nginx-test-pod
