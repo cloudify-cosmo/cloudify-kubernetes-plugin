@@ -204,7 +204,7 @@ workflows:
             branches:
               only: /master/
           requires:
-            - wagonorb/release
+            - release
             - node/validate_documentation_job
 
   nightly:
