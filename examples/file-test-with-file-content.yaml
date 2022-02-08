@@ -1,0 +1,40 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
+  - plugin:cloudify-kubernetes-plugin
+
+inputs:
+
+  resource_path:
+    type: string
+    default: file-test-multiple-resources.yaml
+
+  file_content:
+    type: string
+    default: { get_secret: kubernetes-file-content }
+
+  validate_status:
+    type: boolean
+    default: false
+
+  resource_template_variables:
+    default: {}
+
+  allow_node_redefinition:
+    type: boolean
+    default: true
+
+node_templates:
+
+  resource:
+    type: cloudify.kubernetes.resources.FileDefinedResource
+    properties:
+      client_config:
+        configuration:
+          file_content: { get_input: file_content }
+      validate_resource_status: { get_input: validate_status }
+      allow_node_redefinition: { get_input: allow_node_redefinition }
+      file:
+        resource_path: { get_input: resource_path }
+        template_variables: { get_input: resource_template_variables }

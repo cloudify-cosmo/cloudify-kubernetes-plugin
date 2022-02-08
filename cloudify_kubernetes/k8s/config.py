@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import yaml
 import kubernetes
 
 from kubernetes.config.kube_config import KUBE_CONFIG_DEFAULT_LOCATION
@@ -102,13 +103,17 @@ class FileContentConfiguration(KubernetesApiConfiguration):
 
         if self.FILE_CONTENT_KEY in self.configuration_data:
             file_content = self.configuration_data[self.FILE_CONTENT_KEY]
+            config_base_path = os.path.abspath(
+                os.path.dirname(
+                    os.path.expanduser(KUBE_CONFIG_DEFAULT_LOCATION)
+                )
+            )
+            if isinstance(file_content, str):
+                file_content = yaml.safe_load(file_content)
 
             loader = kubernetes.config.kube_config.KubeConfigLoader(
                 config_dict=file_content,
-                config_base_path=os.path.abspath(os.path.dirname(
-                    os.path.expanduser(KUBE_CONFIG_DEFAULT_LOCATION)
-                ))
-            )
+                config_base_path=config_base_path)
 
             config = type.__call__(kubernetes.client.Configuration)
             loader.load_and_set(config)
