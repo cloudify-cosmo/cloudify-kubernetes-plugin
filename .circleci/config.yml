@@ -55,7 +55,7 @@ workflows:
       - wagonorb/wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master)/
+              only: /([0-9\.]*\-build|master|RD-4205-file-content-not-working-on-cloudify-kubernetes-plugin)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
