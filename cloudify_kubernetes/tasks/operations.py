@@ -14,6 +14,7 @@
 
 # hack for import namespaced modules (google.auth)
 import base64
+from copy import deepcopy
 
 import cloudify_importer # noqa
 from cloudify import ctx
@@ -125,12 +126,7 @@ def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
             'Resource definition: {0}'.format(resource_type))
 
 
-def _file_resource_delete(client, api_mapping, resource_definition, **kwargs):
-    """We want to delete the resources from the file that was created last
-    with this node template."""
-
-    path = retrieve_path(kwargs)
-
+def _get_path_with_adjacent_resources(path, resource_definition, api_mapping):
     try:
         path, resource, adjacent_resources = \
             retrieve_last_create_path(path)
@@ -154,62 +150,124 @@ def _file_resource_delete(client, api_mapping, resource_definition, **kwargs):
             metadata=metadata
         )
         api_mapping = mapping_by_kind(resource_definition)
+    return adjacent_resources, resource_definition, api_mapping
 
-    # We now want to see if the resource exists.
+
+class MissingResource(OperationRetry):
+    pass
+
+
+def _read_while_adjacent_resources(client,
+                                   api_mapping,
+                                   resource_definition,
+                                   kwargs):
     try:
         _do_resource_read(client, api_mapping, resource_definition, **kwargs)
     except (NonRecoverableError, KuberentesApiOperationError) as e:
-        # The resource has been deleted, or something.
-        if adjacent_resources and '(404)' in text_type(e):
-            # We have resources from the same file, so we want to
-            # put them back into the "queue" of stuff to delete.
-            for k, v in adjacent_resources.items():
-                store_result_for_retrieve_id(v, k)
-            raise OperationRetry(
-                'Continue to deletion of adjacent resources: {0}'.format(
-                    text_type(e)))
-        elif '(404)' in text_type(e):
-            # The resource has been deleted and there are no adjacent
-            # resources (that we know of).
-            ctx.logger.debug(
-                'Ignoring error: {0}'.format(text_type(e)))
+        exception = text_type(e)
+        if '(404)' in exception:
+            return MissingResource(exception)
         else:
             # Not sure what happened.
-            raise RecoverableError(
-                'Raising error: {0}'.format(text_type(e)))
+            return RecoverableError('Raising error: {0}'.format(exception))
+
+
+def _delete_while_adjacent_resources(client,
+                                     api_mapping,
+                                     resource_definition,
+                                     kwargs,
+                                     path,
+                                     adjacent_resources):
+
+    try:
+        delete_response = _do_resource_delete(
+            client,
+            api_mapping,
+            resource_definition,
+            resource_definition.metadata['name'],
+            **kwargs
+        )
+    except KuberentesApiOperationError as exception:
+        if '(404)' in exception:
+            return MissingResource(exception)
+        else:
+            raise
+    # Since the resource has only been asyncronously deleted, we
+    # need to put it back in all our runtime properties in order to
+    # let it be deleted again only not to be restored.
+    handle_delete_resource(resource_definition)
+    perform_task = ctx.instance.runtime_properties.get('__perform_task',
+                                                       False)
+
+    if "'finalizers': ['kubernetes.io/pvc-protection']" in \
+            text_type(delete_response):
+        prepare_pvc_delete(
+            resource_definition, client, api_mapping, kwargs)
+
+    if perform_task:
+        store_result_for_retrieve_id(
+            JsonCleanuper(resource_definition).to_dict(),
+            path
+        )
+        # Also the adjacent resources:
+        for k, v in adjacent_resources.items():
+            store_result_for_retrieve_id(v, k)
+        # And now, we rerun to hopefully fail.
+        return OperationRetry('Delete response: {0}'.format(delete_response))
+
+
+def _file_resource_delete(client, api_mapping, resource_definition, **kwargs):
+    """We want to delete the resources from the file that was created last
+    with this node template."""
+
+    path = retrieve_path(kwargs)
+    adjacent_resources, resource_definition, api_mapping = \
+        _get_path_with_adjacent_resources(
+            path, resource_definition, api_mapping)
+    read_resource = _read_while_adjacent_resources(
+        client, api_mapping, resource_definition, kwargs)
+    if isinstance(read_resource, MissingResource) and adjacent_resources:
+        for key, value in adjacent_resources.items():
+            inner_kind = value.get('kind')
+            inner_api = value.get('api_version')
+            inner_meta = value.get('metadata')
+            if all([inner_meta, inner_api, inner_kind]):
+                inner_resource_definition = KubernetesResourceDefinition(
+                    kind=inner_kind,
+                    apiVersion=inner_api,
+                    metadata=inner_meta
+                )
+                inner_api_mapping = mapping_by_kind(resource_definition)
+                _file_resource_delete(
+                    client,
+                    inner_api_mapping,
+                    inner_resource_definition,
+                    **kwargs)
+
+        for k, v in adjacent_resources.items():
+            store_result_for_retrieve_id(v, k)
+        raise OperationRetry(
+            'Continue to deletion of adjacent resources: {0}'.format(
+                text_type(read_resource)))
+    elif isinstance(read_resource, MissingResource):
+        ctx.logger.debug('Ignoring error: {0}'.format(
+            text_type(read_resource)))
+    elif isinstance(read_resource, Exception):
+        raise read_resource
     else:
-        # We now know that the resource has not been deleted.
-        try:
-            delete_response = _do_resource_delete(
-                client,
-                api_mapping,
-                resource_definition,
-                resource_definition.metadata['name'],
-                **kwargs
-            )
-        except KuberentesApiOperationError as e:
-            if '(404)' in text_type(e):
-                ctx.logger.debug(
-                    'Ignoring error: {0}'.format(text_type(e)))
-            else:
-                raise
-        # Since the resource has only been asyncronously deleted, we
-        # need to put it back in all our runtime properties in order to
-        # let it be deleted again only not to be restored.
-        handle_delete_resource(resource_definition)
-        perform_task = ctx.instance.runtime_properties.get('__perform_task',
-                                                           False)
-        if perform_task:
-            store_result_for_retrieve_id(
-                JsonCleanuper(resource_definition).to_dict(),
-                path
-            )
-            # Also the adjacent resources:
-            for k, v in adjacent_resources.items():
-                store_result_for_retrieve_id(v, k)
-            # And now, we rerun to hopefully fail.
-            raise OperationRetry('Delete response: {0}'.format(
-                delete_response))
+        result = _delete_while_adjacent_resources(
+            client,
+            api_mapping,
+            resource_definition,
+            kwargs,
+            path,
+            adjacent_resources)
+        if isinstance(result, MissingResource):
+            ctx.logger.info('Ignoring missing resource: {}'.format(
+                str(result)))
+        elif isinstance(result, OperationRetry):
+            raise result
+
     # If I have not thought of another scenario, we need to go back and
     # read the logs.
     if adjacent_resources:
@@ -585,3 +643,22 @@ def delete_token(instance, **_):
         del instance.runtime_properties['k8s-service-account-token']
     if 'k8s-cacert' in instance.runtime_properties:
         del instance.runtime_properties['k8s-cacert']
+
+
+def prepare_pvc_delete(resource_definition, client, api_mapping, kwargs):
+    metadata = deepcopy(resource_definition.metadata)
+    metadata['finalizers'] = None
+    resource_definition = KubernetesResourceDefinition(
+        kind=resource_definition.kind,
+        apiVersion=resource_definition.api_version,
+        metadata=metadata
+    )
+    try:
+        _do_resource_update(
+            client,
+            api_mapping,
+            resource_definition,
+            **kwargs
+        )
+    except KuberentesApiOperationError:
+        return
