@@ -12,8 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
+
 import os
+import json
+import base64
 from os import environ
 from contextlib import contextmanager
 
@@ -31,18 +33,19 @@ TEST_ID = environ.get('__ECOSYSTEM_TEST_ID', 'plugin-examples')
 
 
 @contextmanager
-def test_cleaner_upper():
+def test_cleaner_upper(test_id):
     try:
         yield
     except Exception:
-        cleanup_on_failure(TEST_ID)
+        cleanup_on_failure(test_id)
         raise
 
 
 @pytest.mark.dependency()
 def test_update(*_, **__):
-    with test_cleaner_upper():
-        deployment_id = TEST_ID + '-update'
+    deployment_id = TEST_ID + '-update'
+    setup_cli()
+    with test_cleaner_upper(deployment_id):
         try:
             # Upload Cloud Watch Blueprint
             blueprints_upload(
@@ -53,6 +56,7 @@ def test_update(*_, **__):
                 deployment_id, {"resource_path": "resources/pod.yaml"})
             # Install Cloud Watch Deployment
             executions_start('install', deployment_id)
+            after_install = get_pod_info()
             executions_start(
                 'update_resource_definition',
                 deployment_id,
@@ -75,6 +79,9 @@ def test_update(*_, **__):
                     }
                 }
             )
+            after_update = get_pod_info()
+            assert after_install[0]['image'] == 'nginx:stable'
+            assert after_update[0]['image'] == 'nginx:latest'
             # Uninstall Cloud Watch Deployment
             executions_start('uninstall', deployment_id)
         except:
@@ -83,13 +90,16 @@ def test_update(*_, **__):
 
 def setup_cli():
     cluster_name = "kube-{}-cluster".format(os.environ['CIRCLE_BUILD_NUM'])
-    handle_process('sudo snap install google-cloud-sdk --classic')
+    capabilities = cloudify_exec('cfy deployments capabilities gcp-gke')
+    cloudify_exec('cfy secrets create -s {} kubernetes_endpoint'.format(
+        capabilities['endpoint']['value']))
+    with open('gcp.json', 'w') as outfile:
+        creds = base64.b64decode(os.environ['gcp_credentials'])
+        outfile.write(str(creds, "utf-8"))
     handle_process('gcloud auth activate-service-account --key-file gcp.json')
-    handle_process('sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin')
     handle_process(
-        'gcloud container clusters '
-        'get-credentials {} --region us-west1-a'.format(cluster_name))
-    handle_process('sudo apt-get install kubectl')
+        'gcloud container clusters get-credentials {} --region us-west1-a'
+        .format(cluster_name))
 
 
 def get_pod_info():
