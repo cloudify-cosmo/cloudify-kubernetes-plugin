@@ -3,7 +3,7 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.13.7'
+    package_version: '2.13.8'
 
 data_types:
 
@@ -601,6 +601,8 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_create
         poststart:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
+        update:
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_update
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
         pull:
@@ -623,6 +625,8 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_create
         poststart:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
+        update:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_update
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_delete
         pull:

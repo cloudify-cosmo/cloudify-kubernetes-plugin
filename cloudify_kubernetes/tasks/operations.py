@@ -35,6 +35,8 @@ from ..utils import (retrieve_path,
                      mapping_by_data,
                      mapping_by_kind,
                      NODE_PROPERTY_FILES,
+                     DEFINITION_ADDITIONS,
+                     update_with_additions,
                      handle_delete_resource,
                      validate_file_resources,
                      handle_existing_resource,
@@ -104,6 +106,18 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
             **kwargs
         )
     ctx.logger.info('Create result: {}'.format(result))
+    path = retrieve_path(kwargs)
+    store_result_for_retrieve_id(result, path)
+
+
+def _file_resource_update(client, api_mapping, resource_definition, **kwargs):
+    result = _do_resource_update(
+        client,
+        api_mapping,
+        resource_definition,
+        **kwargs
+    )
+    ctx.logger.info('Update result: {}'.format(result))
     path = retrieve_path(kwargs)
     store_result_for_retrieve_id(result, path)
 
@@ -337,6 +351,19 @@ def file_resource_create(client, api_mapping, resource_definition, **kwargs):
 
 @with_kubernetes_client
 @resource_task(
+    retrieve_resources_definitions=resource_definitions_from_file,
+    retrieve_mapping=mapping_by_kind,
+)
+def file_resource_update(client, api_mapping, resource_definition, **kwargs):
+    additions = kwargs.get(DEFINITION_ADDITIONS)
+    if additions:
+        definition = update_with_additions(resource_definition, additions)
+        resource_definition = KubernetesResourceDefinition(**definition)
+    _file_resource_update(client, api_mapping, resource_definition, **kwargs)
+
+
+@with_kubernetes_client
+@resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
     resource_state_function=_check_if_resource_exists
@@ -534,6 +561,17 @@ def multiple_file_resource_create(**kwargs):
 
     for file_resource in file_resources:
         file_resource_create(file=file_resource, **kwargs)
+
+
+def multiple_file_resource_update(**kwargs):
+    file_resources = kwargs.get(
+        NODE_PROPERTY_FILES,
+        ctx.node.properties.get(NODE_PROPERTY_FILES, [])
+    )
+    validate_file_resources(file_resources)
+
+    for file_resource in file_resources:
+        file_resource_update(file=file_resource, **kwargs)
 
 
 def multiple_file_resource_read(**kwargs):

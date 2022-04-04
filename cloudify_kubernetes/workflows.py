@@ -13,37 +13,16 @@
 # limitations under the License.
 
 import ast
-import collections
+import json
 
 from cloudify.decorators import workflow
 from cloudify.exceptions import NonRecoverableError
 from cloudify.workflows import ctx
 
-from ._compat import text_type
+from . import utils
 
 RESOURCE_START_OPERATION = 'cloudify.interfaces.lifecycle.poststart'
 RESOURCE_UPDATE_OPERATION = 'cloudify.interfaces.lifecycle.update'
-DEFINITION_ADDITIONS = 'definitions_additions'
-
-
-def merge_definitions(old, new):
-    """
-    Merge two resource definitions, or really any dictionary.
-
-    :param old: The original dictionary.
-    :param new: A dictionary containing changes to old.
-    """
-
-    if isinstance(old, dict):
-        for k, v in new.items():
-            if k in old and isinstance(old[k], dict) \
-                    and isinstance(new[k], collections.Mapping):
-                old[k] = merge_definitions(old[k], new[k])
-            else:
-                old[k] = new[k]
-        return old
-    else:
-        return new
 
 
 def execute_node_instance_operation(_node_instance,
@@ -80,7 +59,7 @@ def execute_node_instance_operation(_node_instance,
 @workflow
 def update_resource_definition(node_instance_id,
                                resource_definition_changes,
-                               **kwargs):
+                               **_):
     """
     Updates a Kubernetes Resource's resource definition.
 
@@ -108,9 +87,18 @@ def update_resource_definition(node_instance_id,
         string representing the changes to the resoruce definition.
     """
 
-    if isinstance(resource_definition_changes, text_type):
+    try:
         resource_definition_changes = \
-            ast.literal_eval(resource_definition_changes)
+            json.loads(resource_definition_changes)
+    except json.JSONDecodeError as e:
+
+        if 'Key name must be string at char' in str(e):
+            resource_definition_changes = \
+                ast.literal_eval(resource_definition_changes)
+        elif 'Unexpected' in str(e):
+            resource_definition_changes = \
+                utils.resource_definitions_from_file_result(
+                    resource_definition_changes)
 
     node_instance = ctx.get_node_instance(node_instance_id)
 
@@ -134,6 +122,6 @@ def update_resource_definition(node_instance_id,
     execute_node_instance_operation(
         node_instance,
         RESOURCE_UPDATE_OPERATION,
-        _params={DEFINITION_ADDITIONS: resource_definition_changes})
+        _params={utils.DEFINITION_ADDITIONS: resource_definition_changes})
     node_instance.logger.info(
         'Executed update in order to push the new changes.')

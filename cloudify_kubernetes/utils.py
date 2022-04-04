@@ -14,8 +14,12 @@
 #
 import os
 import sys
+import json
 from tempfile import NamedTemporaryFile
-from collections import OrderedDict
+from collections import (
+    Mapping,
+    OrderedDict
+)
 
 import yaml
 from cloudify import ctx
@@ -36,7 +40,6 @@ from .k8s import (get_mapping,
                   KubernetesResourceDefinition,
                   KuberentesMappingNotFoundError,
                   KuberentesInvalidDefinitionError)
-from .workflows import merge_definitions, DEFINITION_ADDITIONS
 
 DEFAULT_NAMESPACE = 'default'
 NODE_PROPERTY_FILE_RESOURCE_PATH = 'resource_path'
@@ -61,6 +64,27 @@ CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster',
                  'cloudify.azure.nodes.compute.ManagedCluster',
                  'cloudify.nodes.azure.compute.ManagedCluster']
 CLUSTER_REL = 'cloudify.relationships.kubernetes.connected_to_shared_cluster'
+DEFINITION_ADDITIONS = 'definitions_additions'
+
+
+def merge_definitions(old, new):
+    """
+    Merge two resource definitions, or really any dictionary.
+
+    :param old: The original dictionary.
+    :param new: A dictionary containing changes to old.
+    """
+
+    if isinstance(old, dict):
+        for k, v in new.items():
+            if k in old and isinstance(old[k], dict) \
+                    and isinstance(new[k], Mapping):
+                old[k] = merge_definitions(old[k], new[k])
+            else:
+                old[k] = new[k]
+        return old
+    else:
+        return new
 
 
 def retrieve_path(kwargs):
@@ -271,11 +295,13 @@ def resource_definitions_from_file(**kwargs):
         NODE_PROPERTY_FILE,
         ctx.node.properties.get(NODE_PROPERTY_FILE, None)
     )
+    return resource_definitions_from_file_result(file_resource)
 
-    validate_file_resource(file_resource)
 
+def resource_definitions_from_file_result(result):
+    validate_file_resource(result)
     resource_defs = []
-    for definition in _yaml_from_files(**file_resource):
+    for definition in _yaml_from_files(**result):
         if not isinstance(definition, dict):
             ctx.logger.warn('Unexpected {d} definition.'.format(d=definition))
             continue
@@ -698,3 +724,29 @@ def get_client_config(**kwargs):
                 }
             }
     return kwargs.get('client_config')
+
+
+def update_with_additions(resource_definition, additions):
+    definition = resource_definition.to_dict()
+    l_name = definition.get('metadata', {}).get('name')
+    l_kind = definition.get('kind')
+    r_name = additions.get('metadata', {}).get('name')
+    r_kind = additions.get('kind')
+    if l_name == r_name and l_kind == r_kind:
+        definition.update(additions)
+    else:
+        suggestion = {
+            'metadata': {
+                'name': l_name
+            },
+            'kind': l_kind,
+        }
+        suggestion.update(additions)
+        ctx.logger.warning(
+            'When sending definition addition to file resource, '
+            'it is required to provide name in the metadata '
+            ', as well as kind, for '
+            'proper identification of the exact resource to update. '
+            'Suggestion: {}'.format(json.dumps(suggestion))
+        )
+    return definition

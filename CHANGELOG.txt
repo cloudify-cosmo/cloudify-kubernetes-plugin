@@ -149,3 +149,6 @@
 2.13.5: Rerelease with aarch64 support.
 2.13.6: RD-3555 - Future Proof Kubernetes API Mapping
 2.13.7: RD-4205 Fix issue with file content
+2.13.8:
+  - RD-1899 Speed up uninstall workflow.
+  - RD-4411 Add update resource test.
