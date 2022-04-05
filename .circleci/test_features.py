@@ -55,35 +55,38 @@ def test_update(*_, **__):
             deployments_create(
                 deployment_id, {"resource_path": "resources/pod.yaml"})
             # Install Cloud Watch Deployment
-            executions_start('install', deployment_id)
+            executions_start('install', deployment_id, 300)
             after_install = get_pod_info()
+            params = json.dumps({
+                "kind": "Pod",
+                "metadata": {
+                    "name": "nginx-test-pod"
+                },
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "nginx-test-pod",
+                            "image": "nginx:latest"
+                        }
+                    ]
+                }
+            })
+            params = 'resource_definition_changes=\'' + params + '\''
+            params = params.replace('{', '{{')
+            params = params.replace('}', '}}')
+            ni = node_instance_by_name('resource')
+            params = params + ' -p node_instance_id={}'.format(ni['id'])
             executions_start(
                 'update_resource_definition',
                 deployment_id,
-                params={
-                    'resource_definition_changes': {
-                        {
-                            "kind": "Pod",
-                            "metadata": {
-                                "name": "nginx-test-pod"
-                            },
-                            "spec": {
-                                "containers": [
-                                    {
-                                        "name": "nginx-test-pod",
-                                        "image": "nginx:latest"
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                }
+                300,
+                params=params
             )
             after_update = get_pod_info()
-            assert after_install[0]['image'] == 'nginx:stable'
-            assert after_update[0]['image'] == 'nginx:latest'
+            assert after_install['spec']['containers'][0]['image'] == 'nginx:stable'
+            assert after_update['spec']['containers'][0]['image'] == 'nginx:latest'
             # Uninstall Cloud Watch Deployment
-            executions_start('uninstall', deployment_id)
+            executions_start('uninstall', deployment_id, 300)
         except:
             cleanup_on_failure(deployment_id)
 
@@ -91,8 +94,8 @@ def test_update(*_, **__):
 def setup_cli():
     cluster_name = "kube-{}-cluster".format(os.environ['CIRCLE_BUILD_NUM'])
     capabilities = cloudify_exec('cfy deployments capabilities gcp-gke')
-    cloudify_exec('cfy secrets create -s {} kubernetes_endpoint'.format(
-        capabilities['endpoint']['value']))
+    cloudify_exec('cfy secrets create -u -s {} kubernetes_endpoint'.format(
+        capabilities['endpoint']['value']), get_json=False)
     with open('gcp.json', 'wb') as outfile:
         creds = base64.b64decode(os.environ['gcp_credentials'])
         outfile.write(creds)
@@ -103,5 +106,24 @@ def setup_cli():
 
 
 def get_pod_info():
+    cluster_name = "kube-{}-cluster".format(os.environ['CIRCLE_BUILD_NUM'])
+    handle_process(
+        'gcloud container clusters get-credentials {} --region us-west1-a'
+        .format(cluster_name))
     return json.loads(
         handle_process('kubectl get pod nginx-test-pod --output="json"'))
+
+
+def node_instance_by_name(name):
+    for node_instance in node_instances():
+        if node_instance['node_id'] == name:
+            return node_instance
+    raise Exception('No node instances found.')
+
+
+def nodes():
+    return cloudify_exec('cfy nodes list')
+
+
+def node_instances():
+    return cloudify_exec('cfy node-instances list')
