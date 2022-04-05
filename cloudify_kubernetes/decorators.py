@@ -188,6 +188,7 @@ def resource_task(retrieve_resource_definition=None,
             except (RecoverableError, NonRecoverableError):
                 raise
             except Exception:
+                ctx.logger.info(str(generate_traceback_exception()))
                 raise RecoverableError(
                     'Error encountered',
                     causes=[generate_traceback_exception()]
@@ -290,6 +291,7 @@ def with_kubernetes_client(fn):
         except (RecoverableError, NonRecoverableError):
             raise
         except Exception:
+            ctx.logger.info(str(generate_traceback_exception()))
             raise RecoverableError(
                 'Error encountered',
                 causes=[generate_traceback_exception()]

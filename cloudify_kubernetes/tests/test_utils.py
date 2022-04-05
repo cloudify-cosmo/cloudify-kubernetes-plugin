@@ -395,7 +395,9 @@ class TestUtils(unittest.TestCase):
                 return [{
                     'apiVersion': 'v1',
                     'kind': 'ReplicaSet',
-                    'metadata': 'aa',
+                    'metadata': {
+                        'name': 'aa'
+                    },
                     'spec': 'bb'
                 }]
 
@@ -409,7 +411,7 @@ class TestUtils(unittest.TestCase):
                                        KubernetesResourceDefinition))
             self.assertEquals(result[0].kind, 'ReplicaSet')
             self.assertEquals(result[0].api_version, 'v1')
-            self.assertEquals(result[0].metadata, 'aa')
+            self.assertEquals(result[0].metadata, {'name': 'aa'})
             self.assertEquals(result[0].spec, 'bb')
 
     def test_resource_definitions_from_file_error(self):

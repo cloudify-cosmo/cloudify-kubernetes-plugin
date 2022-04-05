@@ -21,7 +21,7 @@ node_templates:
       client_config:
         configuration:
           api_options:
-            host: { get_input: kubernetes_master }
+            host: { get_secret: kubernetes_endpoint }
             api_key: { get_secret: kubernetes_token }
             verify_ssl: false
             debug: false

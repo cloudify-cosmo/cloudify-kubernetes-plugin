@@ -1,0 +1,28 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
+  - plugin:cloudify-kubernetes-plugin
+
+node_templates:
+
+  resource:
+    type: cloudify.kubernetes.resources.Pod
+    properties:
+      client_config:
+        authentication:
+          gcp_service_account: { get_secret: gcp_credentials }
+        configuration:
+          api_options:
+            host: { get_secret: kubernetes_endpoint }
+            verify_ssl: false
+            debug: false
+      definition:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: nginx-test-pod
+        spec:
+          containers:
+          - name: nginx-test-pod
+            image: nginx:stable

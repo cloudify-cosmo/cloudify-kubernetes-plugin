@@ -1,18 +1,18 @@
 tosca_definitions_version: cloudify_dsl_1_3
 
 imports:
-  - http://www.getcloudify.org/spec/cloudify/5.0.5/types.yaml
+  - https://cloudify.co/spec/cloudify/6.2.0/types.yaml
   - plugin:cloudify-kubernetes-plugin
 
 inputs:
 
   resource_path:
     type: string
-    default: file-test-multiple-resources.yaml
+    default: resources/pod.yaml
 
   kubernetes_master:
     type: string
-    default: { get_secret: kubernetes_master_endpoint }
+    default: { get_secret: kubernetes_endpoint }
 
   validate_status:
     type: boolean
