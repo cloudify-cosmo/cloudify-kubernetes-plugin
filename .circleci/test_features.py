@@ -93,9 +93,9 @@ def setup_cli():
     capabilities = cloudify_exec('cfy deployments capabilities gcp-gke')
     cloudify_exec('cfy secrets create -s {} kubernetes_endpoint'.format(
         capabilities['endpoint']['value']))
-    with open('gcp.json', 'w') as outfile:
+    with open('gcp.json', 'wb') as outfile:
         creds = base64.b64decode(os.environ['gcp_credentials'])
-        outfile.write(str(creds, "utf-8"))
+        outfile.write(creds)
     handle_process('gcloud auth activate-service-account --key-file gcp.json')
     handle_process(
         'gcloud container clusters get-credentials {} --region us-west1-a'
