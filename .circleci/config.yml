@@ -62,19 +62,19 @@ workflows:
       - wagonorb/wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|RD-1899-Improve-File-Delete)/
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|RD-1899-Improve-File-Delete)/
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|RD-1899-Improve-File-Delete)/
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/build_bundle:
           filters:
             branches:
-              only: /master|RD-1899-Improve-File-Delete/
+              only: /master|dev/
           requires:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
@@ -84,7 +84,7 @@ workflows:
             - wagonorb/build_bundle
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|RD-1899-Improve-File-Delete)/
+              only: /([0-9\.]*\-build|master|dev)/
       - releaseorb/release:
           filters:
             branches:

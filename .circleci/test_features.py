@@ -32,63 +32,53 @@ from ecosystem_tests.dorkl.cloudify_api import (
 TEST_ID = environ.get('__ECOSYSTEM_TEST_ID', 'plugin-examples')
 
 
-@contextmanager
-def test_cleaner_upper(test_id):
-    try:
-        yield
-    except Exception:
-        cleanup_on_failure(test_id)
-        raise
-
-
 @pytest.mark.dependency()
 def test_update(*_, **__):
     deployment_id = TEST_ID + '-update'
     setup_cli()
-    with test_cleaner_upper(deployment_id):
-        try:
-            # Upload Cloud Watch Blueprint
-            blueprints_upload(
-                'examples/file-test.yaml',
-                deployment_id)
-            # Create Cloud Watch Deployment with Instance ID input
-            deployments_create(
-                deployment_id, {"resource_path": "resources/pod.yaml"})
-            # Install Cloud Watch Deployment
-            executions_start('install', deployment_id, 300)
-            after_install = get_pod_info()
-            params = json.dumps({
-                "kind": "Pod",
-                "metadata": {
-                    "name": "nginx-test-pod"
-                },
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "nginx-test-pod",
-                            "image": "nginx:latest"
-                        }
-                    ]
-                }
-            })
-            params = 'resource_definition_changes=\'' + params + '\''
-            params = params.replace('{', '{{')
-            params = params.replace('}', '}}')
-            ni = node_instance_by_name('resource')
-            params = params + ' -p node_instance_id={}'.format(ni['id'])
-            executions_start(
-                'update_resource_definition',
-                deployment_id,
-                300,
-                params=params
-            )
-            after_update = get_pod_info()
-            assert after_install['spec']['containers'][0]['image'] == 'nginx:stable'
-            assert after_update['spec']['containers'][0]['image'] == 'nginx:latest'
-            # Uninstall Cloud Watch Deployment
-            executions_start('uninstall', deployment_id, 300)
-        except:
-            cleanup_on_failure(deployment_id)
+    try:
+        # Upload Cloud Watch Blueprint
+        blueprints_upload(
+            'examples/file-test.yaml',
+            deployment_id)
+        # Create Cloud Watch Deployment with Instance ID input
+        deployments_create(
+            deployment_id, {"resource_path": "resources/pod.yaml"})
+        # Install Cloud Watch Deployment
+        executions_start('install', deployment_id, 300)
+        after_install = get_pod_info()
+        params = json.dumps({
+            "kind": "Pod",
+            "metadata": {
+                "name": "nginx-test-pod"
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "name": "nginx-test-pod",
+                        "image": "nginx:latest"
+                    }
+                ]
+            }
+        })
+        params = 'resource_definition_changes=\'' + params + '\''
+        params = params.replace('{', '{{')
+        params = params.replace('}', '}}')
+        ni = node_instance_by_name('resource')
+        params = params + ' -p node_instance_id={}'.format(ni['id'])
+        executions_start(
+            'update_resource_definition',
+            deployment_id,
+            300,
+            params=params
+        )
+        after_update = get_pod_info()
+        assert after_install['spec']['containers'][0]['image'] == 'nginx:stable'
+        assert after_update['spec']['containers'][0]['image'] == 'nginx:latest'
+        # Uninstall Cloud Watch Deployment
+        executions_start('uninstall', deployment_id, 300)
+    except:
+        cleanup_on_failure(deployment_id)
 
 
 def setup_cli():
