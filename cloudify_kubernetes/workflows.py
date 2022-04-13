@@ -23,8 +23,11 @@ from cloudify_rest_client.exceptions import CloudifyClientError
 
 from . import utils
 
-RESOURCE_START_OPERATION = 'cloudify.interfaces.lifecycle.poststart'
-RESOURCE_UPDATE_OPERATION = 'cloudify.interfaces.lifecycle.update'
+POSTSTART = 'cloudify.interfaces.lifecycle.poststart'
+UPDATE = 'cloudify.interfaces.lifecycle.update'
+CHECKDRIFT = 'cloudify.interfaces.lifecycle.check_drift'
+DELETE = 'cloudify.interfaces.lifecycle.delete'
+CREATE = 'cloudify.interfaces.lifecycle.create'
 
 
 def execute_node_instance_operation(_node_instance,
@@ -113,8 +116,7 @@ def update_resource_definition(node_instance_id,
     # the latest version of the resource definition.
     node_instance.logger.info(
         'Executing start in order to get the current state.')
-    execute_node_instance_operation(
-        node_instance, RESOURCE_START_OPERATION)
+    execute_node_instance_operation(node_instance, POSTSTART)
     node_instance.logger.info(
         'Executed start in order to get the current state.')
 
@@ -123,7 +125,7 @@ def update_resource_definition(node_instance_id,
         'Executing update in order to push the new changes.')
     execute_node_instance_operation(
         node_instance,
-        RESOURCE_UPDATE_OPERATION,
+        UPDATE,
         _params={utils.DEFINITION_ADDITIONS: resource_definition_changes})
     node_instance.logger.info(
         'Executed update in order to push the new changes.')
@@ -136,36 +138,24 @@ def refresh_and_store_token(ctx,
                             secret_token_node_instance_id,
                             store_token_and_kubeconfig_id):
 
-    cluster_node_instance = get_node_instance_from_node_instance_id_or_node_id(
+    cluster_ni = lookup_node_instance(
         kubernetes_cluster_node_instance_id)
-    execute_node_instance_operation(
-        cluster_node_instance, 'cloudify.interfaces.lifecycle.poststart')
-    execute_node_instance_operation(
-        cluster_node_instance, 'cloudify.interfaces.lifecycle.check_drift')
+    execute_node_instance_operation(cluster_ni, POSTSTART)
+    execute_node_instance_operation(cluster_ni, CHECKDRIFT)
 
     create_secrets_kubernetes_config(deployment_capability_name)
 
-    service_account_node_instance = \
-        get_node_instance_from_node_instance_id_or_node_id(
-            service_account_node_instance_id)
-    execute_node_instance_operation(service_account_node_instance,
-                                    'cloudify.interfaces.lifecycle.update')
-    execute_node_instance_operation(service_account_node_instance,
-                                    'cloudify.interfaces.lifecycle.poststart')
+    service_account_ni = lookup_node_instance(service_account_node_instance_id)
+    execute_node_instance_operation(service_account_ni, UPDATE)
+    execute_node_instance_operation(service_account_ni, POSTSTART)
 
-    secret_token_node_instance = \
-        get_node_instance_from_node_instance_id_or_node_id(
-            secret_token_node_instance_id)
-    execute_node_instance_operation(secret_token_node_instance,
-                                    'cloudify.interfaces.lifecycle.delete')
-    execute_node_instance_operation(secret_token_node_instance,
-                                    'cloudify.interfaces.lifecycle.create')
+    secret_token_ni = lookup_node_instance(secret_token_node_instance_id)
+    execute_node_instance_operation(secret_token_ni, DELETE)
+    execute_node_instance_operation(secret_token_ni, CREATE)
 
-    store_token_and_kubeconfig_node_instance = \
-        get_node_instance_from_node_instance_id_or_node_id(
-            store_token_and_kubeconfig_id)
-    execute_node_instance_operation(store_token_and_kubeconfig_node_instance,
-                                    'cloudify.interfaces.lifecycle.create')
+    store_token_and_kubeconfig_ni = lookup_node_instance(
+        store_token_and_kubeconfig_id)
+    execute_node_instance_operation(store_token_and_kubeconfig_ni, CREATE)
 
 
 def create_secrets_kubernetes_config(deployment_capability_name):
@@ -183,8 +173,7 @@ def create_secrets_kubernetes_config(deployment_capability_name):
         ctx.logger.error('{}'.format(str(err)))
 
 
-def get_node_instance_from_node_instance_id_or_node_id(
-        provided_node_instance_id):
+def lookup_node_instance(provided_node_instance_id):
     try:
         desired_node_instance = ctx.get_node_instance(
             provided_node_instance_id)
