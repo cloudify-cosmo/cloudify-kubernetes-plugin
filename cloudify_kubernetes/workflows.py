@@ -19,6 +19,7 @@ from cloudify.workflows import ctx
 from cloudify.decorators import workflow
 from cloudify.manager import get_rest_client
 from cloudify.exceptions import NonRecoverableError
+from cloudify_rest_client.exceptions import CloudifyClientError
 
 from . import utils
 
@@ -128,16 +129,13 @@ def update_resource_definition(node_instance_id,
         'Executed update in order to push the new changes.')
 
 
-def refresh_and_store_token(kubernetes_cluster_node_instance_id,
+def refresh_and_store_token(ctx,
+                            kubernetes_cluster_node_instance_id,
                             deployment_capability_name,
                             service_account_node_instance_id,
                             secret_token_node_instance_id,
                             store_token_and_kubeconfig_id):
 
-    client = get_rest_client()
-
-    # cfy exec start execute_operation -p operation=cloudify.interfaces.lifecycle.poststart -p node_instance_ids='["eks_cluster"]' -d eks
-    # cfy exec start execute_operation -vv -p operation=cloudify.interfaces.lifecycle.check_drift -p node_instance_ids='["eks_cluster"]' -d eks
     cluster_node_instance = get_node_instance_from_node_instance_id_or_node_id(
         kubernetes_cluster_node_instance_id)
     execute_node_instance_operation(
@@ -145,14 +143,8 @@ def refresh_and_store_token(kubernetes_cluster_node_instance_id,
     execute_node_instance_operation(
         cluster_node_instance, 'cloudify.interfaces.lifecycle.check_drift')
 
-    # cfy secrets update kubernetes_config -f file
-    kubernetes_config = ctx.deployment.capabilites.get(
-        deployment_capability_name, {})
-    ctx.logger.info('This is the capability: {}'.format(kubernetes_config))
-    client.secrets.create('kubernetes_config', kubernetes_config.get('value'))
+    create_secrets_kubernetes_config(deployment_capability_name)
 
-    # cfy exec start execute_operation -p node_instance_ids='["new_service_account"]' -p operation=cloudify.interfaces.lifecycle.update -vv -d eks
-    # cfy exec start execute_operation -p node_instance_ids='["new_service_account"]' -p operation=cloudify.interfaces.lifecycle.poststart -vv -d eks
     service_account_node_instance = \
         get_node_instance_from_node_instance_id_or_node_id(
             service_account_node_instance_id)
@@ -161,8 +153,6 @@ def refresh_and_store_token(kubernetes_cluster_node_instance_id,
     execute_node_instance_operation(service_account_node_instance,
                                     'cloudify.interfaces.lifecycle.poststart')
 
-    # cfy exec start execute_operation -p node_instance_ids='["secret"]' -p operation=cloudify.interfaces.lifecycle.delete -vv -d eks
-    # cfy exec start execute_operation -p node_instance_ids='["secret"]' -p operation=cloudify.interfaces.lifecycle.create -vv -d eks
     secret_token_node_instance = \
         get_node_instance_from_node_instance_id_or_node_id(
             secret_token_node_instance_id)
@@ -171,12 +161,26 @@ def refresh_and_store_token(kubernetes_cluster_node_instance_id,
     execute_node_instance_operation(secret_token_node_instance,
                                     'cloudify.interfaces.lifecycle.creat')
 
-    # cfy exec start execute_operation -p node_instance_ids='["store_token_and_kubeconfig"]' -p operation=cloudify.interfaces.lifecycle.create -vv -d eks
     store_token_and_kubeconfig_node_instance = \
         get_node_instance_from_node_instance_id_or_node_id(
             store_token_and_kubeconfig_id)
     execute_node_instance_operation(store_token_and_kubeconfig_node_instance,
                                     'cloudify.interfaces.lifecycle.creat')
+
+
+def create_secrets_kubernetes_config(deployment_capability_name):
+    client = get_rest_client()
+
+    capabilities = client.deployments.capabilities. \
+        get(ctx.deployment.id).get('capabilities', {})
+    kubernetes_config = capabilities.get(deployment_capability_name, {}) \
+        .get('file_content', {})
+    ctx.logger.info('This is the capability: {}'.format(kubernetes_config))
+
+    try:
+        client.secrets.create('kubernetes_config', str(kubernetes_config))
+    except CloudifyClientError as err:
+        ctx.logger.error('{}'.format(str(err)))
 
 
 def get_node_instance_from_node_instance_id_or_node_id(
@@ -194,4 +198,4 @@ def get_node_instance_from_node_instance_id_or_node_id(
             'A valid node instance or node ID for a '
             'X node was not found'
         )
-
+    return desired_node_instance
