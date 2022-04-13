@@ -159,13 +159,13 @@ def refresh_and_store_token(ctx,
     execute_node_instance_operation(secret_token_node_instance,
                                     'cloudify.interfaces.lifecycle.delete')
     execute_node_instance_operation(secret_token_node_instance,
-                                    'cloudify.interfaces.lifecycle.creat')
+                                    'cloudify.interfaces.lifecycle.create')
 
     store_token_and_kubeconfig_node_instance = \
         get_node_instance_from_node_instance_id_or_node_id(
             store_token_and_kubeconfig_id)
     execute_node_instance_operation(store_token_and_kubeconfig_node_instance,
-                                    'cloudify.interfaces.lifecycle.creat')
+                                    'cloudify.interfaces.lifecycle.create')
 
 
 def create_secrets_kubernetes_config(deployment_capability_name):
@@ -188,11 +188,13 @@ def get_node_instance_from_node_instance_id_or_node_id(
     try:
         desired_node_instance = ctx.get_node_instance(
             provided_node_instance_id)
+
     except RuntimeError:
         desired_node_instance = None
-        for node_instance in ctx.get_node_instance:
+        for node_instance in ctx.node_instances:
             if node_instance.node_id == provided_node_instance_id:
                 desired_node_instance = node_instance
+                break
     if not desired_node_instance:
         raise NonRecoverableError(
             'A valid node instance or node ID for a '
