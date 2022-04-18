@@ -152,3 +152,5 @@
 2.13.8:
   - RD-1899 Speed up uninstall workflow.
   - RD-4411 Add update resource test.
+2.13.9:
+  -RD-4494-write-workflow-eks-token-refresh.
