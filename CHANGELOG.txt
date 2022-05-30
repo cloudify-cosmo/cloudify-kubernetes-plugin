@@ -154,3 +154,4 @@
   - RD-4411 Add update resource test.
 2.13.9:
   -RD-4494-write-workflow-eks-token-refresh.
+2.13.10: V2 Plugin YAML
