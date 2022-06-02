@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   node: cloudify/public-unittest-orb@1 #orb version
-  wagonorb: cloudify/wagon-bulder-orb@1 #orb version
+  wagonorb: cloudify/wagon-bulder-orb@2.2.0 #orb version
   releaseorb: cloudify/release-orb@1 #orb version
   managerorb: cloudify/manager-orb@1
 
@@ -22,7 +22,7 @@ executors:
 
   cloudify-machine-py3:
     machine:
-      image: ubuntu-1604:201903-01
+      image: ubuntu-2004:202201-02
 
 commands:
   prepare_test_manager:
