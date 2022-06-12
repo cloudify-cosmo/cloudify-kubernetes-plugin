@@ -40,7 +40,7 @@ def get_version(rel_file='plugin.yaml'):
 install_requires = [
     'cloudify-python-importer==0.2',
     'cloudify-common>=4.5',
-    'kubernetes==19.15.0',
+    'kubernetes==22.6.0',
     # 'kubernetes',
     # 'pyyaml>=4.2b1',
     # 'networkx>=1.9.1',
