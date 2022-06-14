@@ -44,12 +44,14 @@ class TestMapping(unittest.TestCase):
         expected_alternates = [
             [
                 ('NodeV1Api', 'V1RuntimeClass'),
+                ('NodeV1alpha1Api', 'V1alpha1RuntimeClass'),
             ],
             [
                 ('NetworkingV1Api', 'V1Ingress'),
                 ('ExtensionsV1beta1Api', 'ExtensionsV1beta1Ingress'),
             ],
             [
+                ('BatchV1Api', 'V1CronJob'),
                 ('BatchV2alpha1Api', 'V2alpha1CronJob')
             ],
             [
