@@ -30,30 +30,3 @@ from .exceptions import (KuberentesError, # noqa
 
 # Monkey Patch "V1beta1CustomResourceDefinitionStatus"
 # https://github.com/kubernetes-client/python/issues/415
-
-# from kubernetes.client.models import \
-#     v1beta1_custom_resource_definition_status as custom
-#
-#
-# @property
-# def accepted_names(self):
-#     return self._accepted_names
-#
-#
-# @accepted_names.setter
-# def accepted_names(self, accepted_names):
-#     self._accepted_names = accepted_names
-#
-#
-# @property
-# def conditions(self):
-#     return self._conditions
-#
-#
-# @conditions.setter
-# def conditions(self, conditions):
-#     self._conditions = conditions
-#
-#
-# custom.V1beta1CustomResourceDefinitionStatus.accepted_names = accepted_names
-# custom.V1beta1CustomResourceDefinitionStatus.conditions = conditions
