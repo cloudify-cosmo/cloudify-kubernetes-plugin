@@ -155,3 +155,4 @@
 2.13.9:
   -RD-4494-write-workflow-eks-token-refresh.
 2.13.10: V2 Plugin YAML
+2.13.11: RD-4411 Improve cloudify-kubernetes-plugin to support API v1.22.5.

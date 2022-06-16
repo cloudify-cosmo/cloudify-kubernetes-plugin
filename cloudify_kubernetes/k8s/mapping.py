@@ -248,7 +248,7 @@ SUPPORTED_API_MAPPINGS = {
         create=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
             method='create_cluster_role_binding',
-            payload='V1beta1ClusterRoleBinding'
+            payload='V1ClusterRoleBinding'
         ),
         read=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
