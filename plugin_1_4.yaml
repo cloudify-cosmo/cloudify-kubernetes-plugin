@@ -668,25 +668,40 @@ workflows:
     mapping: kubernetes.cloudify_kubernetes.workflows.update_resource_definition
     parameters:
       node_instance_id:
+        type: string
         description: The id of the node-instance that you want to modify.
       resource_definition_changes:
+        type: dict
         description: The changes to the resource definition that you are making.
 
   refresh_and_store_token:
     mapping: kubernetes.cloudify_kubernetes.workflows.refresh_and_store_token
+    availability_rules:
+      node_instances_active: ['all', 'partial']
+      node_types_required: ['cloudify.kubernetes.resources.SharedCluster']
     parameters:
       kubernetes_cluster_node_instance_id:
-        type: string
+        type: node_instance
         default: eks_cluster
       deployment_capability_name:
-        type: string
+        type: capability_value
         default: connection_details
       service_account_node_instance_id:
-        type: string
+        type: node_instance
         default: new_service_account
       secret_token_node_instance_id:
-        type: string
+        type: node_instance
         default: secret
       store_token_and_kubeconfig_id:
-        type: string
+        type: node_instance
         default: store_token_and_kubeconfig
+
+blueprint_labels:
+  obj-type:
+    values:
+      - kubernetes
+
+labels:
+  obj-type:
+    values:
+      - kubernetes
