@@ -3,7 +3,7 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.13.12'
+    package_version: '2.13.14'
 
 data_types:
 
@@ -668,7 +668,7 @@ workflows:
     mapping: kubernetes.cloudify_kubernetes.workflows.update_resource_definition
     parameters:
       node_instance_id:
-        type: node_instance
+        type: string
         description: The id of the node-instance that you want to modify.
       resource_definition_changes:
         type: dict
@@ -678,19 +678,19 @@ workflows:
     mapping: kubernetes.cloudify_kubernetes.workflows.refresh_and_store_token
     parameters:
       kubernetes_cluster_node_instance_id:
-        type: node_instance
+        type: string
         default: eks_cluster
       deployment_capability_name:
-        type: capability_value
+        type: string
         default: connection_details
       service_account_node_instance_id:
-        type: node_instance
+        type: string
         default: new_service_account
       secret_token_node_instance_id:
-        type: node_instance
+        type: string
         default: secret
       store_token_and_kubeconfig_id:
-        type: node_instance
+        type: string
         default: store_token_and_kubeconfig
 
 blueprint_labels:
