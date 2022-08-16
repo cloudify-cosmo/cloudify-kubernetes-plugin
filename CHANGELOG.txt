@@ -159,4 +159,6 @@
 2.13.12: Adjust V2 Plugin YAML invalid-types.
 2.13.13: rerelease v2 without dsl 4 types
 2.13.14: release redhat 8 wagon and dsl 1_4
-2.13.15: updated mappings
+2.13.15:
+  - updated mappings
+  - deprecate old node types and old relationship types.
