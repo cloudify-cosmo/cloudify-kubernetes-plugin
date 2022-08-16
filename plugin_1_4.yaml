@@ -3,7 +3,7 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.13.14'
+    package_version: '2.13.15'
 
 data_types:
 
@@ -330,9 +330,10 @@ data_types:
         required: true
 
 
+
 node_types:
 
-  cloudify.kubernetes.nodes.Master:
+  cloudify.nodes.kubernetes.Master:
     derived_from: cloudify.nodes.Root
     properties:
       configuration:
@@ -350,7 +351,10 @@ node_types:
           Authentication properties of Kubernetes Cloud providers. Optional.
           Currently supported providers: Google Cloud Platform.
 
-  cloudify.kubernetes.resources.ResourceBase:
+  cloudify.kubernetes.nodes.Master:
+    derived_from: cloudify.nodes.kubernetes.Master
+
+  cloudify.nodes.kubernetes.resources.ResourceBase:
     derived_from: cloudify.nodes.Root
     properties:
       client_config: &client_config
@@ -383,7 +387,10 @@ node_types:
         description: API options depending on API operations execution.
         type: cloudify.kubernetes.types.Options
 
-  cloudify.kubernetes.resources.ResourceWithValidateStatus:
+  cloudify.kubernetes.resources.ResourceBase:
+    derived_from: cloudify.nodes.kubernetes.resources.ResourceBase
+
+  cloudify.nodes.kubernetes.resources.ResourceWithValidateStatus:
     derived_from: cloudify.kubernetes.resources.ResourceBase
     properties:
       validate_resource_status:
@@ -391,7 +398,10 @@ node_types:
         description: Set this to "true" if you want Cloudify to wait for a predetermined state.
         default: false
 
-  cloudify.kubernetes.resources.BlueprintDefinedResource:
+  cloudify.kubernetes.resources.ResourceWithValidateStatus:
+    derived_from: cloudify.nodes.kubernetes.resources.ResourceWithValidateStatus
+
+  cloudify.nodes.kubernetes.resources.BlueprintDefinedResource:
     derived_from: cloudify.kubernetes.resources.ResourceWithValidateStatus
     properties:
       definition:
@@ -411,7 +421,21 @@ node_types:
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
 
+  cloudify.kubernetes.resources.BlueprintDefinedResource:
+    derived_from: cloudify.nodes.kubernetes.resources.BlueprintDefinedResource
+
+  cloudify.nodes.kubernetes.resources.ClusterRoleBinding:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      definition:
+        type: cloudify.kubernetes.types.RoleBindingDefinition
+        description: >
+          Definition of role binding using native Kubernetes YAML spec
+
   cloudify.kubernetes.resources.ClusterRoleBinding:
+    derived_from: cloudify.nodes.kubernetes.resources.ClusterRoleBinding
+
+  cloudify.nodes.kubernetes.resources.RoleBinding:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -420,14 +444,9 @@ node_types:
           Definition of role binding using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.RoleBinding:
-    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    properties:
-      definition:
-        type: cloudify.kubernetes.types.RoleBindingDefinition
-        description: >
-          Definition of role binding using native Kubernetes YAML spec
+    derived_from: cloudify.nodes.kubernetes.resources.RoleBinding
 
-  cloudify.kubernetes.resources.Role:
+  cloudify.nodes.kubernetes.resources.Role:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -435,7 +454,10 @@ node_types:
         description: >
           Definition of role using native Kubernetes YAML spec
 
-  cloudify.kubernetes.resources.ClusterRole:
+  cloudify.kubernetes.resources.Role:
+     derived_from: cloudify.nodes.kubernetes.resources.Role
+
+  cloudify.nodes.kubernetes.resources.ClusterRole:
     derived_from: cloudify.kubernetes.resources.Role
     properties:
       definition:
@@ -443,7 +465,10 @@ node_types:
         description: >
           Definition of cluster role using native Kubernetes YAML spec
 
-  cloudify.kubernetes.resources.Secret:
+  cloudify.kubernetes.resources.ClusterRole:
+    derived_from: cloudify.nodes.kubernetes.resources.ClusterRole
+
+  cloudify.nodes.kubernetes.resources.Secret:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -451,7 +476,10 @@ node_types:
         description: >
           Definition of secret using native Kubernetes YAML spec
 
-  cloudify.kubernetes.resources.ServiceAccount:
+  cloudify.kubernetes.resources.Secret:
+    derived_from: cloudify.nodes.kubernetes.resources.Secret
+
+  cloudify.nodes.kubernetes.resources.ServiceAccount:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -459,67 +487,106 @@ node_types:
         description: >
           Definition of service account using native Kubernetes YAML spec
 
-  cloudify.kubernetes.resources.Deployment:
+  cloudify.kubernetes.resources.ServiceAccount:
+    derived_from: cloudify.nodes.kubernetes.resources.ServiceAccount
+
+  cloudify.nodes.kubernetes.resources.Deployment:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       validate_resource_status:
         default: true
 
+  cloudify.kubernetes.resources.Deployment:
+    derived_from: cloudify.nodes.kubernetes.resources.Deployment
+
+  cloudify.nodes.kubernetes.resources.Node:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+
   cloudify.kubernetes.resources.Node:
+    derived_from: cloudify.nodes.kubernetes.resources.Node
+
+  cloudify.nodes.kubernetes.resources.Namespace:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
   cloudify.kubernetes.resources.Namespace:
+    derived_from: cloudify.nodes.kubernetes.resources.Namespace
+
+  cloudify.nodes.kubernetes.resources.Pod:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      validate_resource_status:
+        default: true
 
   cloudify.kubernetes.resources.Pod:
+    derived_from: cloudify.nodes.kubernetes.resources.Pod
+
+  cloudify.nodes.kubernetes.resources.ReplicaSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       validate_resource_status:
         default: true
 
   cloudify.kubernetes.resources.ReplicaSet:
+    derived_from: cloudify.nodes.kubernetes.resources.ReplicaSet
+
+  cloudify.nodes.kubernetes.resources.ReplicationController:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       validate_resource_status:
         default: true
 
   cloudify.kubernetes.resources.ReplicationController:
+    derived_from: cloudify.nodes.kubernetes.resources.ReplicationController
+
+  cloudify.nodes.kubernetes.resources.DaemonSet:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    properties:
-      validate_resource_status:
-        default: true
 
   cloudify.kubernetes.resources.DaemonSet:
+    derived_from: cloudify.nodes.kubernetes.resources.DaemonSet
+
+  cloudify.nodes.kubernetes.resources.CustomResourceDefinition:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
 
   cloudify.kubernetes.resources.CustomResourceDefinition:
-    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    derived_from: cloudify.nodes.kubernetes.resources.CustomResourceDefinition
 
-  cloudify.kubernetes.resources.CustomObject:
+  cloudify.nodes.kubernetes.resources.CustomObject:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       options:
         type: cloudify.kubernetes.types.CustomObjectsOptions
 
+  cloudify.kubernetes.resources.CustomObject:
+    derived_from: cloudify.nodes.kubernetes.resources.CustomObject
+
+  cloudify.nodes.kubernetes.resources.Service:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      validate_resource_status:
+        default: true
+
   cloudify.kubernetes.resources.Service:
+    derived_from: cloudify.nodes.kubernetes.resources.Service
+
+  cloudify.nodes.kubernetes.resources.PersistentVolume:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       validate_resource_status:
         default: true
 
   cloudify.kubernetes.resources.PersistentVolume:
-    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    properties:
-      validate_resource_status:
-        default: true
+    derived_from: cloudify.nodes.kubernetes.resources.PersistentVolume
 
-  cloudify.kubernetes.resources.ConfigMap:
+  cloudify.nodes.kubernetes.resources.ConfigMap:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
         type: cloudify.kubernetes.types.ConfigClassResourceDefinition
 
-  cloudify.kubernetes.resources.StorageClass:
+  cloudify.kubernetes.resources.ConfigMap:
+    derived_from: cloudify.nodes.kubernetes.resources.ConfigMap
+
+  cloudify.nodes.kubernetes.resources.StorageClass:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -527,7 +594,21 @@ node_types:
         description: >
           Definition of resource object using native Kubernetes YAML spec
 
+  cloudify.kubernetes.resources.StorageClass:
+    derived_from: cloudify.nodes.kubernetes.resources.StorageClass
+
+  cloudify.nodes.kubernetes.resources.StatefulSet:
+    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
+    properties:
+      definition:
+        default: {}
+        description: >
+          Definition of resource object using native Kubernetes YAML spec
+
   cloudify.kubernetes.resources.StatefulSet:
+    derived_from: cloudify.nodes.kubernetes.resources.StatefulSet
+
+  cloudify.nodes.kubernetes.resources.PodSecurityPolicy:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -536,6 +617,9 @@ node_types:
           Definition of resource object using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.PodSecurityPolicy:
+    derived_from: cloudify.nodes.kubernetes.resources.PodSecurityPolicy
+
+  cloudify.nodes.kubernetes.resources.NetworkPolicy:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -544,6 +628,9 @@ node_types:
           Definition of resource object using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.NetworkPolicy:
+    derived_from: cloudify.nodes.kubernetes.resources.NetworkPolicy
+
+  cloudify.nodes.kubernetes.resources.Ingress:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -552,14 +639,9 @@ node_types:
           Definition of resource object using native Kubernetes YAML spec
 
   cloudify.kubernetes.resources.Ingress:
-    derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
-    properties:
-      definition:
-        default: {}
-        description: >
-          Definition of resource object using native Kubernetes YAML spec
+    derived_from: cloudify.nodes.kubernetes.resources.Ingress
 
-  cloudify.kubernetes.resources.PersistentVolumeClaim:
+  cloudify.nodes.kubernetes.resources.PersistentVolumeClaim:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       definition:
@@ -569,7 +651,10 @@ node_types:
       validate_resource_status:
         default: true
 
-  cloudify.kubernetes.resources.CustomBlueprintDefinedResource:
+  cloudify.kubernetes.resources.PersistentVolumeClaim:
+    derived_from: cloudify.nodes.kubernetes.resources.PersistentVolumeClaim
+
+  cloudify.nodes.kubernetes.resources.CustomBlueprintDefinedResource:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
       api_mapping:
@@ -583,7 +668,10 @@ node_types:
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_delete
 
-  cloudify.kubernetes.resources.FileDefinedResource:
+  cloudify.kubernetes.resources.CustomBlueprintDefinedResource:
+    derived_from: cloudify.nodes.kubernetes.resources.CustomBlueprintDefinedResource
+
+  cloudify.nodes.kubernetes.resources.FileDefinedResource:
     derived_from: cloudify.kubernetes.resources.ResourceWithValidateStatus
     properties:
       file:
@@ -608,7 +696,10 @@ node_types:
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
 
-  cloudify.kubernetes.resources.MultipleFileDefinedResources:
+  cloudify.kubernetes.resources.FileDefinedResource:
+    derived_from: cloudify.nodes.kubernetes.resources.FileDefinedResource
+
+  cloudify.nodes.kubernetes.resources.MultipleFileDefinedResources:
     derived_from: cloudify.kubernetes.resources.ResourceWithValidateStatus
     properties:
       files:
@@ -632,7 +723,10 @@ node_types:
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
 
-  cloudify.kubernetes.resources.SharedCluster:
+  cloudify.kubernetes.resources.MultipleFileDefinedResources:
+    derived_from: cloudify.nodes.kubernetes.resources.MultipleFileDefinedResources
+
+  cloudify.nodes.kubernetes.resources.SharedCluster:
     derived_from: cloudify.nodes.SharedResource
     properties:
       client_config: *client_config
@@ -654,10 +748,16 @@ node_types:
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.read_token
 
+  cloudify.kubernetes.resources.SharedCluster:
+    derived_from: cloudify.nodes.kubernetes.resources.SharedCluster
+
 relationships:
 
-  cloudify.kubernetes.relationships.managed_by_master:
+  cloudify.relationships.kubernetes.managed_by_master:
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.kubernetes.relationships.managed_by_master:
+    derived_from: cloudify.relationships.kubernetes.managed_by_master
 
   cloudify.relationships.kubernetes.connected_to_shared_cluster:
     derived_from: cloudify.relationships.connected_to

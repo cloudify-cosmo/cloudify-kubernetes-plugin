@@ -166,20 +166,20 @@ SUPPORTED_API_MAPPINGS = {
     ),
     'PodSecurityPolicy': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
-            api='PolicyV1beta1Api',
+            api='PolicyV1Api',
             method='create_pod_security_policy',
             payload='V1NetworkPolicy'
         ),
         read=KubernetesSingleOperationApiMapping(
-            api='PolicyV1beta1Api',
+            api='PolicyV1Api',
             method='read_pod_security_policy',
         ),
         update=KubernetesSingleOperationApiMapping(
-            api='PolicyV1beta1Api',
+            api='PolicyV1Api',
             method='patch_pod_security_policy',
         ),
         delete=KubernetesSingleOperationApiMapping(
-            api='PolicyV1beta1Api',
+            api='PolicyV1Api',
             method='delete_pod_security_policy',
             payload='V1DeleteOptions'
         ),
@@ -268,7 +268,7 @@ SUPPORTED_API_MAPPINGS = {
         create=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
             method='create_cluster_role',
-            payload='V1beta1ClusterRole'
+            payload='V1ClusterRole'
         ),
         read=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
@@ -385,20 +385,20 @@ SUPPORTED_API_MAPPINGS = {
     ),
     'Ingress': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
-            api='NetworkingV1beta1Api',
+            api='NetworkingV1Api',
             method='create_namespaced_ingress',
-            payload='NetworkingV1beta1Ingress'
+            payload='V1Ingress'
         ),
         read=KubernetesSingleOperationApiMapping(
-            api='NetworkingV1beta1Api',
+            api='NetworkingV1Api',
             method='read_namespaced_ingress',
         ),
         update=KubernetesSingleOperationApiMapping(
-            api='NetworkingV1beta1Api',
+            api='NetworkingV1Api',
             method='patch_namespaced_ingress'
         ),
         delete=KubernetesSingleOperationApiMapping(
-            api='NetworkingV1beta1Api',
+            api='NetworkingV1Api',
             method='delete_namespaced_ingress',
             payload='V1DeleteOptions'
         ),
@@ -445,20 +445,20 @@ SUPPORTED_API_MAPPINGS = {
     ),
     'StorageClass': KubernetesApiMapping(
         create=KubernetesSingleOperationApiMapping(
-            api='StorageV1beta1Api',
+            api='StorageV1Api',
             method='create_storage_class',
-            payload='V1beta1StorageClass'
+            payload='V1StorageClass'
         ),
         read=KubernetesSingleOperationApiMapping(
-            api='StorageV1beta1Api',
+            api='StorageV1Api',
             method='read_storage_class',
         ),
         update=KubernetesSingleOperationApiMapping(
-            api='StorageV1beta1Api',
+            api='StorageV1Api',
             method='patch_storage_class'
         ),
         delete=KubernetesSingleOperationApiMapping(
-            api='StorageV1beta1Api',
+            api='StorageV1Api',
             method='delete_storage_class',
             payload='V1DeleteOptions'
         ),
