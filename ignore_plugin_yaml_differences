@@ -1,0 +1,1 @@
+{'dictionary_item_added': [root['workflows']['update_resource_definition']['parameters']['resource_definition_changes']['type']], 'dictionary_item_removed': [root['workflows']['update_resource_definition']['parameters']['resource_definition_changes']['default']]}

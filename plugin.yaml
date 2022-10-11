@@ -767,9 +767,11 @@ workflows:
     mapping: kubernetes.cloudify_kubernetes.workflows.update_resource_definition
     parameters:
       node_instance_id:
+        type: string
         description: The id of the node-instance that you want to modify.
       resource_definition_changes:
         description: The changes to the resource definition that you are making.
+        default: {}
 
   refresh_and_store_token:
     mapping: kubernetes.cloudify_kubernetes.workflows.refresh_and_store_token
