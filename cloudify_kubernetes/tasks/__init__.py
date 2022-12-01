@@ -27,6 +27,7 @@ from .operations import (read_token,  # noqa
                          file_resource_create,  # noqa
                          file_resource_update,  # noqa
                          file_resource_delete,  # noqa
+                         custom_resource_read,  # noqa
                          custom_resource_create,  # noqa
                          custom_resource_update,  # noqa
                          custom_resource_delete,  # noqa
