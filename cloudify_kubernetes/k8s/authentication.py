@@ -14,7 +14,8 @@
 
 import json
 
-from oauth2client.service_account import ServiceAccountCredentials
+import google.auth.transport.requests
+from google.oauth2 import service_account
 
 from .._compat import text_type
 from .exceptions import KuberentesAuthenticationError
@@ -84,14 +85,16 @@ class GCPServiceAccountAuthentication(KubernetesApiAuthentication):
                 service_account_file_content = \
                     json.loads(service_account_file_content)
 
-            credentials = ServiceAccountCredentials.from_json_keyfile_dict(
-                service_account_file_content,
-                self.SCOPES
-            )
-            token = credentials.get_access_token().access_token
+            storage_credentials = \
+                service_account.Credentials.from_service_account_info(
+                    service_account_file_content)
+            scoped_credentials = storage_credentials.with_scopes(self.SCOPES)
+            auth_req = google.auth.transport.requests.Request()
+            scoped_credentials.refresh(auth_req)
+            token = scoped_credentials.token
             configuration.api_key[self.K8S_API_AUTHORIZATION] = token
-            configuration.api_key_prefix[self.K8S_API_AUTHORIZATION]\
-                = self.TOKEN_PREFIX
+            configuration.api_key_prefix[self.K8S_API_AUTHORIZATION] = \
+                self.TOKEN_PREFIX
             return configuration
 
         raise KuberentesAuthenticationError(
