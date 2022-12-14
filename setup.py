@@ -40,6 +40,7 @@ def get_version(rel_file='plugin.yaml'):
 install_requires = [
     'cloudify-python-importer==0.2.1',
     'cloudify-common>=4.5',
+    'cloudify-types>=6.3.1',
     'kubernetes==25.3.0',
     # 'kubernetes',
     # 'pyyaml>=4.2b1',
@@ -48,7 +49,6 @@ install_requires = [
     # 'pyasn1-modules>=0.0.5,<0.2.1',
     # 'oauth2client',  # used only in GCPServiceAccountAuthentication
     'google-auth==2.15.0',
-    'cloudify-types==6.4.1'
 ]
 
 
