@@ -166,3 +166,4 @@
   - re-release to fix inconsistant version in v2_plugin.yaml.
 2.13.17: Check Status Workflow Support
 2.13.18: release workflow
+2.13.19: Update google auth library.

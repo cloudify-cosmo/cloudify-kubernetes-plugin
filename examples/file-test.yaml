@@ -8,7 +8,7 @@ inputs:
 
   resource_path:
     type: string
-    default: resources/pod.yaml
+    default: resources/crd.yaml
 
   kubernetes_master:
     type: string

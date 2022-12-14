@@ -82,14 +82,15 @@ class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
         )
 
         with patch(
-            'oauth2client.service_account.'
-            'ServiceAccountCredentials.from_json_keyfile_dict',
+            'google.oauth2.service_account.'
+            'Credentials.from_service_account_info',
             MagicMock(return_value=mock_credentials)
         ):
             instance.authenticate(mock_api)
         api_key = mock_api.api_key
         api_key_prefix = mock_api.api_key_prefix
-        self.assertEquals(token, api_key['authorization'])
+        # raise Exception(vars(api_key['authorization']))
+        self.assertEquals(token, api_key['authorization']._mock_name)
         self.assertEquals('Bearer', api_key_prefix['authorization'])
 
         # use json as account
@@ -99,8 +100,8 @@ class TestGCPServiceAccountAuthentication(BaseTestK8SAuthentication):
         )
 
         with patch(
-            'oauth2client.service_account.'
-            'ServiceAccountCredentials.from_json_keyfile_dict',
+            'google.oauth2.service_account.'
+            'Credentials.from_service_account_info',
             MagicMock(return_value=mock_credentials)
         ):
             instance.authenticate(mock_api)
