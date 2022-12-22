@@ -49,6 +49,7 @@ install_requires = [
     # 'pyasn1-modules>=0.0.5,<0.2.1',
     # 'oauth2client',  # used only in GCPServiceAccountAuthentication
     'google-auth==2.15.0',
+    'deepdiff==3.3.0',
 ]
 
 

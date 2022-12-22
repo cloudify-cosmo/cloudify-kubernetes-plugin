@@ -15,6 +15,7 @@
 # hack for import namespaced modules (google.auth)
 import base64
 from copy import deepcopy
+from deepdiff import DeepDiff
 
 import cloudify_importer # noqa
 from cloudify import ctx
@@ -432,6 +433,26 @@ def resource_read_from_payload(client,
 )
 def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     _file_resource_read(client, api_mapping, resource_definition, **kwargs)
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resources_definitions=resource_definitions_from_file,
+    retrieve_mapping=mapping_by_kind,
+)
+def file_resource_check_drift(client, api_mapping, resource_definition, **kwargs):
+    ctx.logger.info('*** in file_resource_check_drift **')
+
+    path = retrieve_path(kwargs)
+    _, resource, _ = retrieve_last_create_path(path, delete=False)
+
+    # Read All resources.
+    read_response = _do_resource_read(
+        client, api_mapping, resource_definition, **kwargs)
+    ctx.logger.info('*** read_response: {}'.format(read_response))
+    ctx.logger.info('*** resource_definition: {}'.format(resource_definition))
+    ctx.logger.info('*** DeepDiff: {}'
+                    .format(DeepDiff(resource_definition, read_response)))
 
 
 @with_kubernetes_client
