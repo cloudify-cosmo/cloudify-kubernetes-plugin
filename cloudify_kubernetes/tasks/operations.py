@@ -60,6 +60,8 @@ from .nested_resources.tokens import (
     get_cluster_role_binding_payload,
     get_secret_payload)
 
+DEFS = '__resource_definitions'
+
 
 def _resource_create(client, api_mapping, resource_definition, **kwargs):
     try:
@@ -432,6 +434,7 @@ def resource_read_from_payload(client,
     retrieve_mapping=mapping_by_kind,
 )
 def file_resource_read(client, api_mapping, resource_definition, **kwargs):
+    ctx.logger.info('*** in file_resource_read')
     _file_resource_read(client, api_mapping, resource_definition, **kwargs)
 
 
@@ -449,10 +452,14 @@ def file_resource_check_drift(client, api_mapping, resource_definition, **kwargs
     # Read All resources.
     read_response = _do_resource_read(
         client, api_mapping, resource_definition, **kwargs)
+
+    output = ctx.instance.runtime_properties.get(DEFS)
+    read_response = JsonCleanuper(read_response).to_dict()
     ctx.logger.info('*** read_response: {}'.format(read_response))
-    ctx.logger.info('*** resource_definition: {}'.format(resource_definition))
-    ctx.logger.info('*** DeepDiff: {}'
-                    .format(DeepDiff(resource_definition, read_response)))
+    for source in output:
+        if source.get('kind') == read_response.get('kind'):
+            ctx.logger.info('*** source: {}'.format(source))
+            ctx.logger.info('*** DeepDiff: {}'.format(DeepDiff(read_response, source)))
 
 
 @with_kubernetes_client

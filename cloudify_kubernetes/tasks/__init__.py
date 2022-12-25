@@ -20,6 +20,7 @@ from .operations import (read_token,  # noqa
                          create_token,  # noqa
                          delete_token,  # noqa
                          resource_read,  # noqa
+                         file_resource_check_drift,
                          resource_create,  # noqa
                          resource_update,  # noqa
                          resource_delete,  # noqa
