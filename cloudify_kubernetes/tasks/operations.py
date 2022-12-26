@@ -394,8 +394,11 @@ def custom_resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_data,
     resource_state_function=_check_if_resource_exists
 )
-def custom_resource_check_drift(client, api_mapping, resource_definition, **kwargs):
-    file_resource_check_drift(client, api_mapping, resource_definition, **kwargs)
+def custom_resource_check_drift(client,
+                                api_mapping,
+                                resource_definition,
+                                **kwargs):
+    check_drift(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
@@ -432,7 +435,7 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     resource_state_function=_check_if_resource_exists
 )
 def resource_check_drift(client, api_mapping, resource_definition, **kwargs):
-    file_resource_check_drift(client, api_mapping, resource_definition, **kwargs)
+    check_drift(client, api_mapping,  resource_definition, **kwargs)
 
 
 @with_kubernetes_client
@@ -463,38 +466,11 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
 )
-def file_resource_check_drift(client, api_mapping, resource_definition, **kwargs):
-    ctx.logger.info('*** in file_resource_check_drift **')
-
-    # Read All resources.
-    read_response = _do_resource_read(
-        client, api_mapping, resource_definition, **kwargs)
-
-    ctx.logger.info(
-        'Resource definition: {0}'.format(read_response))
-
-    storable_object = KubernetesResourceDefinition(
-            read_response['kind'],
-            read_response.get('api_version', read_response.get('apiVersion')),
-            read_response['metadata']
-        )
-
-    prop = ctx.instance.runtime_properties.get(DEFS)
-    comparable_dict = JsonCleanuper(storable_object).to_dict()
-    kind = comparable_dict.get('kind')
-    name = comparable_dict['metadata'].get('name')
-    namespace = comparable_dict['metadata'].get('namespace')
-
-    for source in prop:
-        if source.get('kind') == kind and \
-                source['metadata'].get('name') == name and \
-                source['metadata'].get('namespace') == namespace:
-
-            ctx.logger.info('*** comparable_dict: {}'.format(comparable_dict))
-            ctx.logger.info('*** source: {}'.format(source))
-
-            diff = DeepDiff(comparable_dict, source)
-            ctx.logger.info('*** diff: {}'.format(diff))
+def file_resource_check_drift(client,
+                              api_mapping,
+                              resource_definition,
+                              **kwargs):
+    check_drift(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
@@ -679,7 +655,7 @@ def multiple_file_resource_check_drift(**kwargs):
     validate_file_resources(file_resources)
 
     for file_resource in file_resources:
-        file_resource_check_drift(file=file_resource, **kwargs)
+        check_drift(file=file_resource, **kwargs)
 
 
 def multiple_file_resource_delete(**kwargs):
@@ -797,3 +773,37 @@ def prepare_pvc_delete(resource_definition, client, api_mapping, kwargs):
         )
     except KuberentesApiOperationError:
         return
+
+
+def check_drift(client, api_mapping, resource_definition, **kwargs):
+    ctx.logger.info('*** in check_drift **')
+
+    # Read All resources.
+    read_response = _do_resource_read(
+        client, api_mapping, resource_definition, **kwargs)
+
+    ctx.logger.info(
+        'Resource definition: {0}'.format(read_response))
+
+    storable_object = KubernetesResourceDefinition(
+            read_response['kind'],
+            read_response.get('api_version', read_response.get('apiVersion')),
+            read_response['metadata']
+        )
+
+    prop = ctx.instance.runtime_properties.get(DEFS)
+    comparable_dict = JsonCleanuper(storable_object).to_dict()
+    kind = comparable_dict.get('kind')
+    name = comparable_dict['metadata'].get('name')
+    namespace = comparable_dict['metadata'].get('namespace')
+
+    for source in prop:
+        if source.get('kind') == kind and \
+                source['metadata'].get('name') == name and \
+                source['metadata'].get('namespace') == namespace:
+
+            ctx.logger.info('*** comparable_dict: {}'.format(comparable_dict))
+            ctx.logger.info('*** source: {}'.format(source))
+
+            diff = DeepDiff(comparable_dict, source)
+            ctx.logger.info('*** diff: {}'.format(diff))
