@@ -20,19 +20,22 @@ from .operations import (read_token,  # noqa
                          create_token,  # noqa
                          delete_token,  # noqa
                          resource_read,  # noqa
-                         file_resource_check_drift,
+                         resource_check_drift, # noqa
                          resource_create,  # noqa
                          resource_update,  # noqa
                          resource_delete,  # noqa
                          file_resource_read,  # noqa
+                         file_resource_check_drift, # noqa
                          file_resource_create,  # noqa
                          file_resource_update,  # noqa
                          file_resource_delete,  # noqa
                          custom_resource_read,  # noqa
+                         custom_resource_check_drift, # noqa
                          custom_resource_create,  # noqa
                          custom_resource_update,  # noqa
                          custom_resource_delete,  # noqa
                          multiple_file_resource_read,  # noqa
+                         multiple_file_resource_check_drift, # noqa
                          multiple_file_resource_create,  # noqa
                          multiple_file_resource_delete )   # noqa
 from .api_calls import (_do_resource_read,  # noqa

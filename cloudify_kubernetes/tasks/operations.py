@@ -427,6 +427,16 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
 
 @with_kubernetes_client
 @resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_kind,
+    resource_state_function=_check_if_resource_exists
+)
+def resource_check_drift(client, api_mapping, resource_definition, **kwargs):
+    file_resource_check_drift(client, api_mapping, resource_definition, **kwargs)
+
+
+@with_kubernetes_client
+@resource_task(
     retrieve_resource_definition=resource_definition_from_payload,
     retrieve_mapping=mapping_by_kind,
 )
