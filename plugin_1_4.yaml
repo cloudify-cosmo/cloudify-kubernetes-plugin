@@ -3,7 +3,7 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.13.19'
+    package_version: '2.13.20'
 
 data_types:
 
@@ -794,19 +794,19 @@ workflows:
       node_types_required: ['cloudify.kubernetes.resources.SharedCluster']
     parameters:
       kubernetes_cluster_node_instance_id:
-        type: node_instance
+        type: string
         default: eks_cluster
       deployment_capability_name:
-        type: capability_value
+        type: string
         default: connection_details
       service_account_node_instance_id:
-        type: node_instance
+        type: string
         default: new_service_account
       secret_token_node_instance_id:
-        type: node_instance
+        type: string
         default: secret
       store_token_and_kubeconfig_id:
-        type: node_instance
+        type: string
         default: store_token_and_kubeconfig
 
 blueprint_labels:

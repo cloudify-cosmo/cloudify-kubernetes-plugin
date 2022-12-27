@@ -174,19 +174,25 @@ def create_secrets_kubernetes_config(deployment_capability_name):
 
 
 def lookup_node_instance(provided_node_instance_id):
+    ctx.logger.debug('Looking for {}'.format(provided_node_instance_id))
     try:
         desired_node_instance = ctx.get_node_instance(
             provided_node_instance_id)
-
+        if not desired_node_instance:
+            raise RuntimeError('Did not find desired node instance.')
     except RuntimeError:
         desired_node_instance = None
         for node_instance in ctx.node_instances:
+            ctx.logger.debug('Checking node_instance {} = {}'.format(
+                node_instance.node_id,
+                provided_node_instance_id
+            ))
             if node_instance.node_id == provided_node_instance_id:
                 desired_node_instance = node_instance
                 break
     if not desired_node_instance:
         raise NonRecoverableError(
-            'A valid node instance or node ID for a '
-            'X node was not found'
+            'A valid node instance or node ID for '
+            '{} node was not found'.format(provided_node_instance_id)
         )
     return desired_node_instance
