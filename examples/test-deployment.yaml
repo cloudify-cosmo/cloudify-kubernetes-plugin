@@ -12,7 +12,7 @@ inputs:
 node_templates:
 
   deployment:
-    type: cloudify.kubernetes.resources.Deployment
+    type: cloudify.nodes.kubernetes.resources.BlueprintDefinedResource
     properties:
       client_config:
         configuration:
@@ -37,6 +37,7 @@ node_templates:
             metadata:
               labels:
                 app: nginx
+                name: nely
             spec:
               containers:
               - name: nginx

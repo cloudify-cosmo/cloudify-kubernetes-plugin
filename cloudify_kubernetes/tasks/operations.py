@@ -60,7 +60,7 @@ from .nested_resources.tokens import (
     get_cluster_role_binding_payload,
     get_secret_payload)
 
-DEFS = '__resource_definitions'
+from ..utils import DEFS
 
 
 def _resource_create(client, api_mapping, resource_definition, **kwargs):
@@ -793,6 +793,7 @@ def check_drift(client, api_mapping, resource_definition, **kwargs):
 
     prop = ctx.instance.runtime_properties.get(DEFS)
     comparable_dict = JsonCleanuper(storable_object).to_dict()
+
     kind = comparable_dict.get('kind')
     name = comparable_dict['metadata'].get('name')
     namespace = comparable_dict['metadata'].get('namespace')
@@ -807,3 +808,11 @@ def check_drift(client, api_mapping, resource_definition, **kwargs):
 
             diff = DeepDiff(comparable_dict, source)
             ctx.logger.info('*** diff: {}'.format(diff))
+
+            if diff:
+                ctx.logger.info('drifted')
+            else:
+                ctx.logger.info('not drifted')
+
+
+
