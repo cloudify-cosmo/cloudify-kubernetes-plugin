@@ -24,9 +24,8 @@ from cloudify.exceptions import (
     RecoverableError,
     NonRecoverableError)
 
-
 from .._compat import text_type
-from ..k8s import KubernetesResourceDefinition
+from ..k8s import KubernetesResourceDefinition, status_mapping
 from ..decorators import (resource_task,
                           nested_resource_task,
                           with_kubernetes_client)
@@ -423,9 +422,13 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
 
     resource_type = getattr(resource_definition, 'kind')
     if resource_type:
-        _do_resource_status_check(resource_type, read_response)
+        result = _do_resource_status_check(resource_type, read_response)
         ctx.logger.info(
             'Resource definition: {0}'.format(resource_type))
+        if isinstance(result, bool) and ctx.operation.name == \
+                'cloudify.interfaces.validation.check_status':
+            ctx.logger.debug('Check status/Check Drift supported.')
+        return result
 
 
 @with_kubernetes_client
@@ -776,43 +779,66 @@ def prepare_pvc_delete(resource_definition, client, api_mapping, kwargs):
 
 
 def check_drift(client, api_mapping, resource_definition, **kwargs):
-    ctx.logger.info('*** in check_drift **')
+    """ We only support check_drift for resources that
+    have an implementation for is_resource_ready in the
+    Kubernetes Resource Status class and where then node property
+    validate_resource_status == True.
+    If `_do_resource_status_check` returns a NoneType, then check_drift
+    is not supported. If it returns a Bool type, then it is.
+    If the Bool Type is False, then the resource is not ready.
+    If the Bool type is True, then it is.
+    Regardless, if _do_resource_status_check is Bool, then we run DeepDiff
+    on KubernetesResourceStatus.status
 
+    :param client:
+    :param api_mapping:
+    :param resource_definition:
+    :param kwargs:
+    :return:
+    """
     # Read All resources.
     read_response = _do_resource_read(
         client, api_mapping, resource_definition, **kwargs)
 
-    ctx.logger.info(
-        'Resource definition: {0}'.format(read_response))
+    ctx.logger.info('Resource definition: {0}'.format(read_response))
 
-    storable_object = KubernetesResourceDefinition(
-            read_response['kind'],
-            read_response.get('api_version', read_response.get('apiVersion')),
-            read_response['metadata']
-        )
+    # This is the logic that determines if check_drift is supported.
+    if not read_response.get('kind'):
+        ctx.logger.error(
+            'Check drift is not supported by this resource and '
+            'therefore check drift is not supported.')
+        return
+    check_status_result = _do_resource_status_check(read_response['kind'],
+                                                    read_response)
+    if not isinstance(check_status_result, bool):
+        ctx.logger.error(
+            'Check drift is not supported by this resource and '
+            'therefore check drift is not supported.')
+        return
 
-    prop = ctx.instance.runtime_properties.get(DEFS)
-    comparable_dict = JsonCleanuper(storable_object).to_dict()
+    # if check_status_result is boolean then we have support for check drift
+    status_obj_name = 'Kubernetes{0}Status'.format(read_response['kind'])
 
-    kind = comparable_dict.get('kind')
-    name = comparable_dict['metadata'].get('name')
-    namespace = comparable_dict['metadata'].get('namespace')
+    current = getattr(status_mapping, status_obj_name)(
+        read_response['status'],
+        ctx.node.properties['validate_resource_status'])
 
-    for source in prop:
-        if source.get('kind') == kind and \
-                source['metadata'].get('name') == name and \
-                source['metadata'].get('namespace') == namespace:
+    old_status = ctx.instance.runtime_properties['kubernetes'].get('status')
+    old = getattr(status_mapping, status_obj_name)(
+        old_status,
+        ctx.node.properties['validate_resource_status'])
 
-            ctx.logger.info('*** comparable_dict: {}'.format(comparable_dict))
-            ctx.logger.info('*** source: {}'.format(source))
+    ctx.logger.info('current.status: {}'.format(current.status))
+    ctx.logger.info('old.status: {}'.format(old.status))
+    return DeepDiff(old.status, current.status)
 
-            diff = DeepDiff(comparable_dict, source)
-            ctx.logger.info('*** diff: {}'.format(diff))
-
-            if diff:
-                ctx.logger.info('drifted')
-            else:
-                ctx.logger.info('not drifted')
-
-
-
+    # old_is_ready = current_is_ready = False
+    #
+    # if current and current.status:
+    #     ctx.logger.info('The current status is: {}'.format(current.status))
+    #     current_is_ready = current.ready()
+    #
+    # if old and old.status:
+    #     ctx.logger.info('The previous status was: {}'.format(old.status))
+    #     old_is_ready = old.ready()
+    # return old_is_ready == current_is_ready

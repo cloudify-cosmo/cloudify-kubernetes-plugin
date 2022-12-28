@@ -73,6 +73,10 @@ def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
 
 
 def _do_resource_status_check(resource_kind, response):
+    """ If this returns NoneType, then check_status is not supported.
+        If this returns Boolean, then check status is supported and
+        we return the readiness
+    """
     ctx.logger.info('Checking resource status.')
     status_obj_name = 'Kubernetes{0}Status'.format(resource_kind)
     if hasattr(status_mapping, status_obj_name):
