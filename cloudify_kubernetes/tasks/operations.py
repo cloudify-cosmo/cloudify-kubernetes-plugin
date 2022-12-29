@@ -36,6 +36,7 @@ from ..utils import (retrieve_path,
                      mapping_by_kind,
                      NODE_PROPERTY_FILES,
                      DEFINITION_ADDITIONS,
+                     CHECK_STATUS,
                      update_with_additions,
                      handle_delete_resource,
                      validate_file_resources,
@@ -133,13 +134,24 @@ def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
     # Read All resources.
     read_response = _do_resource_read(
         client, api_mapping, resource_definition, **kwargs)
-    store_result_for_retrieve_id(read_response, path)
+    ctx.logger.info('Resource definition: {0}'.format(read_response))
 
+    status_obj_name = 'Kubernetes{0}Status'.format(read_response['kind'])
+
+    # Store read response.
+    store_result_for_retrieve_id(read_response, path)
     resource_type = getattr(resource_definition, 'kind')
+
     if resource_type:
-        _do_resource_status_check(resource_type, read_response)
-        ctx.logger.info(
-            'Resource definition: {0}'.format(resource_type))
+        result = _do_resource_status_check(resource_type, read_response)
+        if isinstance(result, bool) and ctx.operation.name == CHECK_STATUS:
+            current = getattr(status_mapping, status_obj_name)(
+                read_response['status'],
+                ctx.node.properties['validate_resource_status'])
+
+            ctx.instance.runtime_properties['expected_status'] = current.status
+            ctx.logger.info('Check status/Check Drift supported.')
+        return result
 
 
 def _get_path_with_adjacent_resources(path, resource_definition, api_mapping):
@@ -413,21 +425,23 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     # Read All resources.
     read_response = _resource_read(
         client, api_mapping, resource_definition, **kwargs)
+    ctx.logger.info('Resource definition: {0}'.format(read_response))
+
+    status_obj_name = 'Kubernetes{0}Status'.format(read_response['kind'])
 
     # Store read response.
     store_result_for_retrieve_id(read_response)
-
-    ctx.logger.info(
-        'Resource definition: {0}'.format(read_response))
-
     resource_type = getattr(resource_definition, 'kind')
+
     if resource_type:
         result = _do_resource_status_check(resource_type, read_response)
-        ctx.logger.info(
-            'Resource definition: {0}'.format(resource_type))
-        if isinstance(result, bool) and ctx.operation.name == \
-                'cloudify.interfaces.validation.check_status':
-            ctx.logger.debug('Check status/Check Drift supported.')
+        if isinstance(result, bool) and ctx.operation.name == CHECK_STATUS:
+            current = getattr(status_mapping, status_obj_name)(
+                read_response['status'],
+                ctx.node.properties['validate_resource_status'])
+
+            ctx.instance.runtime_properties['expected_status'] = current.status
+            ctx.logger.info('Check status/Check Drift supported.')
         return result
 
 
@@ -823,22 +837,8 @@ def check_drift(client, api_mapping, resource_definition, **kwargs):
         read_response['status'],
         ctx.node.properties['validate_resource_status'])
 
-    old_status = ctx.instance.runtime_properties['kubernetes'].get('status')
-    old = getattr(status_mapping, status_obj_name)(
-        old_status,
-        ctx.node.properties['validate_resource_status'])
+    old_status = ctx.instance.runtime_properties['expected_status']
 
-    ctx.logger.info('current.status: {}'.format(current.status))
-    ctx.logger.info('old.status: {}'.format(old.status))
-    return DeepDiff(old.status, current.status)
-
-    # old_is_ready = current_is_ready = False
-    #
-    # if current and current.status:
-    #     ctx.logger.info('The current status is: {}'.format(current.status))
-    #     current_is_ready = current.ready()
-    #
-    # if old and old.status:
-    #     ctx.logger.info('The previous status was: {}'.format(old.status))
-    #     old_is_ready = old.ready()
-    # return old_is_ready == current_is_ready
+    ctx.logger.info('Current status: {}'.format(current.status))
+    ctx.logger.info('olds tatus: {}'.format(old_status))
+    return DeepDiff(old_status, current.status)

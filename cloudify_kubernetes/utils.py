@@ -65,6 +65,7 @@ CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster',
                  'cloudify.nodes.azure.compute.ManagedCluster']
 CLUSTER_REL = 'cloudify.relationships.kubernetes.connected_to_shared_cluster'
 DEFINITION_ADDITIONS = 'definitions_additions'
+CHECK_STATUS ='cloudify.interfaces.validation.check_status'
 
 
 def merge_definitions(old, new):
