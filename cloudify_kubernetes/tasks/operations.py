@@ -371,6 +371,29 @@ def file_resource_update(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_data,
+    resource_state_function=_check_if_resource_exists
+)
+def custom_resource_read(client, api_mapping, resource_definition, **kwargs):
+    read_response = _resource_read(
+        client, api_mapping, resource_definition, **kwargs)
+
+    # Store read response.
+    store_result_for_retrieve_id(read_response)
+
+    ctx.logger.info(
+        'Resource definition: {0}'.format(read_response))
+
+    resource_type = getattr(resource_definition, 'kind')
+    if resource_type:
+        _do_resource_status_check(resource_type, read_response)
+        ctx.logger.info(
+            'Resource definition: {0}'.format(resource_type))
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
     resource_state_function=_check_if_resource_exists
 )

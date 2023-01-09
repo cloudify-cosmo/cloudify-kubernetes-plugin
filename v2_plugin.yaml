@@ -3,7 +3,7 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.13.17'
+    package_version: '2.13.21'
 
 data_types:
 
@@ -329,8 +329,6 @@ data_types:
         description: The custom object resource API version.
         required: true
 
-
-
 node_types:
 
   cloudify.nodes.kubernetes.Master:
@@ -409,6 +407,9 @@ node_types:
         description: >
           Definition of resource object using native Kubernetes YAML spec
     interfaces:
+      cloudify.interfaces.validation:
+        check_status:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
@@ -662,6 +663,9 @@ node_types:
         description: >
           Python Kubernetes API objects and methods definitions used for given resource type
     interfaces:
+      cloudify.interfaces.validation:
+        check_status:
+          implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_read
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_create
@@ -684,6 +688,9 @@ node_types:
           Permit changing the name and kind and number of resources defined in file.
         default: false
     interfaces:
+      cloudify.interfaces.validation:
+        check_status:
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_create
@@ -711,6 +718,9 @@ node_types:
           Permit changing the name and kind and number of resources defined in file.
         default: false
     interfaces:
+      cloudify.interfaces.validation:
+        check_status:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_create
@@ -734,6 +744,9 @@ node_types:
         description: API options depending on API operations execution.
         type: cloudify.kubernetes.types.Options
     interfaces:
+      cloudify.interfaces.validation:
+        check_status:
+          implementation: kubernetes.cloudify_kubernetes.tasks.read_token
       cloudify.interfaces.lifecycle:
         configure:
           implementation: kubernetes.cloudify_kubernetes.tasks.refresh_config

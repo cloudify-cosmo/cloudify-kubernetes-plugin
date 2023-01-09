@@ -164,5 +164,8 @@
   - deprecate old node types and old relationship types.
 2.13.16:
   - re-release to fix inconsistant version in v2_plugin.yaml.
-2.13.17:
-  - RD-6518: K8s LB Service Endpoint IP not available in Cloudify with AKS.
+2.13.17: Check Status Workflow Support
+2.13.18: release workflow
+2.13.19: Update google auth library.
+2.13.20: Remove constraints in 1 4 plugin YAML and improve node instance resolution.
+2.13.21: RD-6518: K8s LB Service Endpoint IP not available in Cloudify with AKS.
