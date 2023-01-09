@@ -105,6 +105,9 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
             resource_definition,
             **kwargs
         )
+    if not result.get('status', {'load_balancer': {}}).get(
+            'load_balancer', {}).get('ingress', True):
+        raise OperationRetry("waiting for ip address")
     ctx.logger.info('Create result: {}'.format(result))
     path = retrieve_path(kwargs)
     store_result_for_retrieve_id(result, path)
