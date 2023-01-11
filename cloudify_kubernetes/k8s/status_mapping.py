@@ -75,7 +75,7 @@ class KubernetesServiceStatus(KubernetesResourceStatus):
 
     @property
     def status(self):
-        return self._status.get('load_balancer', {}).get('ingress')
+        return self._status.get('load_balancer', {}).get('ingress', False)
 
     def is_resource_ready(self):
         if not self.status:
