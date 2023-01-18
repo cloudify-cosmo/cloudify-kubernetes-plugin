@@ -122,35 +122,9 @@ class KubernetesResourceDefinition(object):
 
 class CloudifyKubernetesClient(object):
 
-    def __init__(self, logger, api_configuration, api_authentication=None):
+    def __init__(self, logger, api_client):
         self.logger = logger
-        prepare_api = api_configuration.prepare_api()
-        if isinstance(prepare_api, kubernetes.client.Configuration):
-
-            if api_authentication:
-                self.configuration = api_authentication.authenticate(
-                    prepare_api)
-            else:
-                self.configuration = prepare_api
-
-            self.api = kubernetes.client
-            self.api.configuration = \
-                kubernetes.client.Configuration.set_default(
-                    self.configuration)
-            self.client = kubernetes.client.ApiClient(
-                configuration=self.api.configuration)
-
-        else:
-
-            if prepare_api:
-                self.api = prepare_api
-            else:
-                self.api = kubernetes.client
-
-            self.configuration = None
-            self.client = self.api.ApiClient()
-
-        self.logger.info('Kubernetes API initialized successfully.')
+        self.client = api_client
 
     @property
     def _name(self):

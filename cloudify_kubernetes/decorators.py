@@ -276,6 +276,7 @@ def with_kubernetes_client(fn):
                                          ctx.logger,
                                          ctx.download_resource)
         try:
+            ctx.logger.info('***  before setup_configuration')
             kwargs['client'] = CloudifyKubernetesClient(
                 ctx.logger,
                 setup_configuration(token=token,
@@ -283,6 +284,7 @@ def with_kubernetes_client(fn):
                                     ca_file=ca_file,
                                     kubeconfig=kubeconfig)
             )
+            ctx.logger.info('***  after setup_configuration')
 
             result = fn(**kwargs)
         except (RecoverableError, NonRecoverableError):
