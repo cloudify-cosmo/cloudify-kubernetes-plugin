@@ -167,3 +167,4 @@ local-storage/
 .cloudify/
 **/*.wgn
 
+.vs/

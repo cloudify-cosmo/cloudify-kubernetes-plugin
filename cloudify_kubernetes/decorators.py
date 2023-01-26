@@ -41,6 +41,15 @@ from .k8s import (CloudifyKubernetesClient,
                   KuberentesInvalidPayloadClassError,
                   KubernetesApiAuthenticationVariants)
 
+
+from cloudify_kubernetes_sdk.connection.decorators import setup_configuration
+from cloudify_kubernetes_sdk.connection.utils import (
+    get_connection_details_from_shared_cluster,
+    get_auth_token,
+    get_host,
+    get_kubeconfig_file,
+    get_ssl_ca_file)
+
 NODE_PROPERTY_AUTHENTICATION = 'authentication'
 NODE_PROPERTY_CONFIGURATION = 'configuration'
 RELATIONSHIP_TYPE_MANAGED_BY_MASTER = (
@@ -257,36 +266,55 @@ def nested_resource_task(resources, operation, nested_ops_first=True):
 
 def with_kubernetes_client(fn):
     def wrapper(**kwargs):
-        client_config_from_inputs_relationships = get_client_config(**kwargs)
+        client_config = get_client_config(**kwargs)
+
+        shared_cluster = get_connection_details_from_shared_cluster()
+        token = get_auth_token(client_config, shared_cluster.get('api_key'))
+        host = get_host(client_config, shared_cluster.get('host'))
+        ca_file = get_ssl_ca_file(client_config,
+                                  shared_cluster.get('ssl_ca_cert'))
+        kubeconfig = get_kubeconfig_file(client_config,
+                                         ctx.logger,
+                                         ctx.download_resource)
+
+        client = setup_configuration(
+            token=token,
+            host=host,
+            ca_file=ca_file,
+            kubeconfig=kubeconfig)
+
         configuration_property = _retrieve_property(
             ctx,
             NODE_PROPERTY_CONFIGURATION,
-            client_config_from_inputs_relationships
+            client_config
         )
 
         authentication_property = _retrieve_property(
             ctx,
             NODE_PROPERTY_AUTHENTICATION,
-            client_config_from_inputs_relationships
+            client_config
         )
 
         configuration_property = create_tempfiles_for_certs_and_keys(
             configuration_property)
 
         try:
-            kwargs['client'] = CloudifyKubernetesClient(
-                ctx.logger,
-                KubernetesApiConfigurationVariants(
+            try:
+                kwargs['client'] = CloudifyKubernetesClient(
+                    ctx.logger, api_client=client)
+            except Exception:
+                kwargs['client'] = CloudifyKubernetesClient(
                     ctx.logger,
-                    configuration_property,
-                    download_resource=ctx.download_resource
-                ),
-                KubernetesApiAuthenticationVariants(
-                    ctx.logger,
-                    authentication_property
+                    api_configuration=KubernetesApiConfigurationVariants(
+                        ctx.logger,
+                        configuration_property,
+                        download_resource=ctx.download_resource
+                    ),
+                    api_authentication=KubernetesApiAuthenticationVariants(
+                        ctx.logger,
+                        authentication_property
+                    )
                 )
-            )
-
             result = fn(**kwargs)
         except (RecoverableError, NonRecoverableError):
             raise

@@ -122,10 +122,19 @@ class KubernetesResourceDefinition(object):
 
 class CloudifyKubernetesClient(object):
 
-    def __init__(self, logger, api_configuration, api_authentication=None):
+    def __init__(self,
+                 logger,
+                 api_configuration=None,
+                 api_authentication=None,
+                 api_client=None):
+
         self.logger = logger
+        self.configuration = None
+        self.client = api_client
         prepare_api = api_configuration.prepare_api()
-        if isinstance(prepare_api, kubernetes.client.Configuration):
+        if self.client:
+            self.logger.debug('Using client from cloudify_kubernetes_sdk.')
+        elif isinstance(prepare_api, kubernetes.client.Configuration):
 
             if api_authentication:
                 self.configuration = api_authentication.authenticate(
@@ -147,10 +156,9 @@ class CloudifyKubernetesClient(object):
             else:
                 self.api = kubernetes.client
 
-            self.configuration = None
             self.client = self.api.ApiClient()
 
-        self.logger.info('Kubernetes API initialized successfully.')
+        self.logger.debug('Kubernetes API initialized successfully.')
 
     @property
     def _name(self):
@@ -164,7 +172,7 @@ class CloudifyKubernetesClient(object):
                 'Cannot create instance of Kubernetes API payload class: {0}. '
                 'Class not supported by client {1}'
                 .format(class_name, self._name))
-        self.logger.info('Kubernetes API initialized successfully')
+        self.logger.debug('Kubernetes API initialized successfully')
         return getattr(self.api, class_name)(**vars(resource_definition))
 
     def _prepare_api_method(self, class_name, method_name):
@@ -191,9 +199,9 @@ class CloudifyKubernetesClient(object):
         api_method, api_method_arguments_names = self._prepare_api_method(
             api, method
         )
-        self.logger.info('Preparing operation with api method: {0} '
-                         '(mandatory arguments: {1})'
-                         .format(api_method, api_method_arguments_names))
+        self.logger.debug('Preparing operation with api method: {0} '
+                          '(mandatory arguments: {1})'
+                          .format(api_method, api_method_arguments_names))
 
         return operation(api_method, api_method_arguments_names)
 
@@ -220,11 +228,11 @@ class CloudifyKubernetesClient(object):
             if not v:
                 del arguments[k]
         try:
-            self.logger.info('Executing operation {0}'.format(operation))
-            self.logger.info('Executing operation arguments {0}'.format(
+            self.logger.debug('Executing operation {0}'.format(operation))
+            self.logger.debug('Executing operation arguments {0}'.format(
                 arguments))
             result = operation.execute(arguments)
-            self.logger.info('Operation executed successfully')
+            self.logger.debug('Operation executed successfully')
             self.logger.debug('Result: {0}'.format(result))
 
             return result

@@ -34,7 +34,8 @@ class TestDecorators(unittest.TestCase):
         node = MagicMock()
         node.properties = {
             'configuration': {
-                'blueprint_file_name': 'kubernetes.conf'
+                'blueprint_file_name': 'kubernetes.conf',
+                'api_options': {},
             }
         }
 
