@@ -267,7 +267,6 @@ def nested_resource_task(resources, operation, nested_ops_first=True):
 def with_kubernetes_client(fn):
     def wrapper(**kwargs):
         client_config = get_client_config(**kwargs)
-
         shared_cluster = get_connection_details_from_shared_cluster()
         token = get_auth_token(client_config, shared_cluster.get('api_key'))
         host = get_host(client_config, shared_cluster.get('host'))
@@ -276,33 +275,31 @@ def with_kubernetes_client(fn):
         kubeconfig = get_kubeconfig_file(client_config,
                                          ctx.logger,
                                          ctx.download_resource)
-
         client = setup_configuration(
             token=token,
             host=host,
             ca_file=ca_file,
             kubeconfig=kubeconfig)
 
-        configuration_property = _retrieve_property(
-            ctx,
-            NODE_PROPERTY_CONFIGURATION,
-            client_config
-        )
-
-        authentication_property = _retrieve_property(
-            ctx,
-            NODE_PROPERTY_AUTHENTICATION,
-            client_config
-        )
-
-        configuration_property = create_tempfiles_for_certs_and_keys(
-            configuration_property)
-
         try:
             try:
                 kwargs['client'] = CloudifyKubernetesClient(
                     ctx.logger, api_client=client)
             except Exception:
+                configuration_property = _retrieve_property(
+                    ctx,
+                    NODE_PROPERTY_CONFIGURATION,
+                    client_config
+                )
+
+                authentication_property = _retrieve_property(
+                    ctx,
+                    NODE_PROPERTY_AUTHENTICATION,
+                    client_config
+                )
+
+                configuration_property = create_tempfiles_for_certs_and_keys(
+                    configuration_property)
                 kwargs['client'] = CloudifyKubernetesClient(
                     ctx.logger,
                     api_configuration=KubernetesApiConfigurationVariants(
