@@ -217,7 +217,7 @@ class TestDecorators(unittest.TestCase):
         _, _ctx = self._prepare_master_node()
         self.assertEqual(
             decorators._retrieve_property(_ctx, 'configuration'),
-            {'blueprint_file_name': 'kubernetes.conf'}
+            {'api_options': {}, 'blueprint_file_name': 'kubernetes.conf'}
         )
 
     def test_retrieve_property_with_client_config(self):
@@ -225,7 +225,7 @@ class TestDecorators(unittest.TestCase):
                                             with_relationship_to_master=False)
         self.assertEqual(
             decorators._retrieve_property(_ctx, 'configuration'),
-            {'blueprint_file_name': 'kubernetes.conf'}
+            {'api_options': {}, 'blueprint_file_name': 'kubernetes.conf'}
         )
 
     def test_with_kubernetes_client_NonRecoverableError(self):
@@ -275,7 +275,7 @@ class TestDecorators(unittest.TestCase):
                 )
 
     def test_with_kubernetes_client_RecoverableError(self):
-        _, _ctx = self._prepare_master_node()
+        _ = self._prepare_master_node()[0]
 
         def function(client, **kwargs):
             return client, kwargs
@@ -286,7 +286,8 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(
             error.exception.causes[0]['message'],
             "Cannot initialize Kubernetes API - no suitable configuration "
-            "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
+            "variant found for "
+            "{'blueprint_file_name': 'kubernetes.conf', 'api_options': {}} "
             "properties"
         )
 

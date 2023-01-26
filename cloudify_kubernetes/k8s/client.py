@@ -129,34 +129,34 @@ class CloudifyKubernetesClient(object):
                  api_client=None):
 
         self.logger = logger
-        self.configuration = None
         self.client = api_client
-        prepare_api = api_configuration.prepare_api()
-        if self.client:
-            self.logger.debug('Using client from cloudify_kubernetes_sdk.')
-        elif isinstance(prepare_api, kubernetes.client.Configuration):
+        self.api = kubernetes.client
 
-            if api_authentication:
-                self.configuration = api_authentication.authenticate(
-                    prepare_api)
+        if not self.client:
+            self.logger.debug(
+                'Deprecated client initialization. Please contact support.')
+            self.configuration = None
+            prepare_api = api_configuration.prepare_api()
+            if isinstance(prepare_api, kubernetes.client.Configuration):
+
+                if api_authentication:
+                    self.configuration = api_authentication.authenticate(
+                        prepare_api)
+                else:
+                    self.configuration = prepare_api
+
+                self.api.configuration = \
+                    kubernetes.client.Configuration.set_default(
+                        self.configuration)
+                self.client = kubernetes.client.ApiClient(
+                    configuration=self.api.configuration)
+
             else:
-                self.configuration = prepare_api
 
-            self.api = kubernetes.client
-            self.api.configuration = \
-                kubernetes.client.Configuration.set_default(
-                    self.configuration)
-            self.client = kubernetes.client.ApiClient(
-                configuration=self.api.configuration)
+                if prepare_api:
+                    self.api = prepare_api
 
-        else:
-
-            if prepare_api:
-                self.api = prepare_api
-            else:
-                self.api = kubernetes.client
-
-            self.client = self.api.ApiClient()
+                self.client = self.api.ApiClient()
 
         self.logger.debug('Kubernetes API initialized successfully.')
 

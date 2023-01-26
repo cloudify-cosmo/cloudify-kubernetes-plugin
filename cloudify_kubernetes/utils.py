@@ -724,7 +724,8 @@ def get_client_config(**kwargs):
                 }
             }
     ctx_node = get_node(ctx)
-    client_config = ctx_node.properties.get('client_config', kwargs.get('client_config', {}))
+    client_config = ctx_node.properties.get(
+        'client_config', kwargs.get('client_config', {}))
     client_config.setdefault('configuration', {})
     client_config.setdefault('authentication', {})
     client_config['configuration'].setdefault('api_options', {})

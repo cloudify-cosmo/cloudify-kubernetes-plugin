@@ -275,31 +275,32 @@ def with_kubernetes_client(fn):
         kubeconfig = get_kubeconfig_file(client_config,
                                          ctx.logger,
                                          ctx.download_resource)
-        client = setup_configuration(
-            token=token,
-            host=host,
-            ca_file=ca_file,
-            kubeconfig=kubeconfig)
 
         try:
+            api_client = setup_configuration(
+                token=token,
+                host=host,
+                ca_file=ca_file,
+                kubeconfig=kubeconfig)
+            kwargs['client'] = CloudifyKubernetesClient(
+                ctx.logger, api_client=api_client)
+        except Exception:
+            raise
+            configuration_property = _retrieve_property(
+                ctx,
+                NODE_PROPERTY_CONFIGURATION,
+                client_config
+            )
+
+            authentication_property = _retrieve_property(
+                ctx,
+                NODE_PROPERTY_AUTHENTICATION,
+                client_config
+            )
+
+            configuration_property = create_tempfiles_for_certs_and_keys(
+                configuration_property)
             try:
-                kwargs['client'] = CloudifyKubernetesClient(
-                    ctx.logger, api_client=client)
-            except Exception:
-                configuration_property = _retrieve_property(
-                    ctx,
-                    NODE_PROPERTY_CONFIGURATION,
-                    client_config
-                )
-
-                authentication_property = _retrieve_property(
-                    ctx,
-                    NODE_PROPERTY_AUTHENTICATION,
-                    client_config
-                )
-
-                configuration_property = create_tempfiles_for_certs_and_keys(
-                    configuration_property)
                 kwargs['client'] = CloudifyKubernetesClient(
                     ctx.logger,
                     api_configuration=KubernetesApiConfigurationVariants(
@@ -312,6 +313,16 @@ def with_kubernetes_client(fn):
                         authentication_property
                     )
                 )
+            except Exception:
+                ctx.logger.info(str(generate_traceback_exception()))
+                raise RecoverableError(
+                    'Error encountered',
+                    causes=[generate_traceback_exception()]
+                )
+            finally:
+                delete_tempfiles_for_certs_and_keys(configuration_property)
+
+        try:
             result = fn(**kwargs)
         except (RecoverableError, NonRecoverableError):
             raise
@@ -321,8 +332,6 @@ def with_kubernetes_client(fn):
                 'Error encountered',
                 causes=[generate_traceback_exception()]
             )
-        finally:
-            delete_tempfiles_for_certs_and_keys(configuration_property)
         return result
 
     return operation(func=wrapper, resumable=True)
