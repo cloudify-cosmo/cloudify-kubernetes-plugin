@@ -30,16 +30,12 @@ from .utils import (get_node,
                     handle_existing_resource,
                     generate_traceback_exception,
                     NODE_PROPERTY_FILE_RESOURCE_PATH,
-                    create_tempfiles_for_certs_and_keys,
-                    delete_tempfiles_for_certs_and_keys,
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
 from .k8s import (CloudifyKubernetesClient,
                   KuberentesMappingNotFoundError,
                   KuberentesInvalidApiClassError,
                   KuberentesInvalidApiMethodError,
-                  KubernetesApiConfigurationVariants,
-                  KuberentesInvalidPayloadClassError,
-                  KubernetesApiAuthenticationVariants)
+                  KuberentesInvalidPayloadClassError)
 
 
 from cloudify_kubernetes_sdk.connection.decorators import setup_configuration
@@ -284,50 +280,11 @@ def with_kubernetes_client(fn):
                 kubeconfig=kubeconfig)
             kwargs['client'] = CloudifyKubernetesClient(
                 ctx.logger, api_client=api_client)
-        except Exception:
-            raise
-            configuration_property = _retrieve_property(
-                ctx,
-                NODE_PROPERTY_CONFIGURATION,
-                client_config
-            )
 
-            authentication_property = _retrieve_property(
-                ctx,
-                NODE_PROPERTY_AUTHENTICATION,
-                client_config
-            )
-
-            configuration_property = create_tempfiles_for_certs_and_keys(
-                configuration_property)
-            try:
-                kwargs['client'] = CloudifyKubernetesClient(
-                    ctx.logger,
-                    api_configuration=KubernetesApiConfigurationVariants(
-                        ctx.logger,
-                        configuration_property,
-                        download_resource=ctx.download_resource
-                    ),
-                    api_authentication=KubernetesApiAuthenticationVariants(
-                        ctx.logger,
-                        authentication_property
-                    )
-                )
-            except Exception:
-                ctx.logger.info(str(generate_traceback_exception()))
-                raise RecoverableError(
-                    'Error encountered',
-                    causes=[generate_traceback_exception()]
-                )
-            finally:
-                delete_tempfiles_for_certs_and_keys(configuration_property)
-
-        try:
             result = fn(**kwargs)
         except (RecoverableError, NonRecoverableError):
             raise
-        except Exception:
-            ctx.logger.info(str(generate_traceback_exception()))
+        except BaseException:
             raise RecoverableError(
                 'Error encountered',
                 causes=[generate_traceback_exception()]

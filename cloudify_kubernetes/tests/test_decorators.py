@@ -283,13 +283,10 @@ class TestDecorators(unittest.TestCase):
         with self.assertRaises(RecoverableError) as error:
             decorators.with_kubernetes_client(function)()
 
-        self.assertEqual(
-            error.exception.causes[0]['message'],
-            "Cannot initialize Kubernetes API - no suitable configuration "
-            "variant found for "
-            "{'blueprint_file_name': 'kubernetes.conf', 'api_options': {}} "
-            "properties"
-        )
+            self.assertEqual(
+                error.exception.causes[0]['message'],
+                "Error encountered"
+            )
 
     def test_with_kubernetes_client(self):
         _, _ctx = self._prepare_master_node()

@@ -117,8 +117,8 @@ class TestTasks(unittest.TestCase):
         self.patch_mock_mappings.start()
 
         self.mock_loader = MagicMock(return_value=MagicMock())
-        self.mock_client = MagicMock()
-
+        mock_rest = MagicMock(ApiException=Exception)
+        self.mock_client = MagicMock(rest=mock_rest)
         self.client_api = MagicMock()
 
         def del_func(body, name, first):
@@ -143,9 +143,15 @@ class TestTasks(unittest.TestCase):
             mock.to_dict = MagicMock(return_value=RESPONSE)
             return mock
 
+        def read_func(*args, **kwargs):
+            mock = MagicMock()
+            mock.to_dict = MagicMock(return_value=RESPONSE)
+            return mock
+
         self.client_api.delete = del_func
         self.client_api.create = create_func
         self.client_api.update = update_func
+        self.client_api.read = read_func
 
         self.mock_client.api_client_version = MagicMock(
             return_value=self.client_api
@@ -765,22 +771,17 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(result, expected_value)
 
-    def test_resource_create_RecoverableError(self):
+    @patch('cloudify_kubernetes.decorators.CloudifyKubernetesClient')
+    def test_resource_create_RecoverableError(self, client):
+        client.side_effect = Exception
         _, _ctx = self._prepare_master_node()
 
-        with self.assertRaises(RecoverableError) as error:
+        with self.assertRaises(RecoverableError):
             tasks.resource_create(
                 client=MagicMock(),
                 api_mapping=MagicMock(),
                 resource_definition=MagicMock()
             )
-
-        self.assertEqual(
-            text_type(error.exception.causes[0]['message']),
-            "Cannot initialize Kubernetes API - no suitable configuration "
-            "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
-            "properties"
-        )
 
     def test_resource_create(self):
         if PY2:
@@ -824,19 +825,12 @@ class TestTasks(unittest.TestCase):
     def test_resource_delete_RecoverableError(self):
         _, _ctx = self._prepare_master_node()
 
-        with self.assertRaises(RecoverableError) as error:
+        with self.assertRaises(RecoverableError):
             tasks.resource_delete(
                 client=MagicMock(),
                 api_mapping=MagicMock(),
                 resource_definition=MagicMock()
             )
-
-        self.assertEqual(
-            text_type(error.exception.causes[0]['message']),
-            "Cannot initialize Kubernetes API - no suitable configuration "
-            "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
-            "properties"
-        )
 
     def test_resource_delete(self):
         _, _ctx = self._prepare_master_node()

@@ -36,8 +36,7 @@ class KubernetesOperartion(object):
                 raise KuberentesApiOperationError(
                     'Invalid input data for execution of Kubernetes API '
                     'method: input argument {0} is not defined but is '
-                    'mandatory'
-                    .format(mandatory_argument_name))
+                    'mandatory'.format(mandatory_argument_name))
 
         for optional_argument_name in self.API_ACCEPTED_ARGUMENTS:
             if optional_argument_name in arguments:

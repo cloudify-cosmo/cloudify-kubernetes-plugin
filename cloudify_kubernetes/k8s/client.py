@@ -227,16 +227,12 @@ class CloudifyKubernetesClient(object):
         for k, v in list(arguments.items()):
             if not v:
                 del arguments[k]
-        try:
             self.logger.debug('Executing operation {0}'.format(operation))
             self.logger.debug('Executing operation arguments {0}'.format(
                 arguments))
+        try:
             result = operation.execute(arguments)
-            self.logger.debug('Operation executed successfully')
-            self.logger.debug('Result: {0}'.format(result))
-
-            return result
-        except kubernetes.client.rest.ApiException as e:
+        except Exception as e:
             if 'the namespace of the provided object does not match ' \
                'the namespace sent on the request' in text_type(e):
                 raise NonRecoverableError(text_type(e))
@@ -244,6 +240,10 @@ class CloudifyKubernetesClient(object):
                 'Exception during Kubernetes API call: {0}'.format(
                     text_type(e))
             )
+        self.logger.debug('Operation executed successfully')
+        self.logger.debug('Result: {0}'.format(result))
+
+        return result
 
     def match_namespace(self, resource_definition, options):
         namespace_from_def = resource_definition.metadata.get('namespace')
