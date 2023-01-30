@@ -572,7 +572,7 @@ class TestTasks(unittest.TestCase):
             )
 
     def test_do_resource_create(self):
-        _, _ctx = self._prepare_master_node()
+        _ctx = self._prepare_master_node()[1]
         current_ctx.set(_ctx)
         _ctx.instance.runtime_properties['__perform_task'] = True
         expected_value = {
@@ -730,7 +730,7 @@ class TestTasks(unittest.TestCase):
         self.assertDictEqual(result, expected_value)
 
     def test_external_do_resource_delete(self):
-        _, _ctx = self._prepare_master_node(external=True)
+        _ctx = self._prepare_master_node(external=True)[1]
         _ctx.instance.runtime_properties['__perform_task'] = False
 
         expected_value = {
@@ -774,7 +774,7 @@ class TestTasks(unittest.TestCase):
     @patch('cloudify_kubernetes.decorators.CloudifyKubernetesClient')
     def test_resource_create_RecoverableError(self, client):
         client.side_effect = Exception
-        _, _ctx = self._prepare_master_node()
+        self._prepare_master_node()
 
         with self.assertRaises(RecoverableError):
             tasks.resource_create(
@@ -783,10 +783,13 @@ class TestTasks(unittest.TestCase):
                 resource_definition=MagicMock()
             )
 
-    def test_resource_create(self):
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_resource_create(self, setup):
         if PY2:
             self.skipTest('This test is broken in Python 2.')
-        _, _ctx = self._prepare_master_node(create=True)
+        setup.return_value = True
+        _ctx = self._prepare_master_node(create=True)[1]
 
         mock_isfile = MagicMock(return_value=True)
 
@@ -823,7 +826,7 @@ class TestTasks(unittest.TestCase):
         )
 
     def test_resource_delete_RecoverableError(self):
-        _, _ctx = self._prepare_master_node()
+        self._prepare_master_node()
 
         with self.assertRaises(RecoverableError):
             tasks.resource_delete(
@@ -832,8 +835,11 @@ class TestTasks(unittest.TestCase):
                 resource_definition=MagicMock()
             )
 
-    def test_resource_delete(self):
-        _, _ctx = self._prepare_master_node()
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_resource_delete(self, setup):
+        setup.return_value = True
+        _ctx = self._prepare_master_node()[1]
 
         mock_isfile = MagicMock(return_value=True)
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
@@ -863,7 +869,10 @@ class TestTasks(unittest.TestCase):
         # TODO
         pass
 
-    def test_file_resource_create(self):
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_file_resource_create(self, setup):
+        setup.return_value = True
         _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
@@ -954,10 +963,13 @@ class TestTasks(unittest.TestCase):
                         file_mock.assert_called_with('new_path')
         self.assertEqual(
             text_type(error.exception.causes[0]['message']),
-            "Invalid resource file definition."
+            'Invalid kube-config dict. No configuration found.'
         )
 
-    def test_file_resource_delete(self):
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_file_resource_delete(self, setup):
+        setup.return_value = True
         _, _ctx = self._prepare_master_node()
         _ctx.instance.runtime_properties['kubernetes'] = {
             'abc.yaml#0': {
@@ -1012,7 +1024,10 @@ class TestTasks(unittest.TestCase):
                     file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(client.delete_resource.call_count, 1)
 
-    def test_multiple_file_resource_create(self):
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_multiple_file_resource_create(self, setup):
+        setup.return_value = True
         _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['files'] = [{"resource_path": 'abc.yaml'}]
@@ -1068,7 +1083,10 @@ class TestTasks(unittest.TestCase):
             })))
         self.assertEqual(client.create_resource.call_count, 2)
 
-    def test_multiple_file_resource_delete(self):
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_multiple_file_resource_delete(self, setup):
+        setup.return_value = True
         _, _ctx = self._prepare_master_node()
         defintion = KubernetesResourceDefinition(
             **_ctx.node.properties['definition'])
@@ -1126,10 +1144,13 @@ class TestTasks(unittest.TestCase):
                     file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(client.delete_resource.call_count, 1)
 
-    def test_token(self):
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_token(self, setup):
         if PY2:
             self.skipTest('This test is broken in Python 2.')
-        _, _ctx = self._prepare_shared_cluster_node(create=True)
+        setup.return_value = True
+        _ctx = self._prepare_shared_cluster_node(create=True)[1]
 
         expected_value = {
             'secrets': [{'name': 'foo'}],

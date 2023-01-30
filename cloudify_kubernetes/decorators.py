@@ -278,6 +278,10 @@ def with_kubernetes_client(fn):
                 host=host,
                 ca_file=ca_file,
                 kubeconfig=kubeconfig)
+            if not api_client:
+                raise NonRecoverableError(
+                    'Failed to initialize client. '
+                    'Check debug log for more information.')
             kwargs['client'] = CloudifyKubernetesClient(
                 ctx.logger, api_client=api_client)
 
