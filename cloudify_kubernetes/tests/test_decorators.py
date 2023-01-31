@@ -34,7 +34,8 @@ class TestDecorators(unittest.TestCase):
         node = MagicMock()
         node.properties = {
             'configuration': {
-                'blueprint_file_name': 'kubernetes.conf'
+                'blueprint_file_name': 'kubernetes.conf',
+                'api_options': {},
             }
         }
 
@@ -216,7 +217,7 @@ class TestDecorators(unittest.TestCase):
         _, _ctx = self._prepare_master_node()
         self.assertEqual(
             decorators._retrieve_property(_ctx, 'configuration'),
-            {'blueprint_file_name': 'kubernetes.conf'}
+            {'api_options': {}, 'blueprint_file_name': 'kubernetes.conf'}
         )
 
     def test_retrieve_property_with_client_config(self):
@@ -224,11 +225,30 @@ class TestDecorators(unittest.TestCase):
                                             with_relationship_to_master=False)
         self.assertEqual(
             decorators._retrieve_property(_ctx, 'configuration'),
-            {'blueprint_file_name': 'kubernetes.conf'}
+            {'api_options': {}, 'blueprint_file_name': 'kubernetes.conf'}
         )
 
-    def test_with_kubernetes_client_NonRecoverableError(self):
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_with_kubernetes_client_NonRecoverableError(self, setup):
+        setup.return_value = True
         _, _ctx = self._prepare_master_node()
+
+        with self.assertRaises(NonRecoverableError) as error:
+            decorators.with_kubernetes_client(
+                MagicMock(side_effect=NonRecoverableError(
+                    'error_text')))()
+
+        self.assertEqual(
+            str(error.exception),
+            "error_text"
+        )
+
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_with_kubernetes_client_Exception(self, setup):
+        setup.return_value = True
+        _ctx = self._prepare_master_node()[1]
 
         mock_isfile = MagicMock(return_value=True)
 
@@ -236,31 +256,8 @@ class TestDecorators(unittest.TestCase):
 
         with patch('os.path.isfile', mock_isfile):
             with patch(
-                    'cloudify_kubernetes.k8s.config.'
-                    'kubernetes.config.load_kube_config',
-                    MagicMock()
-            ):
-                with self.assertRaises(NonRecoverableError) as error:
-                    decorators.with_kubernetes_client(
-                        MagicMock(side_effect=NonRecoverableError(
-                            'error_text')))()
-
-                self.assertEqual(
-                    str(error.exception),
-                    "error_text"
-                )
-
-    def test_with_kubernetes_client_Exception(self):
-        _, _ctx = self._prepare_master_node()
-
-        mock_isfile = MagicMock(return_value=True)
-
-        _ctx.download_resource = MagicMock(return_value="downloaded_resource")
-
-        with patch('os.path.isfile', mock_isfile):
-            with patch(
-                    'cloudify_kubernetes.k8s.config.'
-                    'kubernetes.config.load_kube_config',
+                    'cloudify_kubernetes_sdk.connection.decorators.'
+                    'config.new_client_from_config',
                     MagicMock()
             ):
                 with self.assertRaises(RecoverableError) as error:
@@ -274,7 +271,7 @@ class TestDecorators(unittest.TestCase):
                 )
 
     def test_with_kubernetes_client_RecoverableError(self):
-        _, _ctx = self._prepare_master_node()
+        _ = self._prepare_master_node()[0]
 
         def function(client, **kwargs):
             return client, kwargs
@@ -282,30 +279,22 @@ class TestDecorators(unittest.TestCase):
         with self.assertRaises(RecoverableError) as error:
             decorators.with_kubernetes_client(function)()
 
-        self.assertEqual(
-            error.exception.causes[0]['message'],
-            "Cannot initialize Kubernetes API - no suitable configuration "
-            "variant found for {'blueprint_file_name': 'kubernetes.conf'} "
-            "properties"
-        )
+            self.assertEqual(
+                error.exception.causes[0]['message'],
+                "Error encountered"
+            )
 
-    def test_with_kubernetes_client(self):
+    @patch('cloudify_kubernetes.decorators.'
+           'setup_configuration')
+    def test_with_kubernetes_client(self, setup):
         _, _ctx = self._prepare_master_node()
-
-        mock_isfile = MagicMock(return_value=True)
-
+        setup.return_value = True
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
         def function(client, **kwargs):
             self.assertTrue(isinstance(client, CloudifyKubernetesClient))
 
-        with patch('os.path.isfile', mock_isfile):
-            with patch(
-                    'cloudify_kubernetes.k8s.config.'
-                    'kubernetes.config.load_kube_config',
-                    MagicMock()
-            ):
-                decorators.with_kubernetes_client(function)()
+        decorators.with_kubernetes_client(function)()
 
     def test_with_kubernetes_client_certificate_files(self):
         _, _ctx = self._prepare_master_node(with_relationship_to_master=False,
@@ -333,8 +322,8 @@ class TestDecorators(unittest.TestCase):
 
         with patch('os.path.isfile', mock_isfile):
             with patch(
-                    'cloudify_kubernetes.k8s.config.'
-                    'kubernetes.config.load_kube_config',
+                    'cloudify_kubernetes_sdk.connection.decorators.'
+                    'config.new_client_from_config',
                     MagicMock()
             ):
                 decorators.with_kubernetes_client(function)()

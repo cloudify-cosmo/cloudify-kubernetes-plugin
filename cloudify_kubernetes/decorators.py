@@ -30,16 +30,21 @@ from .utils import (get_node,
                     handle_existing_resource,
                     generate_traceback_exception,
                     NODE_PROPERTY_FILE_RESOURCE_PATH,
-                    create_tempfiles_for_certs_and_keys,
-                    delete_tempfiles_for_certs_and_keys,
                     INSTANCE_RUNTIME_PROPERTY_KUBERNETES)
 from .k8s import (CloudifyKubernetesClient,
                   KuberentesMappingNotFoundError,
                   KuberentesInvalidApiClassError,
                   KuberentesInvalidApiMethodError,
-                  KubernetesApiConfigurationVariants,
-                  KuberentesInvalidPayloadClassError,
-                  KubernetesApiAuthenticationVariants)
+                  KuberentesInvalidPayloadClassError)
+
+
+from cloudify_kubernetes_sdk.connection.decorators import setup_configuration
+from cloudify_kubernetes_sdk.connection.utils import (
+    get_connection_details_from_shared_cluster,
+    get_auth_token,
+    get_host,
+    get_kubeconfig_file,
+    get_ssl_ca_file)
 
 NODE_PROPERTY_AUTHENTICATION = 'authentication'
 NODE_PROPERTY_CONFIGURATION = 'configuration'
@@ -257,47 +262,37 @@ def nested_resource_task(resources, operation, nested_ops_first=True):
 
 def with_kubernetes_client(fn):
     def wrapper(**kwargs):
-        client_config_from_inputs_relationships = get_client_config(**kwargs)
-        configuration_property = _retrieve_property(
-            ctx,
-            NODE_PROPERTY_CONFIGURATION,
-            client_config_from_inputs_relationships
-        )
-
-        authentication_property = _retrieve_property(
-            ctx,
-            NODE_PROPERTY_AUTHENTICATION,
-            client_config_from_inputs_relationships
-        )
-
-        configuration_property = create_tempfiles_for_certs_and_keys(
-            configuration_property)
+        client_config = get_client_config(**kwargs)
+        shared_cluster = get_connection_details_from_shared_cluster()
+        token = get_auth_token(client_config, shared_cluster.get('api_key'))
+        host = get_host(client_config, shared_cluster.get('host'))
+        ca_file = get_ssl_ca_file(client_config,
+                                  shared_cluster.get('ssl_ca_cert'))
+        kubeconfig = get_kubeconfig_file(client_config,
+                                         ctx.logger,
+                                         ctx.download_resource)
 
         try:
+            api_client = setup_configuration(
+                token=token,
+                host=host,
+                ca_file=ca_file,
+                kubeconfig=kubeconfig)
+            if not api_client:
+                raise NonRecoverableError(
+                    'Failed to initialize client. '
+                    'Check debug log for more information.')
             kwargs['client'] = CloudifyKubernetesClient(
-                ctx.logger,
-                KubernetesApiConfigurationVariants(
-                    ctx.logger,
-                    configuration_property,
-                    download_resource=ctx.download_resource
-                ),
-                KubernetesApiAuthenticationVariants(
-                    ctx.logger,
-                    authentication_property
-                )
-            )
+                ctx.logger, api_client=api_client)
 
             result = fn(**kwargs)
         except (RecoverableError, NonRecoverableError):
             raise
-        except Exception:
-            ctx.logger.info(str(generate_traceback_exception()))
+        except BaseException:
             raise RecoverableError(
                 'Error encountered',
                 causes=[generate_traceback_exception()]
             )
-        finally:
-            delete_tempfiles_for_certs_and_keys(configuration_property)
         return result
 
     return operation(func=wrapper, resumable=True)
