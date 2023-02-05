@@ -770,4 +770,6 @@ def update_with_additions(resource_definition, additions):
 
 
 def check_drift(previous, current):
-    return DeepDiff(Resource(previous).state, Resource(current).state)
+    previous_state = Resource(previous).to_dict()
+    current_state = Resource(current).to_dict()
+    return DeepDiff(previous_state, current_state)
