@@ -15,6 +15,7 @@
 import os
 import sys
 import json
+from deepdiff import DeepDiff
 from tempfile import NamedTemporaryFile
 from collections import (
     Mapping,
@@ -33,6 +34,8 @@ try:
 except ImportError:
     NODE_INSTANCE = 'node-instance'
     RELATIONSHIP_INSTANCE = 'relationship-instance'
+
+from cloudify_kubernetes_sdk.state import Resource
 
 from ._compat import text_type
 from .k8s import (get_mapping,
@@ -59,7 +62,7 @@ CUSTOM_OBJECT_ANNOTATIONS = ['cloudify-crd-group',
                              'cloudify-crd-version']
 CLUSTER_TYPE = 'cloudify.kubernetes.resources.SharedCluster'
 CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster',
-                 'cloudify.gcp.nodes.KubernetesCluster',
+                 'cloudify.nodes.gcp.KubernetesCluster',
                  'cloudify.nodes.gcp.KubernetesCluster',
                  'cloudify.azure.nodes.compute.ManagedCluster',
                  'cloudify.nodes.azure.compute.ManagedCluster']
@@ -756,3 +759,9 @@ def update_with_additions(resource_definition, additions):
             'Suggestion: {}'.format(json.dumps(suggestion))
         )
     return definition
+
+
+def check_drift(previous, current):
+    previous_state = Resource(previous).to_dict()
+    current_state = Resource(current).to_dict()
+    return DeepDiff(previous_state, current_state)

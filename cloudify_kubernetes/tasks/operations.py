@@ -414,6 +414,51 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
 
 @with_kubernetes_client
 @resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_kind,
+    resource_state_function=_check_if_resource_exists
+)
+def resource_check_status(client, api_mapping, resource_definition, **kwargs):
+    """Attempt to resolve the lifecycle logic.
+    """
+
+    # Read All resources.
+    read_response = _resource_read(
+        client, api_mapping, resource_definition, **kwargs)
+    ctx.logger.info(
+        'Resource definition: {0}'.format(read_response))
+
+    resource_type = getattr(resource_definition, 'kind')
+    if resource_type:
+        if not _do_resource_status_check(resource_type, read_response):
+            raise BAD STATUS EXCEPTION
+        ctx.logger.info(
+            'Resource definition: {0}'.format(resource_type))
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_kind,
+    resource_state_function=_check_if_resource_exists
+)
+def resource_check_drift(client, api_mapping, resource_definition, **kwargs):
+    """Attempt to resolve the lifecycle logic.
+    """
+
+    previous_response = ctx.instance.runtime_properties[KUBERNETES]
+
+    # Read All resources.
+    current_response = _resource_read(
+        client, api_mapping, resource_definition, **kwargs)
+
+    diff = utils.check_drift(previous_response, current_response)
+    if diff:
+        raise DIFF EXCEPTION
+
+
+@with_kubernetes_client
+@resource_task(
     retrieve_resource_definition=resource_definition_from_payload,
     retrieve_mapping=mapping_by_kind,
 )
