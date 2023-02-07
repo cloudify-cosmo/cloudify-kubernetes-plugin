@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2019 Cloudify Platform Ltd. All rights reserved
+# Copyright (c) 2017-2023 Cloudify Platform Ltd. All rights reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,7 +45,9 @@ from ..utils import (retrieve_path,
                      store_result_for_retrieve_id,
                      resource_definitions_from_file,
                      resource_definition_from_payload,
-                     resource_definition_from_blueprint)
+                     resource_definition_from_blueprint,
+                     check_drift,
+                     get_result_for_retrieve_id)
 
 from .api_calls import (
     _do_resource_read,
@@ -107,6 +109,7 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
         )
     ctx.logger.info('Create result: {}'.format(result))
     path = retrieve_path(kwargs)
+    ctx.logger.info('*** path: {}'.format(path))
     store_result_for_retrieve_id(result, path)
 
 
@@ -131,13 +134,13 @@ def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
     # Read All resources.
     read_response = _do_resource_read(
         client, api_mapping, resource_definition, **kwargs)
-    store_result_for_retrieve_id(read_response, path)
 
     resource_type = getattr(resource_definition, 'kind')
+
     if resource_type:
-        _do_resource_status_check(resource_type, read_response)
-        ctx.logger.info(
-            'Resource definition: {0}'.format(resource_type))
+        status_check = _do_resource_status_check(resource_type, read_response)
+        ctx.logger.info('Resource definition: {0}'.format(resource_type))
+        ctx.logger.info('Status: {0}'.format(status_check))
 
 
 def _get_path_with_adjacent_resources(path, resource_definition, api_mapping):
@@ -431,7 +434,7 @@ def resource_check_status(client, api_mapping, resource_definition, **kwargs):
     resource_type = getattr(resource_definition, 'kind')
     if resource_type:
         if not _do_resource_status_check(resource_type, read_response):
-            raise BAD STATUS EXCEPTION
+            raise RuntimeError('Unexpected kubernetes Status: {}'.format(resource_type))
         ctx.logger.info(
             'Resource definition: {0}'.format(resource_type))
 
@@ -445,16 +448,24 @@ def resource_check_status(client, api_mapping, resource_definition, **kwargs):
 def resource_check_drift(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
+    ctx.logger.info('*** resource_check_drift ***')
 
-    previous_response = ctx.instance.runtime_properties[KUBERNETES]
+    path = retrieve_path(kwargs)
+    ctx.logger.info('*** path: {}'.format(path))
+
+    previous_response = get_result_for_retrieve_id(path)
+    ctx.logger.info('*** previous_response: {}'.format(previous_response))
 
     # Read All resources.
     current_response = _resource_read(
         client, api_mapping, resource_definition, **kwargs)
+    ctx.logger.info('*** current_response: {}'.format(current_response))
 
-    diff = utils.check_drift(previous_response, current_response)
+    diff = check_drift(previous_response, current_response)
+    ctx.logger.info('*** diff: {}'.format(diff))
+
     if diff:
-        raise DIFF EXCEPTION
+        raise RuntimeError('The resource has drifted: {}'.format(diff))
 
 
 @with_kubernetes_client
