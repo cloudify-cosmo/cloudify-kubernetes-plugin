@@ -47,7 +47,9 @@ from ..utils import (check_drift,
                      store_result_for_retrieve_id,
                      resource_definitions_from_file,
                      resource_definition_from_payload,
-                     resource_definition_from_blueprint,)
+                     resource_definition_from_blueprint,
+                     check_drift,
+                     get_result_for_retrieve_id)
 
 from .api_calls import (
     _do_resource_read,
@@ -109,6 +111,7 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
         )
     ctx.logger.info('Create result: {}'.format(result))
     path = retrieve_path(kwargs)
+    ctx.logger.info('*** path: {}'.format(path))
     store_result_for_retrieve_id(result, path)
 
 
@@ -169,13 +172,13 @@ def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
     # Read All resources.
     read_response = _do_resource_read(
         client, api_mapping, resource_definition, **kwargs)
-    store_result_for_retrieve_id(read_response, path)
 
     resource_type = getattr(resource_definition, 'kind')
+
     if resource_type:
-        _do_resource_status_check(resource_type, read_response)
-        ctx.logger.info(
-            'Resource definition: {0}'.format(resource_type))
+        status_check = _do_resource_status_check(resource_type, read_response)
+        ctx.logger.info('Resource definition: {0}'.format(resource_type))
+        ctx.logger.info('Status: {0}'.format(status_check))
 
 
 def _get_path_with_adjacent_resources(path, resource_definition, api_mapping):
