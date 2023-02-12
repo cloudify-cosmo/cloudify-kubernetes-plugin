@@ -705,7 +705,6 @@ node_types:
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
 
-
   cloudify.kubernetes.resources.FileDefinedResource:
     derived_from: cloudify.nodes.kubernetes.resources.FileDefinedResource
 
