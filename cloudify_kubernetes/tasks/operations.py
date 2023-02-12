@@ -192,9 +192,10 @@ def _file_resource_check_drift(client,
         client, api_mapping, resource_definition, **kwargs)
 
     diff = check_drift(previous_response, current_response)
-
     if diff:
         raise RuntimeError('The resource has drifted: {}'.format(diff))
+    else:
+        ctx.logger.info('No drift ')
 
 
 def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
