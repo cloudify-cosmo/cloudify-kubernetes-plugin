@@ -160,9 +160,10 @@ def _file_resource_check_drift(client,
         client, api_mapping, resource_definition, **kwargs)
 
     diff = check_drift(previous_response, current_response)
-
     if diff:
         raise RuntimeError('The resource has drifted: {}'.format(diff))
+    else:
+        ctx.logger.info('No drift ')
 
 
 def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
@@ -668,6 +669,28 @@ def multiple_file_resource_update(**kwargs):
 
     for file_resource in file_resources:
         file_resource_update(file=file_resource, **kwargs)
+
+
+def multiple_file_resource_check_status(**kwargs):
+    file_resources = kwargs.get(
+        NODE_PROPERTY_FILES,
+        ctx.node.properties.get(NODE_PROPERTY_FILES, [])
+    )
+    validate_file_resources(file_resources)
+
+    for file_resource in file_resources:
+        file_resource_check_status(file=file_resource, **kwargs)
+
+
+def multiple_file_resource_check_drift(**kwargs):
+    file_resources = kwargs.get(
+        NODE_PROPERTY_FILES,
+        ctx.node.properties.get(NODE_PROPERTY_FILES, [])
+    )
+    validate_file_resources(file_resources)
+
+    for file_resource in file_resources:
+        file_resource_check_drift(file=file_resource, **kwargs)
 
 
 def multiple_file_resource_read(**kwargs):
