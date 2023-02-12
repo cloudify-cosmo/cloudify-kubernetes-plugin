@@ -47,9 +47,7 @@ from ..utils import (check_drift,
                      store_result_for_retrieve_id,
                      resource_definitions_from_file,
                      resource_definition_from_payload,
-                     resource_definition_from_blueprint,
-                     check_drift,
-                     get_result_for_retrieve_id)
+                     resource_definition_from_blueprint,)
 
 from .api_calls import (
     _do_resource_read,
@@ -111,7 +109,6 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
         )
     ctx.logger.info('Create result: {}'.format(result))
     path = retrieve_path(kwargs)
-    ctx.logger.info('*** path: {}'.format(path))
     store_result_for_retrieve_id(result, path)
 
 
