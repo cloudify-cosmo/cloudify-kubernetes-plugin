@@ -145,6 +145,7 @@ def _resource_check_status(client, api_mapping, resource_definition, **kwargs):
         if not status_check:
             raise RuntimeError('Bad status received from Kubernetes.')
 
+
 def _resource_check_drift(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
@@ -163,11 +164,9 @@ def _resource_check_drift(client, api_mapping, resource_definition, **kwargs):
         ctx.logger.info('No drift ')
 
 
-def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
+def _file_resource_check_status(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
-    path = retrieve_path(kwargs)
-    _, resource, _ = retrieve_last_create_path(path, delete=False)
 
     # Read All resources.
     read_response = _do_resource_read(
@@ -179,6 +178,41 @@ def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
         status_check = _do_resource_status_check(resource_type, read_response)
         ctx.logger.info('Resource definition: {0}'.format(resource_type))
         ctx.logger.info('Status: {0}'.format(status_check))
+
+
+def _file_resource_check_drift(client, api_mapping, resource_definition, **kwargs):
+    """Attempt to resolve the lifecycle logic.
+    """
+    path = retrieve_path(kwargs)
+
+    previous_response = get_result_for_retrieve_id(path)
+
+    # Read All resources.
+    current_response = _resource_read(
+        client, api_mapping, resource_definition, **kwargs)
+
+    diff = check_drift(previous_response, current_response)
+
+    if diff:
+        raise RuntimeError('The resource has drifted: {}'.format(diff))
+
+
+def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
+    """Attempt to resolve the lifecycle logic.
+    """
+    path = retrieve_path(kwargs)
+    _, resource, _ = retrieve_last_create_path(path, delete=False)
+
+    # Read All resources.
+    read_response = _do_resource_read(
+        client, api_mapping, resource_definition, **kwargs)
+    store_result_for_retrieve_id(read_response, path)
+
+    resource_type = getattr(resource_definition, 'kind')
+    if resource_type:
+        _do_resource_status_check(resource_type, read_response)
+        ctx.logger.info(
+            'Resource definition: {0}'.format(resource_type))
 
 
 def _get_path_with_adjacent_resources(path, resource_definition, api_mapping):
@@ -524,11 +558,8 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
 )
-def file_resource_check_status(client,
-                               api_mapping,
-                               resource_definition,
-                               **kwargs):
-    _resource_check_status(client, api_mapping, resource_definition, **kwargs)
+def file_resource_check_status(client, api_mapping, resource_definition, **kwargs):
+    _file_resource_check_status(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
@@ -536,11 +567,8 @@ def file_resource_check_status(client,
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
 )
-def file_resource_check_drift(client,
-                              api_mapping,
-                              resource_definition,
-                              **kwargs):
-    _resource_check_drift(client, api_mapping, resource_definition, **kwargs)
+def file_resource_check_drift(client, api_mapping, resource_definition, **kwargs):
+    _file_resource_check_drift(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
