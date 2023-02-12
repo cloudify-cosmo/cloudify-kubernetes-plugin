@@ -272,10 +272,13 @@ def get_definition_object(**kwargs):
         NODE_PROPERTY_DEFINITION,
         ctx.node.properties.get(NODE_PROPERTY_DEFINITION, None)
     )
+
+    ctx.logger.info(' **** 1definition: {}'.format(definition))
     if DEFINITION_ADDITIONS in kwargs:
         definition = merge_definitions(
             definition,
             kwargs.pop(DEFINITION_ADDITIONS))
+        ctx.logger.info(' **** 2definition: {}'.format(definition))
 
     if not definition:
         raise KuberentesInvalidDefinitionError(
@@ -769,6 +772,6 @@ def update_with_additions(resource_definition, additions):
 
 
 def check_drift(previous, current):
-    previous_state = Resource(previous).to_dict()
-    current_state = Resource(current).to_dict()
+    previous_state = Resource(previous).state
+    current_state = Resource(current).state
     return DeepDiff(previous_state, current_state)

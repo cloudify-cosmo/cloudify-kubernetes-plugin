@@ -690,9 +690,9 @@ node_types:
     interfaces:
       cloudify.interfaces.validation:
         check_status:
-          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_check_status
         check_drift:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_check_drift
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_check_drift
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_create
@@ -704,6 +704,7 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
+
 
   cloudify.kubernetes.resources.FileDefinedResource:
     derived_from: cloudify.nodes.kubernetes.resources.FileDefinedResource

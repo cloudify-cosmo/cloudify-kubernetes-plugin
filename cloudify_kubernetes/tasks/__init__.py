@@ -23,6 +23,8 @@ from .operations import (read_token,  # noqa
                          resource_create,  # noqa
                          resource_update,  # noqa
                          resource_delete,  # noqa
+                         file_resource_check_status,  # noqa
+                         file_resource_check_drift,  # noqa
                          file_resource_read,  # noqa
                          file_resource_create,  # noqa
                          file_resource_update,  # noqa
