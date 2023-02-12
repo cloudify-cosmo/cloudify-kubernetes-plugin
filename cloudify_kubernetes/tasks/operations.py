@@ -177,7 +177,10 @@ def _file_resource_check_status(client, api_mapping, resource_definition, **kwar
         ctx.logger.info('Status: {0}'.format(status_check))
 
 
-def _file_resource_check_drift(client, api_mapping, resource_definition, **kwargs):
+def _file_resource_check_drift(client,
+                               api_mapping,
+                               resource_definition,
+                               **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
     path = retrieve_path(kwargs)
@@ -555,8 +558,14 @@ def file_resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
 )
-def file_resource_check_status(client, api_mapping, resource_definition, **kwargs):
-    _file_resource_check_status(client, api_mapping, resource_definition, **kwargs)
+def file_resource_check_status(client,
+                               api_mapping,
+                               resource_definition,
+                               **kwargs):
+    _file_resource_check_status(client,
+                                api_mapping,
+                                resource_definition,
+                                **kwargs)
 
 
 @with_kubernetes_client
@@ -564,8 +573,14 @@ def file_resource_check_status(client, api_mapping, resource_definition, **kwarg
     retrieve_resources_definitions=resource_definitions_from_file,
     retrieve_mapping=mapping_by_kind,
 )
-def file_resource_check_drift(client, api_mapping, resource_definition, **kwargs):
-    _file_resource_check_drift(client, api_mapping, resource_definition, **kwargs)
+def file_resource_check_drift(client,
+                              api_mapping,
+                              resource_definition,
+                              **kwargs):
+    _file_resource_check_drift(client,
+                               api_mapping,
+                               resource_definition,
+                               **kwargs)
 
 
 @with_kubernetes_client
