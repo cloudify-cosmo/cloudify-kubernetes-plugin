@@ -272,13 +272,10 @@ def get_definition_object(**kwargs):
         NODE_PROPERTY_DEFINITION,
         ctx.node.properties.get(NODE_PROPERTY_DEFINITION, None)
     )
-
-    ctx.logger.info(' **** 1definition: {}'.format(definition))
     if DEFINITION_ADDITIONS in kwargs:
         definition = merge_definitions(
             definition,
             kwargs.pop(DEFINITION_ADDITIONS))
-
     if not definition:
         raise KuberentesInvalidDefinitionError(
             'Incorrect format of resource definition'
