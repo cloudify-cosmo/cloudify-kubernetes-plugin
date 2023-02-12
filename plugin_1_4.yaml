@@ -713,7 +713,6 @@ node_types:
         check_drift:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_check_drift
 
-
   cloudify.kubernetes.resources.FileDefinedResource:
     derived_from: cloudify.nodes.kubernetes.resources.FileDefinedResource
 
