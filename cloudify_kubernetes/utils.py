@@ -527,9 +527,11 @@ def store_result_for_retrieve_id(result, path=None):
 
 def get_result_for_retrieve_id(path=None):
     if path:
-        return ctx.instance.runtime_properties[INSTANCE_RUNTIME_PROPERTY_KUBERNETES].get(path, None)
+        return ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES].get(path, None)
     else:
-        return ctx.instance.runtime_properties.get(INSTANCE_RUNTIME_PROPERTY_KUBERNETES, None)
+        return ctx.instance.runtime_properties.get(
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES, None)
 
 
 def set_namespace(kwargs, resource_definition=None):
