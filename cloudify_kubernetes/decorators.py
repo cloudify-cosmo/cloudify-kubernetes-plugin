@@ -282,7 +282,6 @@ def with_kubernetes_client(fn):
             config_kwargs.update({'kubeconfig': kubeconfig})
 
         try:
-
             api_client = setup_configuration(**config_kwargs)
             kwargs['client'] = CloudifyKubernetesClient(
                 ctx.logger, api_client=api_client)
