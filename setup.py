@@ -40,8 +40,8 @@ install_requires = [
     'cloudify-python-importer==0.2.1',
     'cloudify-common>=4.5',
     'cloudify-types>=6.3.1',
-    'cloudify-utilities-plugins-sdk>=0.0.103',  # Provides kubernetes and google-auth.
     'deepdiff==3.3.0',
+    'cloudify-utilities-plugins-sdk>=0.0.103',  # Provides kubernetes and google-auth.
 ]
 
 
