@@ -738,26 +738,22 @@ def multiple_file_resource_delete(**kwargs):
         ('cluster_role_binding', get_cluster_role_binding_payload),
         ('service_account', get_service_account_payload),
     ],
-    operation=resource_create_from_payload
+    operation=resource_create_from_payload,
 )
 def create_token(instance, **_):
-
-    ctx.logger.info(instance.runtime_properties)
     # Create the Token
     sa_resp = instance.runtime_properties['service_account_response']
+    secret_payload = get_secret_payload(sa_resp['metadata']['name'])
     try:
-        token_name = sa_resp['secrets'][0]['name']
-    except (KeyError, TypeError):
-        raise RecoverableError(
-            'Waiting for the service account secret to populate.')
-    secret_payload = get_secret_payload(token_name)
-    secret_response = resource_read_from_payload(payload=secret_payload)[0]
-    ctx.logger.info(secret_response)
+        create_resouse_result = resource_create_from_payload(
+            payload=secret_payload)
+        secret_response = create_resouse_result[0]
+    except Exception:
+        secret_response = resource_read_from_payload(payload=secret_payload)[0]
     # Store the token, endpoint, and certificate.
     token = secret_response['data']['token']
     certificate = secret_response['data']['ca.crt']
     instance.runtime_properties['secret_response'] = secret_response
-
     instance.runtime_properties['k8s-service-account-token'] = \
         base64.b64decode(token).decode('utf-8')
     instance.runtime_properties['k8s-ip'] = \
@@ -776,9 +772,9 @@ def create_token(instance, **_):
 def read_token(instance, **_):
 
     # Refresh the Secret details
-    token_name = instance.runtime_properties['service_account_response']['secrets'][0]['name']  # noqa
+    sa_resp = instance.runtime_properties['service_account_response']
 
-    secret_payload = get_secret_payload(token_name)
+    secret_payload = get_secret_payload(sa_resp['metadata']['name'])
     secret_response = resource_read_from_payload(payload=secret_payload)[0]
 
     token = secret_response['data']['token']
@@ -804,16 +800,11 @@ def read_token(instance, **_):
 def delete_token(instance, **_):
 
     # Delete the secret.
-    service_account_response = instance.runtime_properties.get(
-        'service_account_response')
-    try:
-        token_name = service_account_response['secrets'][0]['name']
-    except (IndexError, KeyError):
-        return
-    secret_payload = get_secret_payload(token_name)
+    sa_resp = instance.runtime_properties['service_account_response']
+    secret_payload = get_secret_payload(sa_resp['metadata']['name'])
     resource_delete_from_payload(
-        payload=get_secret_payload(secret_payload),
-        resource_id=token_name)
+        payload=secret_payload,
+        resource_id='{}-token'.format(sa_resp['metadata']['name']))
     if 'k8s-service-account-token' in instance.runtime_properties:
         del instance.runtime_properties['k8s-service-account-token']
     if 'k8s-cacert' in instance.runtime_properties:
