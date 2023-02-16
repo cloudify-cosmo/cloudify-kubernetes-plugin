@@ -410,6 +410,11 @@ node_types:
       cloudify.interfaces.validation:
         check_status:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_read_check_status
+<<<<<<< HEAD
+=======
+        check_drift:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read_check_drift
+>>>>>>> 37d3276 (add plugin yaml)
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
