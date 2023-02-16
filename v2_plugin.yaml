@@ -727,6 +727,8 @@ node_types:
       cloudify.interfaces.validation:
         check_status:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_check_status
+        check_drift:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_check_drift
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_create
