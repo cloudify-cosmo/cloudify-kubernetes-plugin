@@ -130,8 +130,8 @@ def _file_resource_check_status(client,
                                 **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
-    path = retrieve_path(kwargs)
-    _, resource, _ = retrieve_last_create_path(path, delete=False)
+    # path = retrieve_path(kwargs)
+    # _, resource, _ = retrieve_last_create_path(path, delete=False)
 
     # Read All resources.
     read_response = _do_resource_read(
