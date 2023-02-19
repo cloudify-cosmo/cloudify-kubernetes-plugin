@@ -750,7 +750,7 @@ node_types:
     interfaces:
       cloudify.interfaces.validation:
         check_status:
-          implementation: kubernetes.cloudify_kubernetes.tasks.read_token
+          implementation: kubernetes.cloudify_kubernetes.tasks.get_token_status
       cloudify.interfaces.lifecycle:
         configure:
           implementation: kubernetes.cloudify_kubernetes.tasks.refresh_config

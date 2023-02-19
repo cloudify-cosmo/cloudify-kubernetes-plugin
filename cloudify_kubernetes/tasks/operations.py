@@ -790,6 +790,26 @@ def read_token(instance, **_):
 
 
 @nested_resource_task(
+    resources=[
+        ('service_account', get_service_account_payload),
+        ('cluster_role_binding', get_cluster_role_binding_payload)
+    ],
+    operation=resource_read_from_payload
+)
+def get_token_status(instance, **_):
+
+    # Refresh the Secret details
+    sa_resp = instance.runtime_properties['service_account_response']
+
+    secret_payload = get_secret_payload(sa_resp['metadata']['name'])
+    secret_response = resource_read_from_payload(payload=secret_payload)[0]
+
+    if secret_response:
+        ctx.logger.info('Status: True')
+
+
+
+@nested_resource_task(
     nested_ops_first=False,
     resources=[
         ('service_account', get_service_account_payload),

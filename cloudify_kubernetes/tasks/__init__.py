@@ -28,7 +28,7 @@ from .operations import (read_token,  # noqa
                          multiple_file_resource_check_status,  # noqa
                          multiple_file_resource_check_drift,  # noqa
                          resource_read_check_status,  # noqa
-                         resource_read_check_drift,  # noqa
+                         get_token_status,  # noqad
                          file_resource_read,  # noqa
                          file_resource_create,  # noqa
                          file_resource_update,  # noqa
