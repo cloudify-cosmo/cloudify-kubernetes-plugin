@@ -177,10 +177,7 @@ def _file_resource_check_status(client, api_mapping, resource_definition, **kwar
         ctx.logger.info('Status: {0}'.format(status_check))
 
 
-def _file_resource_check_drift(client,
-                               api_mapping,
-                               resource_definition,
-                               **kwargs):
+def _resource_check_drift(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
     path = retrieve_path(kwargs)
@@ -480,7 +477,6 @@ def custom_check_status(client, api_mapping, resource_definition, **kwargs):
 def custom_check_drift(client, api_mapping, resource_definition, **kwargs):
     _resource_check_drift(client, api_mapping, resource_definition, **kwargs)
 
-
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
@@ -563,10 +559,7 @@ def file_resource_check_status(client,
                                api_mapping,
                                resource_definition,
                                **kwargs):
-    _file_resource_check_status(client,
-                                api_mapping,
-                                resource_definition,
-                                **kwargs)
+    _resource_check_status(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
@@ -578,10 +571,7 @@ def file_resource_check_drift(client,
                               api_mapping,
                               resource_definition,
                               **kwargs):
-    _file_resource_check_drift(client,
-                               api_mapping,
-                               resource_definition,
-                               **kwargs)
+    _resource_check_drift(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
