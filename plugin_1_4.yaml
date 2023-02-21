@@ -406,12 +406,12 @@ node_types:
         type: cloudify.kubernetes.types.ResourceDefinition
         description: >
           Definition of resource object using native Kubernetes YAML spec
+      validate_resource_status:
+        default: true
     interfaces:
       cloudify.interfaces.validation:
         check_status:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_read_check_status
-        check_drift:
-          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read_check_drift
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_create
@@ -423,6 +423,8 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_delete
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.resource_read
+        check_drift:
+          implementation: kubernetes.cloudify_kubernetes.tasks.resource_read_check_drift
 
   cloudify.kubernetes.resources.BlueprintDefinedResource:
     derived_from: cloudify.nodes.kubernetes.resources.BlueprintDefinedResource
@@ -660,6 +662,8 @@ node_types:
   cloudify.nodes.kubernetes.resources.CustomBlueprintDefinedResource:
     derived_from: cloudify.kubernetes.resources.BlueprintDefinedResource
     properties:
+      validate_resource_status:
+        default: true
       api_mapping:
         type: cloudify.kubernetes.types.ApiMapping
         description: >
@@ -667,12 +671,14 @@ node_types:
     interfaces:
       cloudify.interfaces.validation:
         check_status:
-          implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_read
+          implementation: kubernetes.cloudify_kubernetes.tasks.custom_check_status
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_create
         delete:
           implementation: kubernetes.cloudify_kubernetes.tasks.custom_resource_delete
+        check_drift:
+          implementation: kubernetes.cloudify_kubernetes.tasks.custom_check_drift
 
   cloudify.kubernetes.resources.CustomBlueprintDefinedResource:
     derived_from: cloudify.nodes.kubernetes.resources.CustomBlueprintDefinedResource
@@ -689,12 +695,12 @@ node_types:
         description: >
           Permit changing the name and kind and number of resources defined in file.
         default: false
+      validate_resource_status:
+        default: true
     interfaces:
       cloudify.interfaces.validation:
         check_status:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_check_status
-        check_drift:
-          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_check_drift
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_create
@@ -706,6 +712,8 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_delete
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_read
+        check_drift:
+          implementation: kubernetes.cloudify_kubernetes.tasks.file_resource_check_drift
 
   cloudify.kubernetes.resources.FileDefinedResource:
     derived_from: cloudify.nodes.kubernetes.resources.FileDefinedResource
@@ -721,12 +729,12 @@ node_types:
         description: >
           Permit changing the name and kind and number of resources defined in file.
         default: false
+      validate_resource_status:
+        default: true
     interfaces:
       cloudify.interfaces.validation:
         check_status:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_check_status
-        check_drift:
-          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_check_drift
       cloudify.interfaces.lifecycle:
         create:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_create
@@ -738,6 +746,8 @@ node_types:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_delete
         pull:
           implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_read
+        check_drift:
+          implementation: kubernetes.cloudify_kubernetes.tasks.multiple_file_resource_check_drift
 
   cloudify.kubernetes.resources.MultipleFileDefinedResources:
     derived_from: cloudify.nodes.kubernetes.resources.MultipleFileDefinedResources
@@ -749,6 +759,8 @@ node_types:
       options:
         description: API options depending on API operations execution.
         type: cloudify.kubernetes.types.Options
+      validate_resource_status:
+        default: true
     interfaces:
       cloudify.interfaces.validation:
         check_status:

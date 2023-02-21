@@ -124,10 +124,7 @@ def _file_resource_update(client, api_mapping, resource_definition, **kwargs):
     store_result_for_retrieve_id(result, path)
 
 
-def _file_resource_check_status(client,
-                                api_mapping,
-                                resource_definition,
-                                **kwargs):
+def _resource_check_status(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
     # path = retrieve_path(kwargs)
@@ -138,17 +135,13 @@ def _file_resource_check_status(client,
         client, api_mapping, resource_definition, **kwargs)
 
     resource_type = getattr(resource_definition, 'kind')
-
     if resource_type:
         status_check = _do_resource_status_check(resource_type, read_response)
         ctx.logger.info('Resource definition: {0}'.format(resource_type))
         ctx.logger.info('Status: {0}'.format(status_check))
 
 
-def _file_resource_check_drift(client,
-                               api_mapping,
-                               resource_definition,
-                               **kwargs):
+def _resource_check_drift(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
     path = retrieve_path(kwargs)
@@ -432,6 +425,25 @@ def custom_resource_read(client, api_mapping, resource_definition, **kwargs):
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_data,
+    resource_state_function=_check_if_resource_exists
+)
+def custom_check_status(client, api_mapping, resource_definition, **kwargs):
+    _resource_check_status(client, api_mapping, resource_definition, **kwargs)
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
+    retrieve_mapping=mapping_by_data,
+    resource_state_function=_check_if_resource_exists
+)
+def custom_check_drift(client, api_mapping, resource_definition, **kwargs):
+    _resource_check_drift(client, api_mapping, resource_definition, **kwargs)
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
     resource_state_function=_check_if_resource_exists
 )
@@ -462,7 +474,7 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_kind,
 )
 def resource_read_check_status(client, api_mapping, resource_definition, **kwargs):
-    _file_resource_check_status(client, api_mapping, resource_definition, **kwargs)
+    _resource_check_status(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
@@ -471,7 +483,7 @@ def resource_read_check_status(client, api_mapping, resource_definition, **kwarg
     retrieve_mapping=mapping_by_kind,
 )
 def resource_read_check_drift(client, api_mapping, resource_definition, **kwargs):
-    _file_resource_check_drift(client, api_mapping, resource_definition, **kwargs)
+    _resource_check_drift(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
@@ -505,10 +517,7 @@ def file_resource_check_status(client,
                                api_mapping,
                                resource_definition,
                                **kwargs):
-    _file_resource_check_status(client,
-                                api_mapping,
-                                resource_definition,
-                                **kwargs)
+    _resource_check_status(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
@@ -520,10 +529,7 @@ def file_resource_check_drift(client,
                               api_mapping,
                               resource_definition,
                               **kwargs):
-    _file_resource_check_drift(client,
-                               api_mapping,
-                               resource_definition,
-                               **kwargs)
+    _resource_check_drift(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client
