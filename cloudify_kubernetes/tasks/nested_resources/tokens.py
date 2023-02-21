@@ -45,8 +45,12 @@ SECRET = """{{
     'apiVersion': 'v1',
     'kind': 'Secret',
     'metadata': {{
-        'name': {secret_name}
-    }}
+        'name': {token_name},
+        'annotations':  {{
+          'kubernetes.io/service-account.name': {service_account_name}
+        }},
+    }},
+    'type': 'kubernetes.io/service-account-token'
 }}"""
 
 
@@ -64,5 +68,7 @@ def get_cluster_role_binding_payload(name, namespace):
     )
 
 
-def get_secret_payload(name):
-    return SECRET.format(secret_name=name)
+def get_secret_payload(service_account_name):
+    return SECRET.format(
+        token_name=service_account_name + '-token',
+        service_account_name=service_account_name)

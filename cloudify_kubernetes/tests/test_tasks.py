@@ -231,11 +231,9 @@ class TestTasks(unittest.TestCase):
             runtime_properties={
                 'capabilities': {'endpoint': 'foo'},
                 'service_account_response': {
-                    'secrets': [
-                        {
-                            'name': 'foo'
-                        }
-                    ]
+                    'metadata': {
+                        'name': 'foo',
+                    }
                 }
             },
             relationships=[managed_master_node],
@@ -254,6 +252,7 @@ class TestTasks(unittest.TestCase):
                              api_mapping=None,
                              external=False,
                              create=False):
+
         node = MagicMock()
         node.properties = {
             'configuration': {
@@ -1153,7 +1152,7 @@ class TestTasks(unittest.TestCase):
         _ctx = self._prepare_shared_cluster_node(create=True)[1]
 
         expected_value = {
-            'secrets': [{'name': 'foo'}],
+            'metadata': {'name': 'foo-token'},
             'data': {'token': 'Zm9v', 'ca.crt': 'Zm9v'}
         }
 
@@ -1166,7 +1165,6 @@ class TestTasks(unittest.TestCase):
                         dc.return_value = expected_value
                         dr.return_value = expected_value
                         tasks.create_token()
-        print(_ctx.instance.runtime_properties)
         self.assertEqual(_ctx.instance.runtime_properties['k8s-cacert'], 'foo')
         self.assertEqual(
             _ctx.instance.runtime_properties['k8s-service-account-token'],
