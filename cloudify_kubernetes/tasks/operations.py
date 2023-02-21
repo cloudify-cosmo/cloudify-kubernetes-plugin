@@ -139,7 +139,8 @@ def _resource_check_status(client, api_mapping, resource_definition, **kwargs):
         status_check = _do_resource_status_check(resource_type, read_response)
         ctx.logger.info('Resource definition: {0}'.format(resource_type))
         ctx.logger.info('Status: {0}'.format(status_check))
-
+        if not status_check:
+            raise RuntimeError('Bad status received from Kubernetes.')
 
 def _resource_check_drift(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
