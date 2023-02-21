@@ -441,6 +441,7 @@ def custom_check_status(client, api_mapping, resource_definition, **kwargs):
 def custom_check_drift(client, api_mapping, resource_definition, **kwargs):
     _resource_check_drift(client, api_mapping, resource_definition, **kwargs)
 
+
 @with_kubernetes_client
 @resource_task(
     retrieve_resource_definition=resource_definition_from_blueprint,
@@ -473,7 +474,10 @@ def resource_read(client, api_mapping, resource_definition, **kwargs):
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
 )
-def resource_read_check_status(client, api_mapping, resource_definition, **kwargs):
+def resource_read_check_status(client,
+                               api_mapping,
+                               resource_definition,
+                               **kwargs):
     _resource_check_status(client, api_mapping, resource_definition, **kwargs)
 
 
@@ -482,7 +486,10 @@ def resource_read_check_status(client, api_mapping, resource_definition, **kwarg
     retrieve_resource_definition=resource_definition_from_blueprint,
     retrieve_mapping=mapping_by_kind,
 )
-def resource_read_check_drift(client, api_mapping, resource_definition, **kwargs):
+def resource_read_check_drift(client,
+                              api_mapping,
+                              resource_definition,
+                              **kwargs):
     _resource_check_drift(client, api_mapping, resource_definition, **kwargs)
 
 
@@ -812,7 +819,6 @@ def get_token_status(instance, **_):
 
     if secret_response:
         ctx.logger.info('Status: True')
-
 
 
 @nested_resource_task(
