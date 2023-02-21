@@ -161,24 +161,6 @@ def _resource_check_drift(client, api_mapping, resource_definition, **kwargs):
         ctx.logger.info('No drift ')
 
 
-def _resource_check_drift(client, api_mapping, resource_definition, **kwargs):
-    """Attempt to resolve the lifecycle logic.
-    """
-    path = retrieve_path(kwargs)
-
-    previous_response = get_result_for_retrieve_id(path)
-
-    # Read All resources.
-    current_response = _resource_read(
-        client, api_mapping, resource_definition, **kwargs)
-
-    diff = check_drift(previous_response, current_response)
-    if diff:
-        raise RuntimeError('The resource has drifted: {}'.format(diff))
-    else:
-        ctx.logger.info('No drift ')
-
-
 def _file_resource_read(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
