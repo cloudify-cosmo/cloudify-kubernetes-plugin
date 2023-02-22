@@ -296,7 +296,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='AppsV1Api',
-            method='patch_namespaced_deployment',
+            method='replace_namespaced_deployment',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='AppsV1Api',
