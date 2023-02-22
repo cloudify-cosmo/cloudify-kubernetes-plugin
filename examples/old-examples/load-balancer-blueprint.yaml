@@ -65,7 +65,7 @@ node_types:
             payload: V1DeleteOptions
           update:
             api: ExtensionsV1beta1Api
-            method: patch_namespaced_ingress
+            method: replace_namespaced_ingress
 
 node_templates:
 

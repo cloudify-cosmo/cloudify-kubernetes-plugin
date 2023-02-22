@@ -136,7 +136,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='AppsV1Api',
-            method='patch_namespaced_stateful_set',
+            method='replace_namespaced_stateful_set',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='AppsV1Api',
@@ -156,7 +156,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='AppsV1Api',
-            method='patch_namespaced_daemon_set',
+            method='replace_namespaced_daemon_set',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='AppsV1Api',
@@ -196,7 +196,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='NetworkingV1Api',
-            method='patch_namespaced_network_policy',
+            method='replace_namespaced_network_policy',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='NetworkingV1Api',
@@ -316,7 +316,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='patch_namespaced_pod'
+            method='replace_namespaced_pod'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -336,7 +336,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='AppsV1Api',
-            method='patch_namespaced_replica_set'
+            method='replace_namespaced_replica_set'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='AppsV1Api',
@@ -356,7 +356,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='patch_namespaced_replication_controller',
+            method='replace_namespaced_replication_controller',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -375,7 +375,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='patch_namespaced_service'
+            method='replace_namespaced_service'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -395,7 +395,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='NetworkingV1Api',
-            method='patch_namespaced_ingress'
+            method='replace_namespaced_ingress'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='NetworkingV1Api',
@@ -415,7 +415,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='patch_namespaced_persistent_volume_claim'
+            method='replace_namespaced_persistent_volume_claim'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -475,7 +475,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='patch_namespaced_config_map'
+            method='replace_namespaced_config_map'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -495,7 +495,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='patch_namespaced_secret'
+            method='replace_namespaced_secret'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -515,7 +515,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
-            method='patch_namespaced_service_account'
+            method='replace_namespaced_service_account'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CoreV1Api',
@@ -535,7 +535,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
-            method='patch_namespaced_role'
+            method='replace_namespaced_role'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
@@ -555,7 +555,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
-            method='patch_namespaced_role_binding'
+            method='replace_namespaced_role_binding'
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='RbacAuthorizationV1Api',
@@ -595,7 +595,7 @@ SUPPORTED_API_MAPPINGS = {
         ),
         update=KubernetesSingleOperationApiMapping(
             api='CustomObjectsApi',
-            method='patch_namespaced_custom_object',
+            method='replace_namespaced_custom_object',
         ),
         delete=KubernetesSingleOperationApiMapping(
             api='CustomObjectsApi',

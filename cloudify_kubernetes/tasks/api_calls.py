@@ -42,11 +42,7 @@ def _do_resource_create(client, api_mapping, resource_definition, **kwargs):
         options)).to_dict()
 
 
-def _do_resource_read(client,
-                      api_mapping,
-                      resource_definition,
-                      client_sanitization=False,
-                      **kwargs):
+def _do_resource_read(client, api_mapping, resource_definition, **kwargs):
     if not resource_definition:
         raise NonRecoverableError(
             'No resource was found in runtime properties for reading. '
@@ -57,21 +53,17 @@ def _do_resource_read(client,
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     set_namespace(kwargs, resource_definition)
     set_custom_resource(options, resource_definition)
-    read_result = client.read_resource(
+    return JsonCleanuper(client.read_resource(
         api_mapping,
         resource_definition,
         options
-    )
-    if client_sanitization:
-        return client.client.sanitize_for_serialization(read_result)
-    return JsonCleanuper(read_result).to_dict()
+    )).to_dict()
 
 
 def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     set_namespace(kwargs, resource_definition)
     set_custom_resource(options, resource_definition)
-
     return JsonCleanuper(client.update_resource(
         api_mapping,
         resource_definition,

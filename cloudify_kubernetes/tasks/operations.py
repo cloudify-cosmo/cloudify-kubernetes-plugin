@@ -107,7 +107,6 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
             resource_definition,
             **kwargs
         )
-    ctx.logger.info('Create result: {}'.format(result))
     path = retrieve_path(kwargs)
     store_result_for_retrieve_id(result, path)
 
@@ -562,13 +561,12 @@ def resource_update(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_data,
 )
 def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
-    read_response = \
-        _do_resource_update(
-            client,
-            api_mapping,
-            resource_definition,
-            **kwargs)
-    store_result_for_retrieve_id(read_response)
+    response = _do_resource_update(
+        client,
+        api_mapping,
+        resource_definition,
+        **kwargs)
+    store_result_for_retrieve_id(response)
 
 
 @with_kubernetes_client
