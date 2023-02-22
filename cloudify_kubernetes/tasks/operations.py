@@ -35,7 +35,6 @@ from ..utils import (check_drift,
                      JsonCleanuper,
                      mapping_by_data,
                      mapping_by_kind,
-                     merge_definitions,
                      NODE_PROPERTY_FILES,
                      DEFINITION_ADDITIONS,
                      update_with_additions,
@@ -115,27 +114,12 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
 
 def _file_resource_update(client, api_mapping, resource_definition, **kwargs):
 
-    # read_result = _do_resource_read(
-    #     client,
-    #     api_mapping,
-    #     resource_definition,
-    #     client_sanitization=True,
-    #     **kwargs)
-
-    # ctx.logger.info('Read Result: {}'.format(read_result))
-    # ctx.logger.info('Resource: {}'.format(resource_definition.to_dict()))
-    # resource_definition = KubernetesResourceDefinition(
-    #     **merge_definitions(read_result, resource_definition.to_dict())
-    # )
-    # ctx.logger.info('Merged Resource: {}'.format(resource_definition.to_dict()))
-
     result = _do_resource_update(
         client,
         api_mapping,
         resource_definition,
         **kwargs
     )
-    ctx.logger.info('Update result: {}'.format(result))
     path = retrieve_path(kwargs)
     store_result_for_retrieve_id(result, path)
 
