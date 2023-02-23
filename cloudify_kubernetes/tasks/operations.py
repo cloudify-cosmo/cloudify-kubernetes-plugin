@@ -141,6 +141,8 @@ def _resource_check_status(client,
                 client, api_mapping, resource_definition, **kwargs)
             raise OperationRetry(
                 'Attempted to heal resource, retrying check status.')
+        else:
+            raise
 
 
 def _healable_resource_check_status(client,
