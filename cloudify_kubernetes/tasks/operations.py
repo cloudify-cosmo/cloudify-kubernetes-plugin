@@ -135,7 +135,9 @@ def _resource_check_status(client,
         _healable_resource_check_status(
             client, api_mapping, resource_definition, **kwargs)
     except KuberentesApiOperationError:
-        if ctx.workflow_id == 'heal' and ctx.operation.retry_number == 0:
+        if ctx.workflow_id == 'heal' and \
+               ctx.operation.retry_number == 0 and \
+               'check_status' in ctx.operation.name:
             ctx.instance.runtime_properties['__perform_task'] = True
             _resource_create(
                 client, api_mapping, resource_definition, **kwargs)
