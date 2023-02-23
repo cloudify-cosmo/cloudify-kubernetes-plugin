@@ -15,6 +15,7 @@
 import os
 import sys
 import json
+from deepdiff import DeepDiff
 from tempfile import NamedTemporaryFile
 from collections import (
     Mapping,
@@ -33,6 +34,8 @@ try:
 except ImportError:
     NODE_INSTANCE = 'node-instance'
     RELATIONSHIP_INSTANCE = 'relationship-instance'
+
+from cloudify_kubernetes_sdk.state import Resource
 
 from ._compat import text_type
 from .k8s import (get_mapping,
@@ -59,7 +62,7 @@ CUSTOM_OBJECT_ANNOTATIONS = ['cloudify-crd-group',
                              'cloudify-crd-version']
 CLUSTER_TYPE = 'cloudify.kubernetes.resources.SharedCluster'
 CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster',
-                 'cloudify.gcp.nodes.KubernetesCluster',
+                 'cloudify.nodes.gcp.KubernetesCluster',
                  'cloudify.nodes.gcp.KubernetesCluster',
                  'cloudify.azure.nodes.compute.ManagedCluster',
                  'cloudify.nodes.azure.compute.ManagedCluster']
@@ -273,7 +276,6 @@ def get_definition_object(**kwargs):
         definition = merge_definitions(
             definition,
             kwargs.pop(DEFINITION_ADDITIONS))
-
     if not definition:
         raise KuberentesInvalidDefinitionError(
             'Incorrect format of resource definition'
@@ -519,6 +521,15 @@ def store_result_for_retrieve_id(result, path=None):
     ctx.instance.update()
 
 
+def get_result_for_retrieve_id(path=None):
+    if path:
+        return ctx.instance.runtime_properties[
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES].get(path, None)
+    else:
+        return ctx.instance.runtime_properties.get(
+            INSTANCE_RUNTIME_PROPERTY_KUBERNETES, None)
+
+
 def set_namespace(kwargs, resource_definition=None):
     resource_definition = resource_definition or {}
     if isinstance(resource_definition, dict):
@@ -756,3 +767,7 @@ def update_with_additions(resource_definition, additions):
             'Suggestion: {}'.format(json.dumps(suggestion))
         )
     return definition
+
+
+def check_drift(previous, current):
+    return DeepDiff(Resource(previous).state, Resource(current).state)

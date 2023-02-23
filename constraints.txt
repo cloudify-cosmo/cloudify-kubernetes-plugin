@@ -1,6 +1,2 @@
-cloudify-common>===6.4.1
-# https://github.com/cloudify-cosmo/cloudify-manager/archive/refs/heads/5.2.3-build.zip#subdirectory=cloudify_types
-# google-auth===1.27.0
-# google-auth>=1.21.0
-git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.3.1-build#egg=cloudify-types&subdirectory=cloudify_types
-# cryptography==3.4.8
+cloudify-common>===6.4.2
+git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types

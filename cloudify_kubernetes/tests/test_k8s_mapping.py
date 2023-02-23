@@ -120,7 +120,7 @@ class TestMapping(unittest.TestCase):
             ).alternates,
             KubernetesSingleOperationApiMapping(
                 api='CoreV1Api',
-                method='patch_namespaced_service'
+                method='replace_namespaced_service'
             ).alternates,
             KubernetesSingleOperationApiMapping(
                 api='CoreV1Api',
@@ -276,7 +276,7 @@ class TestMapping(unittest.TestCase):
         )
 
         self.assertEqual(mapping.update.api, 'CoreV1Api')
-        self.assertEqual(mapping.update.method, 'patch_namespaced_pod')
+        self.assertEqual(mapping.update.method, 'replace_namespaced_pod')
         self.assertEqual(mapping.update.payload, None)
 
         self.assertTrue(

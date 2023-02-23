@@ -74,7 +74,7 @@ node_types:
             payload: V1DeleteOptions
           update:
             api: CoreV1Api
-            method: patch_namespaced_persistent_volume_claim
+            method: replace_namespaced_persistent_volume_claim
 
   cloudify.kubernetes.resources.StatefulSets:
     derived_from: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
@@ -94,7 +94,7 @@ node_types:
             payload: V1DeleteOptions
           update:
             api: AppsV1beta1Api
-            method: patch_namespaced_stateful_set
+            method: replace_namespaced_stateful_set
 
   cloudify.kubernetes.resources.Autoscaling:
     derived_from: cloudify.kubernetes.resources.CustomBlueprintDefinedResource
@@ -114,7 +114,7 @@ node_types:
             payload: V1DeleteOptions
           update:
             api: AutoscalingV1Api
-            method: patch_namespaced_horizontal_pod_autoscaler
+            method: replace_namespaced_horizontal_pod_autoscaler
 
 node_templates:
 

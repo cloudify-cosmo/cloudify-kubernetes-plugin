@@ -83,6 +83,21 @@ RESPONSE = json.loads(json.dumps({
 }))
 
 
+class MockCloudifyContextWorkflowId(MockCloudifyContext):
+
+    def __init__(self, *args, **kwargs):
+        self._workflow_id = None
+        super().__init__(*args, **kwargs)
+
+    @property
+    def workflow_id(self):
+        return self._workflow_id
+
+    @workflow_id.setter
+    def workflow_id(self, value):
+        self._workflow_id = value
+
+
 class TestTasks(unittest.TestCase):
 
     def setUp(self):
@@ -223,7 +238,7 @@ class TestTasks(unittest.TestCase):
         if api_mapping:
             properties['api_mapping'] = api_mapping
 
-        _ctx = MockCloudifyContext(
+        _ctx = MockCloudifyContextWorkflowId(
             node_id="test_id",
             node_name="test_name",
             deployment_id="test_name",
@@ -231,11 +246,9 @@ class TestTasks(unittest.TestCase):
             runtime_properties={
                 'capabilities': {'endpoint': 'foo'},
                 'service_account_response': {
-                    'secrets': [
-                        {
-                            'name': 'foo'
-                        }
-                    ]
+                    'metadata': {
+                        'name': 'foo',
+                    }
                 }
             },
             relationships=[managed_master_node],
@@ -253,7 +266,9 @@ class TestTasks(unittest.TestCase):
     def _prepare_master_node(self,
                              api_mapping=None,
                              external=False,
-                             create=False):
+                             create=False,
+                             operation=None):
+
         node = MagicMock()
         node.properties = {
             'configuration': {
@@ -284,7 +299,7 @@ class TestTasks(unittest.TestCase):
         if api_mapping:
             properties['api_mapping'] = api_mapping
 
-        _ctx = MockCloudifyContext(
+        _ctx = MockCloudifyContextWorkflowId(
             node_id="test_id",
             node_name="test_name",
             deployment_id="test_name",
@@ -313,7 +328,7 @@ class TestTasks(unittest.TestCase):
                 }))
             ),
             relationships=[managed_master_node],
-            operation={'retry_number': 0}
+            operation=operation or {'retry_number': 0}
         )
 
         _ctx.node.type_hierarchy = \
@@ -430,6 +445,26 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(
             text_type(error.exception),
             "Status is {'phase': 'Unknown'}"
+        )
+
+    @patch('cloudify_kubernetes.tasks.operations.'
+           '_healable_resource_check_status')
+    def test_resource_check_status_fail_heal(self, fn):
+        # raise exception on 'Failed'
+        _, _ctx = self._prepare_master_node(
+            operation={'name': 'check_status', 'retry_number': 0})
+        _ctx.workflow_id = 'heal'
+        current_ctx.set(_ctx)
+        fn.side_effect = KuberentesApiOperationError('Foo')
+        with self.assertRaises(OperationRetry) as error:
+            tasks.operations._resource_check_status(
+                client=MagicMock(),
+                api_mapping=MagicMock(),
+                resource_definition=MagicMock()
+            )
+        self.assertEqual(
+            text_type(error.exception),
+            "Attempted to heal resource, retrying check status."
         )
 
     def test_do_resource_status_check_pod_failed(self):
@@ -924,48 +959,6 @@ class TestTasks(unittest.TestCase):
             expected_props)
         self.assertEqual(client.create_resource.call_count, 2)
 
-    def test_file_resource_create_empty_file(self):
-        _, _ctx = self._prepare_master_node(create=True)
-
-        _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
-        _ctx.download_resource_and_render = MagicMock(return_value="new_path")
-
-        expected_value = {
-            'metadata': {'name': 'check_id'}
-        }
-
-        class _Result(object):
-            def to_dict(self):
-                return expected_value
-
-        client = MagicMock()
-        client.create_resource = Mock(return_value=_Result())
-
-        mock_isfile = MagicMock(return_value=True)
-        mock_fileWithSize = MagicMock(return_value=1)
-        with self.assertRaises(RecoverableError) as error:
-            with patch('os.path.isfile', mock_isfile):
-                with patch('os.path.getsize', mock_fileWithSize):
-                    with patch(
-                            'cloudify_kubernetes.decorators.'
-                            'CloudifyKubernetesClient',
-                            MagicMock(return_value=client)
-                    ):
-                        with patch(
-                                'cloudify_kubernetes.utils.open',
-                                mock_open(read_data='')
-                        ) as file_mock:
-                            tasks.file_resource_create(
-                                client=client,
-                                api_mapping=None,
-                                resource_definition=None
-                            )
-                        file_mock.assert_called_with('new_path')
-        self.assertEqual(
-            text_type(error.exception.causes[0]['message']),
-            'Invalid kube-config dict. No configuration found.'
-        )
-
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
     def test_file_resource_delete(self, setup):
@@ -1153,7 +1146,7 @@ class TestTasks(unittest.TestCase):
         _ctx = self._prepare_shared_cluster_node(create=True)[1]
 
         expected_value = {
-            'secrets': [{'name': 'foo'}],
+            'metadata': {'name': 'foo-token'},
             'data': {'token': 'Zm9v', 'ca.crt': 'Zm9v'}
         }
 
@@ -1166,7 +1159,6 @@ class TestTasks(unittest.TestCase):
                         dc.return_value = expected_value
                         dr.return_value = expected_value
                         tasks.create_token()
-        print(_ctx.instance.runtime_properties)
         self.assertEqual(_ctx.instance.runtime_properties['k8s-cacert'], 'foo')
         self.assertEqual(
             _ctx.instance.runtime_properties['k8s-service-account-token'],

@@ -262,26 +262,28 @@ def nested_resource_task(resources, operation, nested_ops_first=True):
 
 def with_kubernetes_client(fn):
     def wrapper(**kwargs):
+        config_kwargs = dict()
         client_config = get_client_config(**kwargs)
         shared_cluster = get_connection_details_from_shared_cluster()
         token = get_auth_token(client_config, shared_cluster.get('api_key'))
+        if token:
+            config_kwargs.update({'token': token})
         host = get_host(client_config, shared_cluster.get('host'))
+        if host:
+            config_kwargs.update({'host': host})
         ca_file = get_ssl_ca_file(client_config,
                                   shared_cluster.get('ssl_ca_cert'))
+        if ca_file:
+            config_kwargs.update({'ca_file': ca_file})
         kubeconfig = get_kubeconfig_file(client_config,
                                          ctx.logger,
                                          ctx.download_resource)
+        if kubeconfig:
+            config_kwargs.update({'kubeconfig': kubeconfig})
 
         try:
-            api_client = setup_configuration(
-                token=token,
-                host=host,
-                ca_file=ca_file,
-                kubeconfig=kubeconfig)
-            if not api_client:
-                raise NonRecoverableError(
-                    'Failed to initialize client. '
-                    'Check debug log for more information.')
+
+            api_client = setup_configuration(**config_kwargs)
             kwargs['client'] = CloudifyKubernetesClient(
                 ctx.logger, api_client=api_client)
 

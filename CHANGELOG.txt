@@ -170,3 +170,8 @@
 2.13.20: Remove constraints in 1 4 plugin YAML and improve node instance resolution.
 2.13.21: RD-6518 - K8s LB Service Endpoint IP not available in Cloudify with AKS.
 2.13.22: RD-6692 Update Kubernetes Client
+2.13.23:
+  - Fix SharedCluster
+  - Update Workflow
+  - Check Drift Workflow
+  - Check Status Workflow
