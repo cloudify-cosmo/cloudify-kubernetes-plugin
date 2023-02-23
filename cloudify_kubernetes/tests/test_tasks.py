@@ -266,7 +266,8 @@ class TestTasks(unittest.TestCase):
     def _prepare_master_node(self,
                              api_mapping=None,
                              external=False,
-                             create=False):
+                             create=False,
+                             operation=None):
 
         node = MagicMock()
         node.properties = {
@@ -327,7 +328,7 @@ class TestTasks(unittest.TestCase):
                 }))
             ),
             relationships=[managed_master_node],
-            operation={'retry_number': 0}
+            operation=operation or {'retry_number': 0}
         )
 
         _ctx.node.type_hierarchy = \
@@ -450,7 +451,8 @@ class TestTasks(unittest.TestCase):
            '_healable_resource_check_status')
     def test_resource_check_status_fail_heal(self, fn):
         # raise exception on 'Failed'
-        _, _ctx = self._prepare_master_node()
+        _, _ctx = self._prepare_master_node(
+            operation={'name': 'check_status', 'retry_number': 0})
         _ctx.workflow_id = 'heal'
         current_ctx.set(_ctx)
         fn.side_effect = KuberentesApiOperationError('Foo')
