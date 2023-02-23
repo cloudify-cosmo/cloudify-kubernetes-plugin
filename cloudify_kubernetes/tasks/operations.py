@@ -107,33 +107,52 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
             resource_definition,
             **kwargs
         )
-    ctx.logger.info('Create result: {}'.format(result))
     path = retrieve_path(kwargs)
     store_result_for_retrieve_id(result, path)
 
 
 def _file_resource_update(client, api_mapping, resource_definition, **kwargs):
+
     result = _do_resource_update(
         client,
         api_mapping,
         resource_definition,
         **kwargs
     )
-    ctx.logger.info('Update result: {}'.format(result))
     path = retrieve_path(kwargs)
     store_result_for_retrieve_id(result, path)
 
 
-def _resource_check_status(client, api_mapping, resource_definition, **kwargs):
+def _resource_check_status(client,
+                           api_mapping,
+                           resource_definition,
+                           **kwargs):
     """Attempt to resolve the lifecycle logic.
     """
-    # path = retrieve_path(kwargs)
-    # _, resource, _ = retrieve_last_create_path(path, delete=False)
+    # If check status is called during heal,
+    # I want to see this happen instead of tearing down everything.
+    try:
+        _healable_resource_check_status(
+            client, api_mapping, resource_definition, **kwargs)
+    except KuberentesApiOperationError:
+        if ctx.workflow_id == 'heal' and \
+               ctx.operation.retry_number == 0 and \
+               'check_status' in ctx.operation.name:
+            ctx.instance.runtime_properties['__perform_task'] = True
+            _resource_create(
+                client, api_mapping, resource_definition, **kwargs)
+            raise OperationRetry(
+                'Attempted to heal resource, retrying check status.')
+        else:
+            raise
 
-    # Read All resources.
+
+def _healable_resource_check_status(client,
+                                    api_mapping,
+                                    resource_definition,
+                                    **kwargs):
     read_response = _do_resource_read(
         client, api_mapping, resource_definition, **kwargs)
-
     resource_type = getattr(resource_definition, 'kind')
     if resource_type:
         status_check = _do_resource_status_check(resource_type, read_response)
@@ -141,6 +160,7 @@ def _resource_check_status(client, api_mapping, resource_definition, **kwargs):
         ctx.logger.info('Status: {0}'.format(status_check))
         if not status_check:
             raise RuntimeError('Bad status received from Kubernetes.')
+
 
 def _resource_check_drift(client, api_mapping, resource_definition, **kwargs):
     """Attempt to resolve the lifecycle logic.
@@ -561,13 +581,12 @@ def resource_update(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_data,
 )
 def custom_resource_update(client, api_mapping, resource_definition, **kwargs):
-    read_response = \
-        _do_resource_update(
-            client,
-            api_mapping,
-            resource_definition,
-            **kwargs)
-    store_result_for_retrieve_id(read_response)
+    response = _do_resource_update(
+        client,
+        api_mapping,
+        resource_definition,
+        **kwargs)
+    store_result_for_retrieve_id(response)
 
 
 @with_kubernetes_client

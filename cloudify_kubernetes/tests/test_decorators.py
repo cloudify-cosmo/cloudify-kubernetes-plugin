@@ -273,12 +273,14 @@ class TestDecorators(unittest.TestCase):
     def test_with_kubernetes_client_RecoverableError(self):
         _ = self._prepare_master_node()[0]
 
-        def function(client, **kwargs):
-            return client, kwargs
+        class FakeException(Exception):
+            pass
+
+        def function(*_, **__):
+            raise FakeException('Foo')
 
         with self.assertRaises(RecoverableError) as error:
             decorators.with_kubernetes_client(function)()
-
             self.assertEqual(
                 error.exception.causes[0]['message'],
                 "Error encountered"

@@ -74,7 +74,7 @@ node_types:
             payload: V1DeleteOptions
           update:
             api: CoreV1Api
-            method: patch_namespaced_persistent_volume_claim
+            method: replace_namespaced_persistent_volume_claim
 
 node_templates:
 

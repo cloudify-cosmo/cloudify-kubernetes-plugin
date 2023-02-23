@@ -64,7 +64,6 @@ def _do_resource_update(client, api_mapping, resource_definition, **kwargs):
     options = ctx.node.properties.get(NODE_PROPERTY_OPTIONS, kwargs)
     set_namespace(kwargs, resource_definition)
     set_custom_resource(options, resource_definition)
-
     return JsonCleanuper(client.update_resource(
         api_mapping,
         resource_definition,
