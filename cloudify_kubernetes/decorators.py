@@ -40,11 +40,12 @@ from .k8s import (CloudifyKubernetesClient,
 
 from cloudify_kubernetes_sdk.connection.decorators import setup_configuration
 from cloudify_kubernetes_sdk.connection.utils import (
-    get_connection_details_from_shared_cluster,
-    get_auth_token,
     get_host,
+    get_auth_token,
+    get_ssl_ca_file,
     get_kubeconfig_file,
-    get_ssl_ca_file)
+    get_connection_details_from_shared_cluster
+)
 
 NODE_PROPERTY_AUTHENTICATION = 'authentication'
 NODE_PROPERTY_CONFIGURATION = 'configuration'
