@@ -912,10 +912,12 @@ class TestTasks(unittest.TestCase):
         # TODO
         pass
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_file_resource_create(self, setup):
+    def test_file_resource_create(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
@@ -967,10 +969,12 @@ class TestTasks(unittest.TestCase):
             expected_props)
         self.assertEqual(client.create_resource.call_count, 2)
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_file_resource_delete(self, setup):
+    def test_file_resource_delete(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _, _ctx = self._prepare_master_node()
         _ctx.instance.runtime_properties['kubernetes'] = {
             'abc.yaml#0': {
@@ -1025,10 +1029,12 @@ class TestTasks(unittest.TestCase):
                     file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(client.delete_resource.call_count, 1)
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_multiple_file_resource_create(self, setup):
+    def test_multiple_file_resource_create(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['files'] = [{"resource_path": 'abc.yaml'}]
