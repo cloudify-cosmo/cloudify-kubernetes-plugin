@@ -743,7 +743,7 @@ def get_client_config(**kwargs):
     client_config['configuration'].setdefault('api_options', {})
     az = AKSConnection(client_config['authentication'])
     if az.has_service_account and not \
-            client_config['configuration']['file_content']:
+            client_config['configuration'].get('file_content'):
         client_config['configuration'] = {
             'file_content': az.kubeconfig_data
         }
