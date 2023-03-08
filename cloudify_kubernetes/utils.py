@@ -36,6 +36,7 @@ except ImportError:
     RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 from cloudify_kubernetes_sdk.state import Resource
+from cloudify_azure_sdk.client import AKSConnection
 
 from ._compat import text_type
 from .k8s import (get_mapping,
@@ -740,6 +741,12 @@ def get_client_config(**kwargs):
     client_config.setdefault('configuration', {})
     client_config.setdefault('authentication', {})
     client_config['configuration'].setdefault('api_options', {})
+    az = AKSConnection(client_config['authentication'])
+    if az.has_service_account and not \
+            client_config['configuration'].get('file_content'):
+        client_config['configuration'] = {
+            'file_content': az.kubeconfig_data
+        }
     return client_config
 
 

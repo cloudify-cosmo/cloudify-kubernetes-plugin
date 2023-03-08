@@ -806,8 +806,10 @@ class TestTasks(unittest.TestCase):
 
         self.assertEqual(result, expected_value)
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.CloudifyKubernetesClient')
-    def test_resource_create_RecoverableError(self, client):
+    def test_resource_create_RecoverableError(self, client, aks):
+        aks.has_service_account.return_value = None
         client.side_effect = Exception
         self._prepare_master_node()
 
@@ -818,11 +820,13 @@ class TestTasks(unittest.TestCase):
                 resource_definition=MagicMock()
             )
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_resource_create(self, setup):
+    def test_resource_create(self, setup, aks):
         if PY2:
             self.skipTest('This test is broken in Python 2.')
+        aks.has_service_account.return_value = None
         setup.return_value = True
         _ctx = self._prepare_master_node(create=True)[1]
 
@@ -860,8 +864,10 @@ class TestTasks(unittest.TestCase):
             }))
         )
 
-    def test_resource_delete_RecoverableError(self):
+    @patch('cloudify_kubernetes.utils.AKSConnection')
+    def test_resource_delete_RecoverableError(self, aks):
         self._prepare_master_node()
+        aks.has_service_account.return_value = None
 
         with self.assertRaises(RecoverableError):
             tasks.resource_delete(
@@ -870,10 +876,12 @@ class TestTasks(unittest.TestCase):
                 resource_definition=MagicMock()
             )
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_resource_delete(self, setup):
+    def test_resource_delete(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _ctx = self._prepare_master_node()[1]
 
         mock_isfile = MagicMock(return_value=True)
@@ -904,10 +912,12 @@ class TestTasks(unittest.TestCase):
         # TODO
         pass
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_file_resource_create(self, setup):
+    def test_file_resource_create(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['file'] = {"resource_path": 'abc.yaml'}
@@ -959,10 +969,12 @@ class TestTasks(unittest.TestCase):
             expected_props)
         self.assertEqual(client.create_resource.call_count, 2)
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_file_resource_delete(self, setup):
+    def test_file_resource_delete(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _, _ctx = self._prepare_master_node()
         _ctx.instance.runtime_properties['kubernetes'] = {
             'abc.yaml#0': {
@@ -1017,10 +1029,12 @@ class TestTasks(unittest.TestCase):
                     file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(client.delete_resource.call_count, 1)
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_multiple_file_resource_create(self, setup):
+    def test_multiple_file_resource_create(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _, _ctx = self._prepare_master_node(create=True)
 
         _ctx.node.properties['files'] = [{"resource_path": 'abc.yaml'}]
@@ -1076,10 +1090,12 @@ class TestTasks(unittest.TestCase):
             })))
         self.assertEqual(client.create_resource.call_count, 2)
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_multiple_file_resource_delete(self, setup):
+    def test_multiple_file_resource_delete(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _, _ctx = self._prepare_master_node()
         defintion = KubernetesResourceDefinition(
             **_ctx.node.properties['definition'])
@@ -1137,12 +1153,14 @@ class TestTasks(unittest.TestCase):
                     file_mock.assert_called_with('new_path', 'rb')
         self.assertEqual(client.delete_resource.call_count, 1)
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_token(self, setup):
+    def test_token(self, setup, aks):
         if PY2:
             self.skipTest('This test is broken in Python 2.')
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _ctx = self._prepare_shared_cluster_node(create=True)[1]
 
         expected_value = {
