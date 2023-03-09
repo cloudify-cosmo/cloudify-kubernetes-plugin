@@ -41,7 +41,7 @@ install_requires = [
     'cloudify-common>=4.5',
     'cloudify-types>=6.3.1',
     'deepdiff==3.3.0',
-    'cloudify-utilities-plugins-sdk>=0.0.111',  # Provides kubernetes and google-auth.
+    'cloudify-utilities-plugins-sdk>=0.0.112',  # Provides kubernetes and google-auth.
 ]
 
 
