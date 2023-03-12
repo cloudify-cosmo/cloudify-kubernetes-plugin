@@ -15,6 +15,7 @@
 import os
 import sys
 import json
+from urlparse import urlparse
 from deepdiff import DeepDiff
 from tempfile import NamedTemporaryFile
 from collections import (
@@ -68,6 +69,7 @@ CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster',
                  'cloudify.nodes.azure.compute.ManagedCluster']
 CLUSTER_REL = 'cloudify.relationships.kubernetes.connected_to_shared_cluster'
 DEFINITION_ADDITIONS = 'definitions_additions'
+ARCHIVE_PATH = 'https://{}/archive/refs/heads/{}.zip'
 
 
 def merge_definitions(old, new):
@@ -771,3 +773,15 @@ def update_with_additions(resource_definition, additions):
 
 def check_drift(previous, current):
     return DeepDiff(Resource(previous).state, Resource(current).state)
+
+
+def get_archive_from_github_url(path):
+    parsed = urlparse(path)
+
+    if parsed.path.startswith('github'):
+        folder_path = '/'.join(parsed.path.split('/')[0:3])
+        branch = parsed.query.split('=')[-1]
+        download_url = ARCHIVE_PATH.format(folder_path, branch)
+        return download_url
+    else:
+        raise NonRecoverableError('Unsupported argument: {}'.format(path))

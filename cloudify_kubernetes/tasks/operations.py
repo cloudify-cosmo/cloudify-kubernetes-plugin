@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # hack for import namespaced modules (google.auth)
+import os
 import base64
 from copy import deepcopy
 
@@ -35,6 +36,7 @@ from ..utils import (check_drift,
                      JsonCleanuper,
                      mapping_by_data,
                      mapping_by_kind,
+                     get_archive_from_github_url,
                      NODE_PROPERTY_FILES,
                      DEFINITION_ADDITIONS,
                      update_with_additions,
@@ -60,6 +62,13 @@ from .nested_resources.tokens import (
     get_service_account_payload,
     get_cluster_role_binding_payload,
     get_secret_payload)
+
+from cloudify_common_sdk.resource_downloader import (
+    get_http_https_resource,
+    get_shared_resource
+)
+
+from cloudify_common_sdk.utils import get_node_instance_dir, copy_directory
 
 
 def _resource_create(client, api_mapping, resource_definition, **kwargs):
@@ -109,6 +118,24 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
         )
     path = retrieve_path(kwargs)
     store_result_for_retrieve_id(result, path)
+
+
+def _create_kustomize(directory_path, *args, **kwargs):
+    name = directory_path.split('/')[-1]
+    target_path = os.path.join(get_node_instance_dir(), name)
+
+    if 'github' in directory_path .split('/')[0]:
+        download_url = get_archive_from_github_url(directory_path)
+        tmp_path = get_shared_resource(download_url)
+        copy_directory(tmp_path, target_path)
+    elif not os.path.isabs(directory_path):
+        ctx.download_resource(directory_path, target_path=target_path)
+    # elif os.path.exists(directory_path):
+    #     copy_directory(directory_path, target_path)
+    else:
+        raise NonRecoverableError('Unsupported argument: {}'.format(directory_path))
+
+    ctx.instance.runtime_properties['kustomize'] = target_path
 
 
 def _file_resource_update(client, api_mapping, resource_definition, **kwargs):
@@ -404,7 +431,16 @@ def custom_resource_create(client, api_mapping, resource_definition, **kwargs):
     retrieve_mapping=mapping_by_kind,
 )
 def file_resource_create(client, api_mapping, resource_definition, **kwargs):
-    _file_resource_create(client, api_mapping, resource_definition, **kwargs)
+    _file_resource_create(client, api_mapping, resource_definition, **kwargs)\
+
+
+@with_kubernetes_client
+@resource_task(
+    retrieve_resources_definitions=resource_definitions_from_file,
+    retrieve_mapping=mapping_by_kind,
+)
+def create_kustomize(client, api_mapping, resource_definition, **kwargs):
+    _create_kustomize(client, api_mapping, resource_definition, **kwargs)
 
 
 @with_kubernetes_client

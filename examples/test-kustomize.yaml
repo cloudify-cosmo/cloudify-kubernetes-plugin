@@ -1,0 +1,28 @@
+tosca_definitions_version: cloudify_dsl_1_3
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/5.0.0/types.yaml
+  - plugin:cloudify-kubernetes-plugin
+
+inputs:
+  kubernetes_endpoint:
+    type: string
+    default: { get_secret: kubernetes_master_endpoint }
+
+  resources:
+    default:
+      - resource_path: resources/cloudify-crd.yaml
+
+node_templates:
+
+  resources:
+    type: cloudify.kubernetes.resources.Kustomize
+    properties:
+      client_config:
+        configuration:
+          api_options:
+            host: { get_input: kubernetes_endpoint }
+            api_key: { get_secret: kubernetes_token }
+            verify_ssl: false
+            debug: false
+      kustomize: github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.14.zip
