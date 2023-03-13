@@ -228,10 +228,12 @@ class TestDecorators(unittest.TestCase):
             {'api_options': {}, 'blueprint_file_name': 'kubernetes.conf'}
         )
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_with_kubernetes_client_NonRecoverableError(self, setup):
+    def test_with_kubernetes_client_NonRecoverableError(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _, _ctx = self._prepare_master_node()
 
         with self.assertRaises(NonRecoverableError) as error:
@@ -244,10 +246,12 @@ class TestDecorators(unittest.TestCase):
             "error_text"
         )
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_with_kubernetes_client_Exception(self, setup):
+    def test_with_kubernetes_client_Exception(self, setup, aks):
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _ctx = self._prepare_master_node()[1]
 
         mock_isfile = MagicMock(return_value=True)
@@ -270,7 +274,9 @@ class TestDecorators(unittest.TestCase):
                     "error_text"
                 )
 
-    def test_with_kubernetes_client_RecoverableError(self):
+    @patch('cloudify_kubernetes.utils.AKSConnection')
+    def test_with_kubernetes_client_RecoverableError(self, aks):
+        aks.has_service_account.return_value = None
         _ = self._prepare_master_node()[0]
 
         class FakeException(Exception):
@@ -286,11 +292,13 @@ class TestDecorators(unittest.TestCase):
                 "Error encountered"
             )
 
+    @patch('cloudify_kubernetes.utils.AKSConnection')
     @patch('cloudify_kubernetes.decorators.'
            'setup_configuration')
-    def test_with_kubernetes_client(self, setup):
+    def test_with_kubernetes_client(self, setup, aks):
         _, _ctx = self._prepare_master_node()
         setup.return_value = True
+        aks.has_service_account.return_value = None
         _ctx.download_resource = MagicMock(return_value="downloaded_resource")
 
         def function(client, **kwargs):
@@ -298,10 +306,11 @@ class TestDecorators(unittest.TestCase):
 
         decorators.with_kubernetes_client(function)()
 
-    def test_with_kubernetes_client_certificate_files(self):
+    @patch('cloudify_kubernetes.utils.AKSConnection')
+    def test_with_kubernetes_client_certificate_files(self, aks):
         _, _ctx = self._prepare_master_node(with_relationship_to_master=False,
                                             with_client_config=True)
-
+        aks.has_service_account.return_value = None
         _ctx.node.properties['client_config'] = {
             'configuration': {
                 'api_options': {

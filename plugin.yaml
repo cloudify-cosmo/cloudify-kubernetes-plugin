@@ -3,7 +3,7 @@ plugins:
   kubernetes:
     executor: central_deployment_agent
     package_name: cloudify-kubernetes-plugin
-    package_version: '2.13.23'
+    package_version: '2.13.24'
 
 data_types:
 
@@ -95,7 +95,13 @@ data_types:
         type: string
         required: false
         description: >
-          (JSON) Content of Google Cloud Platform Service Accout file
+          (JSON) Content of Google Cloud Platform Service Account file
+      azure_service_account:
+        type: dict
+        required: false
+        description: >
+          A dictionary containing all keys supported by the Azure plugin client_config property.
+          In addition, the keys "resource_group_name" and "cluster_name" must be provided with values as well.
 
   cloudify.kubernetes.types.ApiMappingEntry:
     description: >

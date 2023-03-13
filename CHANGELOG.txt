@@ -175,3 +175,4 @@
   - Update Workflow
   - Check Drift Workflow
   - Check Status Workflow
+2.13.24: Support Azure Service Account Authentication.
