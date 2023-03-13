@@ -65,7 +65,7 @@ from .nested_resources.tokens import (
 
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 
-from cloudify_common_sdk.utils import get_node_instance_dir, copy_directory
+from cloudify_common_sdk.utils import get_node_instance_dir
 
 
 def _resource_create(client, api_mapping, resource_definition, **kwargs):
@@ -128,7 +128,8 @@ def _create_kustomize(client, api_mapping, resource_definition, **kwargs):
     elif os.path.isabs(directory_path):
         ctx.download_resource(directory_path, target_path=target_path)
     else:
-        raise NonRecoverableError('Unsupported argument: {}'.format(directory_path))
+        raise NonRecoverableError('Unsupported argument: {}'
+                                  .format(directory_path))
 
     ctx.instance.runtime_properties['kustomize'] = target_path
 
