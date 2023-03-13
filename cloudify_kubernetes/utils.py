@@ -15,7 +15,7 @@
 import os
 import sys
 import json
-from urlparse import urlparse
+from urllib.parse import urlparse
 from deepdiff import DeepDiff
 from tempfile import NamedTemporaryFile
 from collections import (
