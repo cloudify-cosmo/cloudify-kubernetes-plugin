@@ -37,7 +37,10 @@ except ImportError:
     RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 from cloudify_kubernetes_sdk.state import Resource
-from cloudify_common_sdk.utils import get_node_instance_dir
+from cloudify_common_sdk.utils import (get_node_instance_dir,
+                                       copy_directory,
+                                       remove_directory
+                                       )
 from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_azure_sdk.client import AKSConnection
 
@@ -803,13 +806,12 @@ def set_directory_path(directory_path=None, target_path=None):
         target_path = get_node_instance_dir()
     if 'github' in directory_path .split('/')[0]:
         download_url = get_archive_from_github_url(directory_path)
-        get_shared_resource(download_url, target_path)
-        print(os.listdir(target_path))
-
+        tmp_file = get_shared_resource(download_url)
+        copy_directory(tmp_file, target_path)
+        remove_directory(tmp_file)
     elif os.path.isabs(directory_path):
         ctx.download_resource(directory_path, target_path=target_path)
     else:
         raise NonRecoverableError('Unsupported argument: {}'
                                   .format(directory_path))
     return target_path
-
