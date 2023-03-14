@@ -53,15 +53,16 @@ spec: d
 ---
 """
 
-test_dir1 = mkdtemp()
-
 
 class TestUtils(unittest.TestCase):
 
-    @patch('cloudify_kubernetes.utils.get_node_instance_dir',
-           return_value=test_dir1)
+    @patch('cloudify_kubernetes.utils.get_node_instance_dir')
     @patch('cloudify_common_sdk.utils.get_deployment_dir')
-    def test_set_directory_path(*_, **__):
+    def test_set_directory_path(self, *args, **__):
+        get_node_instance_dir = args[1]
+        test_dir1 = mkdtemp()
+        get_node_instance_dir.return_value = test_dir1
+
         some_directory = 'github.com/kubernetes-sigs/aws-ebs-csi-driver/' \
                          'deploy/kubernetes/overlays/stable/?ref=release-1.14'
         listdir = ['cloudbuild.yaml', 'hack', 'tests', 'SECURITY_CONTACTS',
@@ -71,9 +72,9 @@ class TestUtils(unittest.TestCase):
                    'NOTICE', 'CONTRIBUTING.md', 'pkg', 'OWNERS',
                    'CHANGELOG.md']
 
-        resalt = utils.set_directory_path(some_directory,
+        result = utils.set_directory_path(some_directory,
                                           target_path=test_dir1)
-        assert os.listdir(resalt) == listdir
+        self.assertEqual(sorted(os.listdir(result)), sorted(listdir))
         shutil.rmtree(test_dir1)
 
     def test_get_archive_from_github_url(*_, **__):
