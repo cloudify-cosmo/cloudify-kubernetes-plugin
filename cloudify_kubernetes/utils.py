@@ -795,23 +795,26 @@ def get_archive_from_github_url(path):
         download_url = ARCHIVE_PATH.format(folder_path, branch)
         return download_url
     else:
-        raise NonRecoverableError('Unsupported argument: {}'.format(path))
+        raise NonRecoverableError(
+            'Unsupported argument: {}.'
+            'for Kustomize directory. '
+            'At the moment, only Github refs are supported'.format(path))
 
 
-def set_directory_path(directory_path=None, target_path=None):
-    if not directory_path:
-        directory_path = ctx.node.properties['kustomize']
+def set_directory_path(dir_path=None, target_path=None):
+    if not dir_path:
+        dir_path = ctx.node.properties['kustomize']
 
     if not target_path:
         target_path = get_node_instance_dir()
-    if 'github' in directory_path .split('/')[0]:
-        download_url = get_archive_from_github_url(directory_path)
+    if 'github' in dir_path.split('/')[0]:
+        download_url = get_archive_from_github_url(dir_path)
         tmp_file = get_shared_resource(download_url)
         copy_directory(tmp_file, target_path)
         remove_directory(tmp_file)
-    elif os.path.isabs(directory_path):
-        ctx.download_resource(directory_path, target_path=target_path)
     else:
-        raise NonRecoverableError('Unsupported argument: {}'
-                                  .format(directory_path))
+        raise NonRecoverableError(
+            'Unsupported argument: {}. '
+            'for Kustomize directory. '
+            'At the moment, only Github refs are supported'.format(dir_path))
     return target_path

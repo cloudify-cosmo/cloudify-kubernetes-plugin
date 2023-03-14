@@ -66,11 +66,10 @@ class TestUtils(unittest.TestCase):
         some_directory = 'github.com/kubernetes-sigs/aws-ebs-csi-driver/' \
                          'deploy/kubernetes/overlays/stable/?ref=release-1.14'
         listdir = ['cloudbuild.yaml', 'hack', 'tests', 'SECURITY_CONTACTS',
-                   'LICENSE', 'README.md', 'examples', 'docs',
+                   'LICENSE', 'README.md', 'examples', 'docs', 'CHANGELOG.md',
                    'code-of-conduct.md', 'deploy', 'cmd', 'THIRD-PARTY',
                    'go.mod', 'Dockerfile', 'charts', 'Makefile', 'go.sum',
-                   'NOTICE', 'CONTRIBUTING.md', 'pkg', 'OWNERS',
-                   'CHANGELOG.md']
+                   'NOTICE', 'CONTRIBUTING.md', 'pkg', 'OWNERS']
 
         result = utils.set_directory_path(some_directory,
                                           target_path=test_dir1)
