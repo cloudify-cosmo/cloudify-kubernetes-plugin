@@ -16,6 +16,7 @@ import os
 import sys
 import json
 from deepdiff import DeepDiff
+from urllib.parse import urlparse
 from tempfile import NamedTemporaryFile
 from collections import (
     Mapping,
@@ -36,6 +37,8 @@ except ImportError:
     RELATIONSHIP_INSTANCE = 'relationship-instance'
 
 from cloudify_kubernetes_sdk.state import Resource
+from cloudify_common_sdk.utils import get_node_instance_dir
+from cloudify_common_sdk.resource_downloader import get_shared_resource
 from cloudify_azure_sdk.client import AKSConnection
 
 from ._compat import text_type
@@ -69,6 +72,7 @@ CLUSTER_TYPES = ['cloudify.nodes.aws.eks.Cluster',
                  'cloudify.nodes.azure.compute.ManagedCluster']
 CLUSTER_REL = 'cloudify.relationships.kubernetes.connected_to_shared_cluster'
 DEFINITION_ADDITIONS = 'definitions_additions'
+ARCHIVE_PATH = 'https://{}/archive/refs/heads/{}.zip'
 
 
 def merge_definitions(old, new):
@@ -778,3 +782,34 @@ def update_with_additions(resource_definition, additions):
 
 def check_drift(previous, current):
     return DeepDiff(Resource(previous).state, Resource(current).state)
+
+
+def get_archive_from_github_url(path):
+    parsed = urlparse(path)
+    if parsed.path.startswith('github'):
+        folder_path = '/'.join(parsed.path.split('/')[0:3])
+        branch = parsed.query.split('=')[-1]
+        download_url = ARCHIVE_PATH.format(folder_path, branch)
+        return download_url
+    else:
+        raise NonRecoverableError('Unsupported argument: {}'.format(path))
+
+
+def set_directory_path(directory_path=None, target_path=None):
+    if not directory_path:
+        directory_path = ctx.node.properties['kustomize']
+
+    if not target_path:
+        target_path = get_node_instance_dir()
+    if 'github' in directory_path .split('/')[0]:
+        download_url = get_archive_from_github_url(directory_path)
+        get_shared_resource(download_url, target_path)
+        print(os.listdir(target_path))
+
+    elif os.path.isabs(directory_path):
+        ctx.download_resource(directory_path, target_path=target_path)
+    else:
+        raise NonRecoverableError('Unsupported argument: {}'
+                                  .format(directory_path))
+    return target_path
+

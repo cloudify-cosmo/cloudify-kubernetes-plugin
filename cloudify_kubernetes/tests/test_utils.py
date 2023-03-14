@@ -15,6 +15,7 @@
 import os
 import json
 import unittest
+from tempfile import mkdtemp
 from mock import (MagicMock, mock_open, patch)
 
 from cloudify.state import current_ctx
@@ -51,8 +52,69 @@ spec: d
 ---
 """
 
+test_dir1 = mkdtemp(dir='/project')
+
 
 class TestUtils(unittest.TestCase):
+
+    @patch('cloudify_kubernetes.utils.get_node_instance_dir',
+           return_value=test_dir1)
+    def test_set_directory_path(*_, **__):
+
+
+        some_directory = 'github.com/kubernetes-sigs/aws-ebs-csi-driver' \
+                         '/deploy/kubernetes/overlays/stable/?ref=release-1.14'
+
+        _ctx = MockCloudifyContext(
+            node_id="test_id",
+            node_name="test_name",
+            deployment_id="test_name",
+            properties={
+                'kustomize': some_directory
+            },
+        )
+        listdir = ['cloudbuild.yaml',
+                   '.gitignore',
+                   'hack',
+                   'tests',
+                   'SECURITY_CONTACTS',
+                   'LICENSE',
+                   'README.md',
+                   'examples',
+                   'docs',
+                   '.golangci.yml',
+                   '.github',
+                   'code-of-conduct.md',
+                   'deploy',
+                   'cmd',
+                   'THIRD-PARTY',
+                   'go.mod',
+                   'Dockerfile',
+                   'charts',
+                   'Makefile',
+                   'go.sum',
+                   'NOTICE',
+                   'CONTRIBUTING.md',
+                   'pkg',
+                   'OWNERS',
+                   'CHANGELOG.md'
+                   ]
+
+        resalt = utils.set_directory_path(some_directory,
+                                          target_path=test_dir1)
+        print(resalt)
+        print(test_dir1)
+        assert os.listdir(resalt) == listdir
+
+    def test_get_archive_from_github_url(*_, **__):
+
+        some_directory = 'github.com/kubernetes-sigs/aws-ebs-csi-driver' \
+                         '/deploy/kubernetes/overlays/stable/?ref=release-1.14'
+
+        fake_git_url = 'https://github.com/kubernetes-sigs/' \
+                       'aws-ebs-csi-driver/archive/refs/heads/release-1.14.zip'
+        resalt = utils.get_archive_from_github_url(some_directory)
+        assert resalt == fake_git_url
 
     def _assert_mapping(self, mapping):
         self.assertTrue(
