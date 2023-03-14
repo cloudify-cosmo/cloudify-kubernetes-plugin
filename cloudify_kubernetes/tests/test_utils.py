@@ -53,7 +53,7 @@ spec: d
 ---
 """
 
-test_dir1 = mkdtemp(dir='/project')
+test_dir1 = mkdtemp()
 
 
 class TestUtils(unittest.TestCase):
@@ -73,7 +73,6 @@ class TestUtils(unittest.TestCase):
 
         resalt = utils.set_directory_path(some_directory,
                                           target_path=test_dir1)
-        print(os.listdir(resalt))
         assert os.listdir(resalt) == listdir
         shutil.rmtree(test_dir1)
 
