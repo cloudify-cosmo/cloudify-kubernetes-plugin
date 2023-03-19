@@ -14,7 +14,9 @@
 
 import os
 import json
+import shutil
 import unittest
+from tempfile import mkdtemp
 from mock import (MagicMock, mock_open, patch)
 
 from cloudify.state import current_ctx
@@ -53,6 +55,35 @@ spec: d
 
 
 class TestUtils(unittest.TestCase):
+
+    @patch('cloudify_kubernetes.utils.get_node_instance_dir')
+    @patch('cloudify_common_sdk.utils.get_deployment_dir')
+    def test_set_directory_path(self, *args, **__):
+        get_node_instance_dir = args[1]
+        test_dir1 = mkdtemp()
+        get_node_instance_dir.return_value = test_dir1
+
+        some_directory = 'github.com/kubernetes-sigs/aws-ebs-csi-driver/' \
+                         'deploy/kubernetes/overlays/stable/?ref=release-1.14'
+        listdir = ['cloudbuild.yaml', 'hack', 'tests', 'SECURITY_CONTACTS',
+                   'LICENSE', 'README.md', 'examples', 'docs', 'CHANGELOG.md',
+                   'code-of-conduct.md', 'deploy', 'cmd', 'THIRD-PARTY',
+                   'go.mod', 'Dockerfile', 'charts', 'Makefile', 'go.sum',
+                   'NOTICE', 'CONTRIBUTING.md', 'pkg', 'OWNERS']
+
+        result = utils.set_directory_path(some_directory,
+                                          target_path=test_dir1)
+        self.assertEqual(sorted(os.listdir(result)), sorted(listdir))
+        shutil.rmtree(test_dir1)
+
+    def test_get_archive_from_github_url(*_, **__):
+        some_directory = 'github.com/kubernetes-sigs/aws-ebs-csi-driver' \
+                         '/deploy/kubernetes/overlays/stable/?ref=release-1.14'
+        fake_git_url = 'https://github.com/kubernetes-sigs/' \
+                       'aws-ebs-csi-driver/archive/refs/heads/release-1.14.zip'
+
+        resalt = utils.get_archive_from_github_url(some_directory)
+        assert resalt == fake_git_url
 
     def _assert_mapping(self, mapping):
         self.assertTrue(
