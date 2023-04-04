@@ -176,3 +176,4 @@
   - Check Drift Workflow
   - Check Status Workflow
 2.13.24: Support Azure Service Account Authentication.
+2.13.25: add __version__.py file in cloudify_kubernetes folder.
