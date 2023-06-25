@@ -17,10 +17,6 @@ import sys
 import json
 from deepdiff import DeepDiff
 from tempfile import NamedTemporaryFile
-from collections import (
-    Mapping,
-    OrderedDict
-)
 
 import yaml
 from cloudify import ctx
@@ -38,12 +34,24 @@ except ImportError:
 from cloudify_kubernetes_sdk.state import Resource
 from cloudify_azure_sdk.client import AKSConnection
 
-from ._compat import text_type
+from ._compat import text_type, PY311
 from .k8s import (get_mapping,
                   KubernetesApiMapping,
                   KubernetesResourceDefinition,
                   KuberentesMappingNotFoundError,
                   KuberentesInvalidDefinitionError)
+
+try:
+    from collections import (
+        Mapping,
+        OrderedDict
+    )
+except ImportError:
+    if PY311:
+        from collections.abc import Mapping
+        from collections import OrderedDict
+    else:
+        raise
 
 DEFAULT_NAMESPACE = 'default'
 NODE_PROPERTY_FILE_RESOURCE_PATH = 'resource_path'
