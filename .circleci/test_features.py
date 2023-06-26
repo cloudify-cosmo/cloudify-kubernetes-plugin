@@ -15,7 +15,9 @@
 
 import os
 import json
+import yaml
 import base64
+import tempfile
 from os import environ
 from contextlib import contextmanager
 
@@ -47,7 +49,7 @@ def test_update(*_, **__):
         # Install Cloud Watch Deployment
         executions_start('install', deployment_id, 300)
         after_install = get_pod_info()
-        params = json.dumps({
+        update_params = {
             "kind": "Pod",
             "metadata": {
                 "name": "nginx-test-pod"
@@ -60,18 +62,18 @@ def test_update(*_, **__):
                     }
                 ]
             }
-        })
-        params = 'resource_definition_changes=\'' + params + '\''
-        params = params.replace('{', '{{')
-        params = params.replace('}', '}}')
-        ni = node_instance_by_name('resource')
-        params = params + ' -p node_instance_id={}'.format(ni['id'])
+        }
+        params = {'resource_definition_changes': update_params}
+        tmp = tempfile.NamedTemporaryFile(delete=false, mode='w', suffix='.yaml')
+        yaml.dump(params, tmp)
+        tmp.close()
         executions_start(
             'update_resource_definition',
             deployment_id,
             300,
-            params=params
+            params=tmp
         )
+        os.remove(tmp.name)
         after_update = get_pod_info()
         assert after_install['spec']['containers'][0]['image'] == 'nginx:stable'
         assert after_update['spec']['containers'][0]['image'] == 'nginx:latest'
@@ -82,7 +84,8 @@ def test_update(*_, **__):
 
 
 def setup_cli():
-    cluster_name = "kube-{}-cluster".format(os.environ['CIRCLE_BUILD_NUM'])
+    cluster_name = runtime_properties(
+        node_instance_by_name('kubernetes-cluster')['id'])['name']
     capabilities = cloudify_exec('cfy deployments capabilities gcp-gke')
     cloudify_exec('cfy secrets create -u -s {} kubernetes_endpoint'.format(
         capabilities['endpoint']['value']), get_json=False)
@@ -96,7 +99,8 @@ def setup_cli():
 
 
 def get_pod_info():
-    cluster_name = "kube-{}-cluster".format(os.environ['CIRCLE_BUILD_NUM'])
+    cluster_name = runtime_properties(
+        node_instance_by_name('kubernetes-cluster')['id'])['name']
     handle_process(
         'gcloud container clusters get-credentials {} --region us-west1-a'
         .format(cluster_name))
@@ -117,3 +121,11 @@ def nodes():
 
 def node_instances():
     return cloudify_exec('cfy node-instances list')
+
+
+def node_instance(node_instance_id):
+    return cloudify_exec('cfy node-instances get {}'.format(node_instance_id))
+
+
+def runtime_properties(node_instance_id):
+    return node_instance(node_instance_id)['runtime_properties']
