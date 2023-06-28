@@ -18,7 +18,7 @@ import cloudify_importer # noqa
 from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
-from .._compat import PY2
+from .._compat import PY2, PY311
 from ..utils import (get_node,
                      get_instance,
                      with_rest_client,
@@ -33,7 +33,14 @@ try:
     from cloudify_types.shared_resource.constants import \
         WORKFLOW_EXECUTION_TIMEOUT
 except ImportError:
-    if not PY2:
+    if PY311:
+        from mgmtworker.cloudify_types.polling import poll_with_timeout
+        from mgmtworker.cloudify_types.component.polling import (
+            verify_execution_state,
+            is_all_executions_finished)
+        from mgmtworker.cloudify_types.shared_resource.constants import \
+            WORKFLOW_EXECUTION_TIMEOUT
+    elif not PY2:
         raise
 
 

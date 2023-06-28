@@ -19,6 +19,7 @@
 import sys
 import inspect
 PY2 = sys.version_info[0] == 2
+PY311 = sys.version_info[0] == 3 and sys.version_info[1] == 11
 
 if PY2:
     text_type = unicode

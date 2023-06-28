@@ -168,3 +168,5 @@ local-storage/
 **/*.wgn
 
 .vs/
+gcp.json
+pydoc/
