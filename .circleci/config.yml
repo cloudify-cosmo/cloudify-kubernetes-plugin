@@ -73,11 +73,16 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - kubernetes_integration_tests_py3:
           requires:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -114,19 +119,14 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
-      - wagonorb/arch64_wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/rhel_wagon:
+      - wagonorb/wagon_311:
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
       - kubernetes_integration_tests_py3:
           requires:
             - wagonorb/wagon
-            - wagonorb/arch64_wagon
-            - wagonorb/rhel_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
