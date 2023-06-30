@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   node: cloudify/public-unittest-orb@volatile
-  wagonorb: cloudify/wagon-bulder-orb@volatile
+  wagonorb: cloudify/wagon-bulder-orb@2.5.12
   releaseorb: cloudify/release-orb@volatile
   managerorb: cloudify/manager-orb@volatile
 
@@ -27,7 +27,7 @@ executors:
 commands:
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *centos-Core*x86_64.wgn)  ~/project/plugin.yaml
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *uni-py311-none-linux_x86_64.wgn*)  ~/project/plugin.yaml
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN ansible
       - run: ecosystem-test upload-plugin -PN gcp
@@ -73,11 +73,16 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
+      - wagonorb/wagon_311:
+          filters:
+            branches:
+              only: /([0-9\.]*\-build|master|dev)/
       - kubernetes_integration_tests_py3:
           requires:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
@@ -114,19 +119,14 @@ workflows:
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
-      - wagonorb/arch64_wagon:
-          filters:
-            branches:
-              only: /([0-9\.]*\-build|master|dev)/
-      - wagonorb/rhel_wagon:
+      - wagonorb/wagon_311:
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
       - kubernetes_integration_tests_py3:
           requires:
             - wagonorb/wagon
-            - wagonorb/arch64_wagon
-            - wagonorb/rhel_wagon
+            - wagonorb/wagon_311
           filters:
             branches:
               only: /([0-9\.]*\-build|master)/
