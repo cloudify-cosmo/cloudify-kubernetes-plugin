@@ -27,7 +27,7 @@ executors:
 commands:
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *uni-py311-none-linux_x86_64.wgn*)  ~/project/plugin.yaml
+      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*)  ~/project/plugin.yaml
       - run: ecosystem-test upload-plugin -PN utilities
       - run: ecosystem-test upload-plugin -PN ansible
       - run: ecosystem-test upload-plugin -PN gcp
