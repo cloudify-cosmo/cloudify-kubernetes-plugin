@@ -78,6 +78,8 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master|dev)/
       - kubernetes_integration_tests_py3:
+          context: 
+            - plugins-inputs
           requires:
             - wagonorb/wagon
             - wagonorb/arch64_wagon
@@ -124,6 +126,8 @@ workflows:
             branches:
               only: /([0-9\.]*\-build|master)/
       - kubernetes_integration_tests_py3:
+          context: 
+            - plugins-inputs
           requires:
             - wagonorb/wagon
             - wagonorb/wagon_311
