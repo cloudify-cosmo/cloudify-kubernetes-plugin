@@ -32,7 +32,8 @@ try:
         is_all_executions_finished)
     from cloudify_types.shared_resource.constants import \
         WORKFLOW_EXECUTION_TIMEOUT
-except ImportError:
+except ImportError as e:
+    ctx.logger.error("****ERROR: {}***".format(e))
     if PY311:
         from mgmtworker.cloudify_types.polling import poll_with_timeout
         from mgmtworker.cloudify_types.component.polling import (
@@ -41,7 +42,7 @@ except ImportError:
         from mgmtworker.cloudify_types.shared_resource.constants import \
             WORKFLOW_EXECUTION_TIMEOUT
     elif not PY2:
-        raise
+        raise e
 
 
 @with_rest_client
