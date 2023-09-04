@@ -75,6 +75,7 @@ jobs:
     steps:
       - checkout
       - managerorb/create_manager_container_latest
+      - setup_manager
       - prepare_test_manager
       - run_gke_test
 
