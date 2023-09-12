@@ -113,7 +113,7 @@ workflows:
             - wagonorb/wagon_311
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RND-1248-k-8-s-plugin-nightly-failing)/
       - releaseorb/release:
           filters:
             branches:
