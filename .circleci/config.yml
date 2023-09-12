@@ -51,7 +51,7 @@ commands:
 
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-remote-test-manager -es gcp_credentials=$gcp_credentials -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*)  ~/project/plugin.yaml
+      - run: ecosystem-test prepare-remote-test-manager -es gcp_credentials=$gcp_credentials -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin.yaml
       - run: ecosystem-test remote-upload-plugin -PN utilities
       - run: ecosystem-test remote-upload-plugin -PN ansible
       - run: ecosystem-test remote-upload-plugin -PN gcp
