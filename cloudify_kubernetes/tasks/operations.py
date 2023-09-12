@@ -95,9 +95,14 @@ def _resource_update(client, api_mapping, resource_definition, **kwargs):
 
 
 def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
+    ctx.logger.info('*** _file_resource_create')
     result = _check_if_resource_exists(
         client, api_mapping, resource_definition, **kwargs)
+    ctx.logger.info('*** after _check_if_resource_exists: {}'.format(result))
+
     handle_existing_resource(result, resource_definition)
+    ctx.logger.info('*** after handle_existing_resource')
+
     perform_task = ctx.instance.runtime_properties.get('__perform_task',
                                                        False)
     if perform_task:
@@ -107,8 +112,14 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
             resource_definition,
             **kwargs
         )
+    ctx.logger.info('*** after _do_resource_create')
+
     path = retrieve_path(kwargs)
+    ctx.logger.info('*** after retrieve_path: {}'.format(path))
+
     store_result_for_retrieve_id(result, path)
+    ctx.logger.info('*** after store_result_for_retrieve_id')
+
 
 
 def _file_resource_update(client, api_mapping, resource_definition, **kwargs):
