@@ -24,12 +24,15 @@ from contextlib import contextmanager
 import pytest
 
 from ecosystem_tests.dorkl.commands import handle_process
-from ecosystem_tests.dorkl.cloudify_api import cloudify_exec
 
 from ecosystem_tests.nerdl.api import (
+    create_secret,
+    deployment_exists,
+    get_node_instance,
+    list_node_instances,
     upload_blueprint,
     create_deployment,
-    wait_for_workflow,
+    wait_for_install,
     cleanup_on_failure)
 
 
@@ -54,7 +57,7 @@ def test_update(*_, **__):
             }
         )
         # Install Cloud Watch Deployment
-        wait_for_workflow(deployment_id, 'install', 300)
+        wait_for_install(deployment_id, 300)
         after_install = get_pod_info()
         update_params = {
             "kind": "Pod",
@@ -85,7 +88,7 @@ def test_update(*_, **__):
         assert after_install['spec']['containers'][0]['image'] == 'nginx:stable'
         assert after_update['spec']['containers'][0]['image'] == 'nginx:latest'
         # Uninstall Cloud Watch Deployment
-        wait_for_workflow(deployment_id, 'uninstall', 300)
+        wait_for_uninstall(deployment_id, 300)
     except:
         cleanup_on_failure(deployment_id)
 
@@ -93,9 +96,8 @@ def test_update(*_, **__):
 def setup_cli():
     cluster_name = runtime_properties(
         node_instance_by_name('kubernetes-cluster')['id'])['name']
-    capabilities = cloudify_exec('cfy deployments capabilities gcp-gke')
-    cloudify_exec('cfy secrets create -u -s {} kubernetes_endpoint'.format(
-        capabilities['endpoint']['value']), get_json=False)
+    capabilities = get_capabilities('gcp-gke')
+    create_secret('kubernetes_endpoint', capabilities['endpoint']['value'])
     with open('gcp.json', 'wb') as outfile:
         creds = base64.b64decode(os.environ['gcp_credentials'])
         outfile.write(creds)
@@ -103,6 +105,11 @@ def setup_cli():
     handle_process(
         'gcloud container clusters get-credentials {} --region us-west1-a'
         .format(cluster_name))
+
+
+def get_capabilities(dep_id):
+    dep = deployment_exists(dep_id)
+    return dep.capabilities
 
 
 def get_pod_info():
@@ -122,17 +129,9 @@ def node_instance_by_name(name):
     raise Exception('No node instances found.')
 
 
-def nodes():
-    return cloudify_exec('cfy nodes list')
-
-
 def node_instances():
-    return cloudify_exec('cfy node-instances list')
-
-
-def node_instance(node_instance_id):
-    return cloudify_exec('cfy node-instances get {}'.format(node_instance_id))
+    return list_node_instances(TEST_ID)
 
 
 def runtime_properties(node_instance_id):
-    return node_instance(node_instance_id)['runtime_properties']
+    return get_node_instance(node_instance_id)['runtime_properties']
