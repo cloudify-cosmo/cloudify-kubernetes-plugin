@@ -121,7 +121,6 @@ def _file_resource_create(client, api_mapping, resource_definition, **kwargs):
     ctx.logger.info('*** after store_result_for_retrieve_id')
 
 
-
 def _file_resource_update(client, api_mapping, resource_definition, **kwargs):
 
     result = _do_resource_update(
