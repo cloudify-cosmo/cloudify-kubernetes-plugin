@@ -59,13 +59,7 @@ commands:
 
   run_gke_test:
     steps:
-      - run: echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-      - run: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-      - run: sudo apt-get update
-      - run: sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
-      - run: sudo apt-get install kubectl
-      - run: gcloud config set project trammell-project
-      - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/kubernetes/gcp-gke/blueprint.yaml --test-id=gcp-gke  -i resource_prefix=kube-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 --nested-test=.circleci/test_features.py
+       - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/kubernetes/gcp-gke/blueprint.yaml --test-id=gcp-gke  -i resource_prefix=kube-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 --nested-test=.circleci/test_features.py
 
 jobs:
   kubernetes_integration_tests_py3:
@@ -74,7 +68,6 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - managerorb/create_manager_container_latest
       - setup_manager
       - prepare_test_manager
       - run_gke_test

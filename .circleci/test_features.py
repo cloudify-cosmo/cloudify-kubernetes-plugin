@@ -23,13 +23,15 @@ from contextlib import contextmanager
 
 import pytest
 
-from ecosystem_tests.dorkl import cleanup_on_failure
 from ecosystem_tests.dorkl.commands import handle_process
-from ecosystem_tests.dorkl.cloudify_api import (
-    cloudify_exec,
-    blueprints_upload,
-    deployments_create,
-    executions_start)
+from ecosystem_tests.dorkl.cloudify_api import cloudify_exec
+
+from ecosystem_tests.nerdl.api import (
+    upload_blueprint,
+    create_deployment,
+    wait_for_workflow,
+    cleanup_on_failure)
+
 
 TEST_ID = environ.get('__ECOSYSTEM_TEST_ID', 'plugin-examples')
 
@@ -40,14 +42,19 @@ def test_update(*_, **__):
     setup_cli()
     try:
         # Upload Cloud Watch Blueprint
-        blueprints_upload(
+        upload_blueprint(
             'examples/file-test.yaml',
             deployment_id)
         # Create Cloud Watch Deployment with Instance ID input
-        deployments_create(
-            deployment_id, {"resource_path": "resources/pod.yaml"})
+        create_deployment(
+            deployment_id,
+            deployment_id,
+            {
+                "resource_path": "resources/pod.yaml"
+            }
+        )
         # Install Cloud Watch Deployment
-        executions_start('install', deployment_id, 300)
+        wait_for_workflow(deployment_id, 'install', 300)
         after_install = get_pod_info()
         update_params = {
             "kind": "Pod",
@@ -67,9 +74,9 @@ def test_update(*_, **__):
         tmp = tempfile.NamedTemporaryFile(delete=false, mode='w', suffix='.yaml')
         yaml.dump(params, tmp)
         tmp.close()
-        executions_start(
-            'update_resource_definition',
+        wait_for_workflow(
             deployment_id,
+            'update_resource_definition',
             300,
             params=tmp
         )
@@ -78,7 +85,7 @@ def test_update(*_, **__):
         assert after_install['spec']['containers'][0]['image'] == 'nginx:stable'
         assert after_update['spec']['containers'][0]['image'] == 'nginx:latest'
         # Uninstall Cloud Watch Deployment
-        executions_start('uninstall', deployment_id, 300)
+        wait_for_workflow(deployment_id, 'uninstall', 300)
     except:
         cleanup_on_failure(deployment_id)
 
