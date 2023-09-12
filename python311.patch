@@ -123,7 +123,7 @@ index f4d4d02..47b9aae 100755
                'cloudify_kubernetes.tasks',
 -              'cloudify_kubernetes.tasks.nested_resources'],
 +              'cloudify_kubernetes.tasks.nested_resources',
-+              'pydoc'],
++              'pydoc', 'webbrowser'],
      license='LICENSE',
      install_requires=install_requires
  )
