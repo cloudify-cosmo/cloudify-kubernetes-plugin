@@ -27,7 +27,7 @@ from ecosystem_tests.dorkl.commands import handle_process
 
 from ecosystem_tests.nerdl.api import (
     create_secret,
-    deployment_exists,
+    with_client,
     get_node_instance,
     list_node_instances,
     upload_blueprint,
@@ -107,8 +107,9 @@ def setup_cli():
         .format(cluster_name))
 
 
-def get_capabilities(dep_id):
-    dep = deployment_exists(dep_id)
+@with_client
+def get_capabilities(dep_id, client):
+    dep = client.deployments.capabilities.get(dep_id)
     return dep.capabilities
 
 
