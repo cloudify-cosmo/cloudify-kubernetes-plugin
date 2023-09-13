@@ -4,7 +4,6 @@ orbs:
   node: cloudify/public-unittest-orb@volatile
   wagonorb: cloudify/wagon-bulder-orb@volatile
   releaseorb: cloudify/release-orb@volatile
-  managerorb: cloudify/manager-orb@volatile
 
 checkout:
   post:
@@ -25,22 +24,40 @@ executors:
       image: ubuntu-2004:202201-02
 
 commands:
+
+  setup_manager:
+    steps:
+      - run: |
+          if [[ -z "${CLOUDIFY_HOST}" ]]; then
+              exit 1
+          fi
+      - run: |
+          if [[ -z "${CLOUDIFY_TENANT}" ]] && [ -z "${CIRCLE_PROJECT_REPONAME}" ]; then
+              exit 1
+          fi
+      - run: |
+          if [[ -z "${CLOUDIFY_TOKEN}" ]]; then
+              exit 1
+          fi
+      - run: |
+          response=$(curl --write-out '%{http_code}' --silent --insecure --header "Tenant: ${CLOUDIFY_TENANT}" --header "Authentication-Token: ${CLOUDIFY_TOKEN}" https://$CLOUDIFY_HOST/api/v3.1/status --output /dev/null)
+          if [[ $response != 200 ]]; then
+              echo "Failed to get manager status";
+              exit 1
+          fi
+      - run: pip3 install https://github.com/cloudify-incubator/cloudify-ecosystem-test/archive/refs/heads/master.zip
+      - run: git submodule update --init --recursive --remote
+
+
   prepare_test_manager:
     steps:
-      - run: ecosystem-test prepare-test-manager -l $TEST_LICENSE -es gcp_credentials=$gcp_credentials --yum-package python-netaddr --yum-package git -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*)  ~/project/plugin.yaml
-      - run: ecosystem-test upload-plugin -PN utilities
-      - run: ecosystem-test upload-plugin -PN ansible
-      - run: ecosystem-test upload-plugin -PN gcp
+      - run: ecosystem-test prepare-remote-test-manager -es gcp_credentials=$gcp_credentials -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin.yaml
+      - run: curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - run: sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
   run_gke_test:
     steps:
-      - run: echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-      - run: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-      - run: sudo apt-get update
-      - run: sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
-      - run: sudo apt-get install kubectl
-      - run: gcloud config set project trammell-project
-      - run: ecosystem-test local-blueprint-test -b examples/blueprint-examples/kubernetes/gcp-gke/blueprint.yaml --test-id=gcp-gke  -i resource_prefix=kube-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 --nested-test=.circleci/test_features.py
+       - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/kubernetes/gcp-gke/blueprint.yaml --test-id=gcp-gke  -i resource_prefix=kube-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 --nested-test=.circleci/test_features.py
 
 jobs:
   kubernetes_integration_tests_py3:
@@ -49,7 +66,9 @@ jobs:
       CLOUDIFY_SSL_TRUST_ALL: true
     steps:
       - checkout
-      - managerorb/create_manager_container_latest
+      - attach_workspace:
+          at: workspace
+      - setup_manager
       - prepare_test_manager
       - run_gke_test
 
@@ -87,7 +106,7 @@ workflows:
             - wagonorb/wagon_311
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev)/
+              only: /([0-9\.]*\-build|master|dev|RND-1248-k-8-s-plugin-nightly-failing)/
       - releaseorb/release:
           filters:
             branches:
@@ -95,6 +114,8 @@ workflows:
           requires:
             - node/unittests_job
             - wagonorb/wagon
+            - wagonorb/wagon_311
+            - wagonorb/arch64_wagon
             - wagonorb/rhel_wagon
             - kubernetes_integration_tests_py3
       - releaseorb/merge_docs_job:

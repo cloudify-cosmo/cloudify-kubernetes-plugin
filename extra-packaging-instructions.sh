@@ -6,5 +6,11 @@ then
 def get_doc(*args):
     return ''
 EOF
+    mkdir -p ./webbrowser
+    touch ./webbrowser/__init__.py
+    cat <<EOF > ./webbrowser/__init__.py
+def register(*args, **kwargs):
+    return ''
+EOF
     git apply python311.patch
 fi
