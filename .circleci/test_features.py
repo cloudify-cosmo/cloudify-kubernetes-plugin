@@ -98,14 +98,15 @@ def setup_cli():
         node_instance_by_name('kubernetes-cluster')['id'])['name']
     capabilities = get_capabilities('gcp-gke')
     logger.info('capabilities: {}'.format(capabilities))
-    create_secret('kubernetes_endpoint', capabilities['endpoint']['value'])
+    create_secret('kubernetes_endpoint', capabilities['endpoint'])
     with open('gcp.json', 'wb') as outfile:
         creds = base64.b64decode(os.environ['gcp_credentials'])
         outfile.write(creds)
     handle_process('gcloud auth activate-service-account --key-file gcp.json')
     handle_process(
-        'gcloud container clusters get-credentials {} --region us-west1-a'
-        .format(cluster_name))
+        'gcloud container clusters get-credentials {} '
+        '--region us-west1-a --project {}'
+        .format(cluster_name, 'trammell-project'))
 
 
 @with_client

@@ -52,6 +52,8 @@ commands:
   prepare_test_manager:
     steps:
       - run: ecosystem-test prepare-remote-test-manager -es gcp_credentials=$gcp_credentials -p $(find ~/project/workspace/build/ -name *manylinux-py311-none-linux_x86_64.wgn*) ~/project/plugin.yaml
+      - run: curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      - run: sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
   run_gke_test:
     steps:
