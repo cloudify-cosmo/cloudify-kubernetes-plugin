@@ -83,19 +83,19 @@ workflows:
       - wagonorb/wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|dev|RND-1248-k-8-s-plugin-nightly-failing)/
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/arch64_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|dev|RND-1248-k-8-s-plugin-nightly-failing)/
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/rhel_wagon:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|dev|RND-1248-k-8-s-plugin-nightly-failing)/
+              only: /([0-9\.]*\-build|master|dev)/
       - wagonorb/wagon_311:
           filters:
             branches:
-              only: /([0-9\.]*\-build|master|dev|dev|RND-1248-k-8-s-plugin-nightly-failing)/
+              only: /([0-9\.]*\-build|master|dev)/
       - kubernetes_integration_tests_py3:
           context: 
             - plugins-inputs
