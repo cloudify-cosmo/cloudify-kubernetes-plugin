@@ -24,7 +24,7 @@ from contextlib import contextmanager
 import pytest
 
 from ecosystem_tests.dorkl.commands import handle_process
-
+from ecosystem_tests.ecosystem_tests_cli.logger import logger
 from ecosystem_tests.nerdl.api import (
     create_secret,
     with_client,
@@ -97,6 +97,7 @@ def setup_cli():
     cluster_name = runtime_properties(
         node_instance_by_name('kubernetes-cluster')['id'])['name']
     capabilities = get_capabilities('gcp-gke')
+    logger.info('capabilities: {}'.format(capabilities))
     create_secret('kubernetes_endpoint', capabilities['endpoint']['value'])
     with open('gcp.json', 'wb') as outfile:
         creds = base64.b64decode(os.environ['gcp_credentials'])
