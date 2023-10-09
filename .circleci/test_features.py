@@ -104,7 +104,7 @@ def setup_cli():
         creds = base64.b64decode(os.environ['gcp_credentials'])
         outfile.write(creds)
     handle_process('gcloud auth activate-service-account --key-file gcp.json')
-    handle_process('gcloud components install gke-gcloud-auth-plugin')
+    # handle_process('gcloud components install gke-gcloud-auth-plugin')
     handle_process(
         'gcloud container clusters get-credentials {} '
         '--region us-west1-a --project {}'.format(
