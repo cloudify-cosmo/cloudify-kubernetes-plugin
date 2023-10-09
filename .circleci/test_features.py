@@ -37,6 +37,7 @@ from ecosystem_tests.nerdl.api import (
 
 
 TEST_ID = environ.get('__ECOSYSTEM_TEST_ID', 'plugin-examples')
+environ['USE_GKE_GCLOUD_AUTH_PLUGIN'] = True
 
 
 @pytest.mark.dependency()
@@ -103,6 +104,7 @@ def setup_cli():
         creds = base64.b64decode(os.environ['gcp_credentials'])
         outfile.write(creds)
     handle_process('gcloud auth activate-service-account --key-file gcp.json')
+    handle_process('gcloud components install gke-gcloud-auth-plugin')
     handle_process(
         'gcloud container clusters get-credentials {} '
         '--region us-west1-a --project {}'.format(
