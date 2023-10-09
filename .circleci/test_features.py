@@ -37,7 +37,7 @@ from ecosystem_tests.nerdl.api import (
 
 
 TEST_ID = environ.get('__ECOSYSTEM_TEST_ID', 'plugin-examples')
-environ['USE_GKE_GCLOUD_AUTH_PLUGIN'] = True
+environ['USE_GKE_GCLOUD_AUTH_PLUGIN'] = 'true'
 
 
 @pytest.mark.dependency()
