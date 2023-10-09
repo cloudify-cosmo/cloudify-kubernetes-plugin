@@ -105,8 +105,8 @@ def setup_cli():
     handle_process('gcloud auth activate-service-account --key-file gcp.json')
     handle_process(
         'gcloud container clusters get-credentials {} '
-        '--region us-west1-a --project {}'
-        .format(cluster_name, 'trammell-project'))
+        '--region us-west1-a --project {}'.format(
+            cluster_name, 'trammell-project'))
 
 
 @with_client
@@ -119,8 +119,9 @@ def get_pod_info():
     cluster_name = runtime_properties(
         node_instance_by_name('kubernetes-cluster')['id'])['name']
     handle_process(
-        'gcloud container clusters get-credentials {} --region us-west1-a'
-        .format(cluster_name))
+        'gcloud container clusters get-credentials '
+        '{} --region us-west1-a --project trammell-project'.format(
+            cluster_name))
     return json.loads(
         handle_process('kubectl get pod nginx-test-pod --output="json"'))
 
