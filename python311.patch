@@ -1,134 +1,51 @@
+diff --git a/cloudify_kubernetes/__version__.py b/cloudify_kubernetes/__version__.py
+index 7345107..ef58aee 100644
+--- a/cloudify_kubernetes/__version__.py
++++ b/cloudify_kubernetes/__version__.py
+@@ -1 +1 @@
+-version = '2.13.27'
++version = '2.13.28'
 diff --git a/constraints.txt b/constraints.txt
-index 863be00..34de6a6 100644
+index 863be00..f63d8c6 100644
 --- a/constraints.txt
 +++ b/constraints.txt
-@@ -1,3 +1,4 @@
+@@ -1,3 +1 @@
 -cloudify-common>===6.4.2
 -git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types
--charset_normalizer===3.0.1
+ charset_normalizer===3.0.1
 \ No newline at end of file
-+cloudify-common>===7.0.0
-+# git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types
-+git+https://github.com/cloudify-cosmo/cloudify-manager.git@7.0.0-build#egg=cloudify-mgmtworker&subdirectory=mgmtworker
-+git+https://github.com/cloudify-cosmo/cloudify-agent.git@7.0.0-build#egg=cloudify-agent
 diff --git a/dev-requirements.txt b/dev-requirements.txt
-index 19732bb..cfe88eb 100644
+index 19732bb..e69de29 100644
 --- a/dev-requirements.txt
 +++ b/dev-requirements.txt
-@@ -1 +1,4 @@
+@@ -1 +0,0 @@
 -git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types
-+# cloudify-common>===7.0.0
-+# git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types
-+git+https://github.com/cloudify-cosmo/cloudify-manager.git@7.0.0-build#egg=cloudify-mgmtworker&subdirectory=mgmtworker
-+git+https://github.com/cloudify-cosmo/cloudify-agent.git@7.0.0-build#egg=cloudify-agent
-# diff --git a/pydoc/__init__.py b/pydoc/__init__.py
-# new file mode 100644
-# index 0000000..3676233
-# --- /dev/null
-# +++ b/pydoc/__init__.py
-# @@ -0,0 +1,3 @@
-# +
-# +def get_doc(*args):
-# +    return ''
-# diff --git a/python311.diff b/python311.diff
-# new file mode 100644
-# index 0000000..f1499f8
-# --- /dev/null
-# +++ b/python311.diff
-# @@ -0,0 +1,65 @@
-+diff --git a/constraints.txt b/constraints.txt
-+index 863be00..34de6a6 100644
-+--- a/constraints.txt
-++++ b/constraints.txt
-+@@ -1,3 +1,4 @@
-+-cloudify-common>===6.4.2
-+-git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types
-+-charset_normalizer===3.0.1
-+\ No newline at end of file
-++cloudify-common>===7.0.0
-++# git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types
-++git+https://github.com/cloudify-cosmo/cloudify-manager.git@7.0.0-build#egg=cloudify-mgmtworker&subdirectory=mgmtworker
-++git+https://github.com/cloudify-cosmo/cloudify-agent.git@7.0.0-build#egg=cloudify-agent
-+diff --git a/dev-requirements.txt b/dev-requirements.txt
-+index 19732bb..cfe88eb 100644
-+--- a/dev-requirements.txt
-++++ b/dev-requirements.txt
-+@@ -1 +1,4 @@
-+-git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types
-++# cloudify-common>===7.0.0
-++# git+https://github.com/cloudify-cosmo/cloudify-manager.git@6.4.2-build#egg=cloudify-types&subdirectory=cloudify_types
-++git+https://github.com/cloudify-cosmo/cloudify-manager.git@7.0.0-build#egg=cloudify-mgmtworker&subdirectory=mgmtworker
-++git+https://github.com/cloudify-cosmo/cloudify-agent.git@7.0.0-build#egg=cloudify-agent
-+diff --git a/examples/blueprint-examples b/examples/blueprint-examples
-+--- a/examples/blueprint-examples
-++++ b/examples/blueprint-examples
-+@@ -1 +1 @@
-+-Subproject commit 706cac79e74217733c4c4cf26032021ba55132f8
-++Subproject commit 706cac79e74217733c4c4cf26032021ba55132f8-dirty
-+diff --git a/setup.py b/setup.py
-+index f4d4d02..47b9aae 100755
-+--- a/setup.py
-++++ b/setup.py
-+@@ -32,8 +32,9 @@ def get_version():
-+ install_requires = [
-+     'cloudify-python-importer==0.2.1',
-+     'cloudify-common>=4.5',
-+-    'cloudify-types>=6.3.1',
-+-    'deepdiff==3.3.0',
-++    # 'cloudify-types>=6.3.1',
-++    'cloudify-mgmtworker',
-++    'deepdiff>=5.7.0',
-+     'cloudify-utilities-plugins-sdk>=0.0.112',  # Provides kubernetes and google-auth.
-+ ]
-+ 
-+@@ -48,7 +49,8 @@ setup(
-+     packages=['cloudify_kubernetes',
-+               'cloudify_kubernetes.k8s',
-+               'cloudify_kubernetes.tasks',
-+-              'cloudify_kubernetes.tasks.nested_resources'],
-++              'cloudify_kubernetes.tasks.nested_resources',
-++              'pydoc'],
-+     license='LICENSE',
-+     install_requires=install_requires
-+ )
-+diff --git a/test-requirements.txt b/test-requirements.txt
-+index 2904754..9a01c7b 100644
-+--- a/test-requirements.txt
-++++ b/test-requirements.txt
-+@@ -4,4 +4,4 @@ mock
-+ nose-testconfig
-+ nose==1.3.7
-+ nose-cov==1.6
-+-deepdiff==3.3.0
-++deepdiff>=5.7.0
+diff --git a/examples/blueprint-examples b/examples/blueprint-examples
+--- a/examples/blueprint-examples
++++ b/examples/blueprint-examples
+@@ -1 +1 @@
+-Subproject commit 706cac79e74217733c4c4cf26032021ba55132f8
++Subproject commit 706cac79e74217733c4c4cf26032021ba55132f8-dirty
 diff --git a/setup.py b/setup.py
-index f4d4d02..47b9aae 100755
+index f4d4d02..64097ce 100755
 --- a/setup.py
 +++ b/setup.py
-@@ -32,8 +32,9 @@ def get_version():
+@@ -31,10 +31,9 @@ def get_version():
+ 
  install_requires = [
      'cloudify-python-importer==0.2.1',
-     'cloudify-common>=4.5',
+-    'cloudify-common>=4.5',
 -    'cloudify-types>=6.3.1',
 -    'deepdiff==3.3.0',
-+    # 'cloudify-types>=6.3.1',
-+    'cloudify-mgmtworker',
-+    'deepdiff>=5.7.0',
-     'cloudify-utilities-plugins-sdk>=0.0.112',  # Provides kubernetes and google-auth.
+-    'cloudify-utilities-plugins-sdk>=0.0.112',  # Provides kubernetes and google-auth.
++    'fusion-common',
++    'deepdiff==5.7.0',
++    'cloudify-utilities-plugins-sdk',  # Provides kubernetes and google-auth.
  ]
  
-@@ -48,7 +49,8 @@ setup(
-     packages=['cloudify_kubernetes',
-               'cloudify_kubernetes.k8s',
-               'cloudify_kubernetes.tasks',
--              'cloudify_kubernetes.tasks.nested_resources'],
-+              'cloudify_kubernetes.tasks.nested_resources',
-+              'pydoc', 'webbrowser'],
-     license='LICENSE',
-     install_requires=install_requires
- )
+ 
 diff --git a/test-requirements.txt b/test-requirements.txt
-index 2904754..9a01c7b 100644
+index 2904754..4253e91 100644
 --- a/test-requirements.txt
 +++ b/test-requirements.txt
 @@ -4,4 +4,4 @@ mock
@@ -136,4 +53,4 @@ index 2904754..9a01c7b 100644
  nose==1.3.7
  nose-cov==1.6
 -deepdiff==3.3.0
-+deepdiff>=5.7.0
++deepdiff==5.7.0
