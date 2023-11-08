@@ -179,3 +179,4 @@
 2.13.25: add __version__.py file in cloudify_kubernetes folder.
 2.13.26: check plugin and update circleci config.
 2.13.27: Use DSL 1.5.
+2.13.28: Update dependencies.
