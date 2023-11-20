@@ -57,7 +57,7 @@ commands:
 
   run_gke_test:
     steps:
-       - run: ecosystem-test remote-blueprint-test -b examples/blueprint-examples/kubernetes/gcp-gke/blueprint.yaml --test-id=gcp-gke  -i resource_prefix=kube-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=3000 --nested-test=.circleci/test_features.py
+       - run: ecosystem-test remote-blueprint-test -b .circleci/blueprint.yaml --test-id=kube-test-$CIRCLE_BUILD_NUM --on-failure=uninstall-force --timeout=5400
 
 jobs:
   kubernetes_integration_tests_py3:
