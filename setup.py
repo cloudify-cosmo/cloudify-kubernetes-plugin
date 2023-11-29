@@ -16,7 +16,7 @@ import os
 import re
 import sys
 import pathlib
-from setuptools import setup
+from setuptools import setup, find_packages
 
 PY2 = sys.version_info[0] == 2
 
@@ -31,12 +31,31 @@ def get_version():
 
 install_requires = [
     'cloudify-python-importer==0.2.1',
-    'cloudify-common>=4.5',
-    'cloudify-types>=6.3.1',
-    'deepdiff==3.3.0',
-    'cloudify-utilities-plugins-sdk>=0.0.112',  # Provides kubernetes and google-auth.
 ]
 
+if sys.version_info.major == 3 and sys.version_info.minor == 6:
+    packages=[
+        'cloudify_kubernetes',
+        'cloudify_kubernetes.k8s',
+        'cloudify_kubernetes.tasks',
+        'cloudify_kubernetes.tasks.nested_resources'
+    ]
+    install_requires += [
+        'cloudify-common>=4.5,<7.0',
+        'cloudify_types @ git+https://github.com/cloudify-cosmo/' \
+        'cloudify-manager.git@6.4.2-build#egg=cloudify-types' \
+        '&subdirectory=cloudify_types',
+        'deepdiff==3.3.0',
+        'cloudify-utilities-plugins-sdk>=0.0.112',  # Provides kubernetes and google-auth.
+    ]
+else:
+    packages=find_packages()
+    install_requires += [
+        'fusion-common',
+        'fusion-mgmtworker',
+        'deepdiff==5.7.0',
+        'cloudify-utilities-plugins-sdk',
+    ]
 
 setup(
     name='cloudify-kubernetes-plugin',
@@ -45,10 +64,7 @@ setup(
     author_email='hello@cloudify.co',
     description='Plugin provides Kubernetes management possibility',
     include_package_data=True,
-    packages=['cloudify_kubernetes',
-              'cloudify_kubernetes.k8s',
-              'cloudify_kubernetes.tasks',
-              'cloudify_kubernetes.tasks.nested_resources'],
+    packages=packages,
     license='LICENSE',
     install_requires=install_requires
 )
