@@ -170,3 +170,7 @@ local-storage/
 .vs/
 gcp.json
 pydoc/
+fusion-agent
+fusion-common
+fusion-manager
+cloudify-utilities-plugins-sdk

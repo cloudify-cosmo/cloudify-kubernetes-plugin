@@ -12,5 +12,4 @@ EOF
 def register(*args, **kwargs):
     return ''
 EOF
-    git apply python311.patch
 fi
