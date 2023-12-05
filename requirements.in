@@ -4,3 +4,5 @@
 -e cloudify-utilities-plugins-sdk
 cryptography>=41.0.5
 charset_normalizer===3.0.1
+cffi>=1.14,<1.15
+pyyaml>=6.0.1

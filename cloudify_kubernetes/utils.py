@@ -718,11 +718,21 @@ def get_client_config(**kwargs):
     :param kwargs: from node properties
     :return:
     """
+    ctx_node = get_node(ctx)
+    client_config = ctx_node.properties.get(
+        'client_config', kwargs.get('client_config', {}))
+    client_config.setdefault('configuration', {})
+    client_config.setdefault('authentication', {})
+    client_config['configuration'].setdefault('api_options', {})
 
     # It probably happens in a NI context, but maybe it happens in a
     # relationship.
     # It is problematic to program for just NI. Leads to problem later on.
     node_instance = get_instance(ctx)
+    master_types = [
+        'cloudify.nodes.kubernetes.Master',
+        'cloudify.kubernetes.nodes.Master'
+    ]
     for x in node_instance.relationships:
         if CLUSTER_REL in x.type_hierarchy and \
                 CLUSTER_TYPE in x.target.node.type_hierarchy:
@@ -743,12 +753,16 @@ def get_client_config(**kwargs):
                     }
                 }
             }
-    ctx_node = get_node(ctx)
-    client_config = ctx_node.properties.get(
-        'client_config', kwargs.get('client_config', {}))
-    client_config.setdefault('configuration', {})
-    client_config.setdefault('authentication', {})
-    client_config['configuration'].setdefault('api_options', {})
+        elif any(t in x.target.node.type_hierarchy for t in master_types):
+            configuration = x.target.node.properties.get('configuration')
+            authentication = x.target.node.properties.get('authentication')
+            client_config = {
+                'configuration': configuration,
+                'authentication': authentication
+            }
+            ctx.logger.error(
+                'Support for these node types has been '
+                'discontinued: {}'.format(master_types))
     az = AKSConnection(client_config['authentication'])
     if az.has_service_account and not \
             client_config['configuration'].get('file_content'):
