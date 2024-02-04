@@ -1,0 +1,19 @@
+---
+project_exclusion_list:
+  exclusion_folders:
+    - .drp
+    - .github
+    - examples
+    - test
+    - jenkins
+    - helm_sdk/tests
+    - cloudify_helm/tests
+  exclusion_file_paths:
+    - Makefile
+    - dev-requirements.txt
+    - .gitignore
+    - CHANGELOG.txt
+    - README.md
+    - tox.ini
+    - requirements.in
+    - cloudify_cloudinit/README.md
