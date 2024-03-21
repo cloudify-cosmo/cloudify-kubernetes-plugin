@@ -183,3 +183,4 @@
 2.13.29: Update requirements.
 2.13.30: Add back support for master type.
 2.13.31: added .drp folder for trufflehog.
+2.13.32: blackduck.
