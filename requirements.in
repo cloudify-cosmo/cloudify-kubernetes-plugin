@@ -1,8 +1,5 @@
--e fusion-common
--e fusion-manager/mgmtworker
--e fusion-agent
--e cloudify-utilities-plugins-sdk
-cryptography>=41.0.5
-charset_normalizer===3.0.1
-cffi>=1.14,<1.15
-pyyaml>=6.0.1
+-e ${HOME}/fusion-common
+-e ${HOME}/fusion-manager/mgmtworker
+-e ${HOME}/fusion-agent
+-e ${HOME}/cloudify-utilities-plugins-sdk
+cryptography>=42.0.5
